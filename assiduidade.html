@@ -152,12 +152,15 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
   <img class="lklogo" src="" data-logo alt="EFAFLU">
   <h2 id="lkTit">Assiduidade</h2>
   <p class="small" id="lkTxt">A carregar…</p>
+  <input type="email" id="lkEmail" autocomplete="username" placeholder="Email" class="hide">
   <input type="password" id="lkP0" autocomplete="off" placeholder="Palavra-passe atual" class="hide">
   <input type="password" id="lkP1" autocomplete="off" placeholder="Palavra-passe">
   <input type="password" id="lkP2" autocomplete="off" placeholder="Repetir palavra-passe" class="hide">
   <button class="btn" id="lkBtn">Entrar</button>
   <button class="btn sec hide" id="lkCancel">Cancelar</button>
   <p id="lkErr"></p>
+  <a href="#" id="lkEsq" class="small hide" style="color:var(--pri)">Esqueci-me da palavra-passe</a>
+  <div class="small" style="margin-top:14px;opacity:.6">versão 30/10 · login por email</div>
 </div></div>
 <header>
   <span class="logo"><img src="" data-logo alt="EFAFLU"></span>
@@ -481,17 +484,39 @@ async function iniciar(){
   if (FIREBASE_CONFIG && window.firebase){
     try{
       if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
-      try{ if(!firebase.auth().currentUser) await firebase.auth().signInAnonymously(); }catch(e){ console.warn('auth',e); }
       db = firebase.firestore();
-      [COL_COLAB,COL_REG,COL_REL,COL_PLAN].forEach(col=>
-        db.collection(col).onSnapshot(s=>{ setArr(col, s.docs.map(d=>({id:d.id,...d.data()}))); render(); }));
+      fbAuth = firebase.auth();
       estado('☁️ Firebase');
+      fbAuth.onAuthStateChanged(u=>{
+        if(u && !u.isAnonymous){ ligarDados(); estado('☁️ '+u.email); desbloquear(); }
+        else { if(u) fbAuth.signOut(); desligarDados(); estado('☁️ Firebase'); abrirLock('login'); }
+      });
       return;
-    }catch(e){ console.error(e); aviso('Erro a ligar ao Firebase – a usar armazenamento local.'); db=null; }
+    }catch(e){ console.error(e); }
+  }
+  if (FIREBASE_CONFIG){                      // configurado mas não ligou: não passar para modo local
+    estado('⚠️ Sem ligação');
+    $('lkTit').textContent='Sem ligação';
+    $('lkTxt').textContent='Não foi possível ligar ao servidor. Verifica se tens internet (dados móveis ou Wi-Fi) e tenta outra vez.';
+    ['lkEmail','lkP0','lkP1','lkP2','lkCancel','lkEsq'].forEach(i=>$(i).classList.add('hide'));
+    $('lkBtn').textContent='🔄 Tentar outra vez'; $('lkBtn').onclick=()=>location.reload();
+    fbFalhou=true; return;
   }
   try{ const d = JSON.parse(localStorage.getItem(LS_KEY)||'{}'); colabs=d.colabs||[]; regs=d.regs||[]; relogios=d.relogios||[]; planos=d.planos||[]; }catch(e){}
   estado('💾 Local (este dispositivo)');
   render();
+}
+let fbAuth=null, unsubs=[], fbFalhou=false;
+function ligarDados(){
+  desligarDados();
+  unsubs=[COL_COLAB,COL_REG,COL_REL,COL_PLAN].map(col=>
+    db.collection(col).onSnapshot(s=>{ setArr(col, s.docs.map(d=>({id:d.id,...d.data()}))); render(); },
+      e=>{ console.error(e);
+        if(e.code==='permission-denied'){ aviso('Esta conta não tem acesso aos dados.\nPede ao responsável para adicionar o teu email às regras do Firebase.'); fbAuth.signOut(); } }));
+}
+function desligarDados(){
+  unsubs.forEach(u=>{ try{u();}catch(e){} }); unsubs=[];
+  colabs=[]; regs=[]; relogios=[]; planos=[]; render();
 }
 function gravarLocal(){ try{ localStorage.setItem(LS_KEY, JSON.stringify({colabs,regs,relogios,planos})); }catch(e){} }
 
@@ -1153,27 +1178,33 @@ async function gravarHash(h){
   pwHash=h;
 }
 function abrirLock(modo){
+  if(fbAuth && modo==='entrar') modo='login';
   lkModo=modo;
-  const cfg={entrar:['Assiduidade','Introduz a palavra-passe.','Entrar'],
+  const cfg={login:['Assiduidade','Entra com o teu email e palavra-passe.','Entrar'],
+             entrar:['Assiduidade','Introduz a palavra-passe.','Entrar'],
              criar:['Criar palavra-passe','Primeira utilização neste computador. Escolhe uma palavra-passe (mínimo 4 caracteres) e guarda-a bem: não há forma de a recuperar.','Criar e entrar'],
              mudar:['Mudar palavra-passe','Indica a atual e a nova.','Guardar']}[modo];
   $('lkTit').textContent=cfg[0]; $('lkTxt').textContent=cfg[1]; $('lkBtn').textContent=cfg[2];
   $('lkP0').classList.toggle('hide',modo!=='mudar');
-  $('lkP2').classList.toggle('hide',modo==='entrar');
-  $('lkP1').placeholder = modo==='entrar' ? 'Palavra-passe' : 'Nova palavra-passe';
+  $('lkP2').classList.toggle('hide',modo==='entrar'||modo==='login');
+  $('lkEmail').classList.toggle('hide',modo!=='login');
+  $('lkEsq').classList.toggle('hide',modo!=='login');
+  if(modo==='login'){ try{ $('lkEmail').value=localStorage.getItem('assid_email')||''; }catch(e){} }
+  $('lkP1').placeholder = (modo==='entrar'||modo==='login') ? 'Palavra-passe' : 'Nova palavra-passe';
   $('lkCancel').classList.toggle('hide',modo!=='mudar');
   ['lkP0','lkP1','lkP2'].forEach(i=>$(i).value=''); $('lkErr').textContent='';
   document.body.classList.add('locked'); $('lock').classList.remove('hide');
-  setTimeout(()=>$(modo==='mudar'?'lkP0':'lkP1').focus(),50);
+  setTimeout(()=>$(modo==='mudar'?'lkP0':(modo==='login'&&!$('lkEmail').value?'lkEmail':'lkP1')).focus(),50);
 }
 function desbloquear(){
   document.body.classList.remove('locked'); $('lock').classList.add('hide');
   try{ sessionStorage.setItem('assid_ok',pwHash); }catch(e){}
   ultimoUso=Date.now();
 }
-function bloquear(){ try{ sessionStorage.removeItem('assid_ok'); }catch(e){} abrirLock(pwHash?'entrar':'criar'); }
+function bloquear(){ try{ sessionStorage.removeItem('assid_ok'); }catch(e){} if(fbAuth) return fbAuth.signOut(); abrirLock(pwHash?'entrar':'criar'); }
 async function confirmarLock(){
   const p0=$('lkP0').value, p1=$('lkP1').value, p2=$('lkP2').value, err=t=>{ $('lkErr').textContent=t; };
+  if(fbAuth) return confirmarLockFb(p0,p1,p2,err);
   if(lkModo==='entrar'){
     if(await hashPw(p1)===pwHash) return desbloquear();
     $('lkP1').value=''; return err('Palavra-passe errada.');
@@ -1185,14 +1216,48 @@ async function confirmarLock(){
   desbloquear();
   if(lkModo==='mudar') aviso('✅ Palavra-passe alterada.');
 }
+const ERR_FB = e => ({'auth/invalid-credential':'Email ou palavra-passe errados.','auth/wrong-password':'Email ou palavra-passe errados.',
+  'auth/user-not-found':'Email ou palavra-passe errados.','auth/invalid-email':'Email inválido.','auth/too-many-requests':'Demasiadas tentativas. Espera uns minutos.',
+  'auth/network-request-failed':'Sem ligação à internet.','auth/weak-password':'Palavra-passe fraca – mínimo 6 caracteres.',
+  'auth/user-disabled':'Esta conta foi desativada.'}[e.code] || ('Erro: '+(e.code||e.message)));
+async function confirmarLockFb(p0,p1,p2,err){
+  $('lkBtn').disabled=true; err('');
+  try{
+    if(lkModo==='login'){
+      const em=$('lkEmail').value.trim();
+      if(!em||!p1) return err('Preenche o email e a palavra-passe.');
+      try{ localStorage.setItem('assid_email',em); }catch(e){}
+      await fbAuth.signInWithEmailAndPassword(em,p1);   // onAuthStateChanged abre a página
+      $('lkP1').value='';
+    } else if(lkModo==='mudar'){
+      if(p1.length<6) return err('A nova palavra-passe precisa de pelo menos 6 caracteres.');
+      if(p1!==p2) return err('As duas palavras-passe não são iguais.');
+      const u=fbAuth.currentUser;
+      await u.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(u.email,p0));
+      await u.updatePassword(p1);
+      desbloquear(); aviso('✅ Palavra-passe alterada.');
+    }
+  }catch(e){ console.error(e); if(lkModo==='mudar' && ['auth/invalid-credential','auth/wrong-password'].includes(e.code)) err('A palavra-passe atual está errada.'); else err(ERR_FB(e)); }
+  finally{ $('lkBtn').disabled=false; }
+}
+$('lkEsq').onclick=async e=>{
+  e.preventDefault();
+  const em=$('lkEmail').value.trim();
+  if(!em){ $('lkErr').textContent='Escreve primeiro o teu email.'; return $('lkEmail').focus(); }
+  try{ await fbAuth.sendPasswordResetEmail(em); $('lkErr').style.color='var(--extra)';
+       $('lkErr').textContent='📧 Se o email estiver registado, recebes um link para criar uma nova palavra-passe (vê também o spam).'; }
+  catch(x){ $('lkErr').style.color=''; $('lkErr').textContent=ERR_FB(x); }
+};
+$('lkEmail').addEventListener('input',()=>{ $('lkErr').style.color=''; });
 $('lkBtn').onclick=confirmarLock;
 $('lkCancel').onclick=desbloquear;
-['lkP0','lkP1','lkP2'].forEach(i=>$(i).addEventListener('keydown',e=>{ if(e.key==='Enter') confirmarLock(); }));
+['lkEmail','lkP0','lkP1','lkP2'].forEach(i=>$(i).addEventListener('keydown',e=>{ if(e.key==='Enter') confirmarLock(); }));
 ['click','keydown','touchstart','mousemove'].forEach(ev=>document.addEventListener(ev,()=>{ ultimoUso=Date.now(); },{passive:true}));
 setInterval(()=>{ if(!document.body.classList.contains('locked') && Date.now()-ultimoUso>MIN_BLOQ*60000) bloquear(); },30000);
 document.querySelectorAll('input:not([type=password])').forEach(i=>{ if(!i.hasAttribute('autocomplete')) i.setAttribute('autocomplete','off'); });
 
 iniciar().then(async()=>{
+  if(fbAuth || fbFalhou) return;           // com Firebase, o login trata de tudo
   pwHash=await lerHash();
   let ok=null; try{ ok=sessionStorage.getItem('assid_ok'); }catch(e){}
   if(pwHash && ok===pwHash) desbloquear(); else abrirLock(pwHash?'entrar':'criar');
