@@ -248,7 +248,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
             <select id="plTipo"><option value="sabado">Sábado trabalhado</option><option value="extra">Horas extra</option><option value="banco">Banco de horas (+)</option></select></div>
         </div>
         <div class="row" style="margin-top:10px">
-          <div><label>Trabalho / descrição</label><input id="plDesc" placeholder="ex.: manutenção das bombas, inventário…"></div>
+          <div><label>Trabalho / descrição</label><input id="plDesc" placeholder="opcional – ex.: limpeza, inventário, reparação…"></div>
         </div>
         <div style="margin-top:12px">
           <label>Quem vai ser chamado</label>
@@ -887,9 +887,31 @@ async function apagarPlano(pid){
   await apagar(COL_PLAN,pid);
 }
 function textoPlano(p){
-  const g=e=>Object.entries(p.pessoas).filter(([,v])=>v.estado===e).map(([id])=>nomeCol(id)).sort((a,b)=>String(a.num).localeCompare(String(b.num),'pt',{numeric:true}));
-  const bl=(t,l)=>l.length ? `\n${t} (${l.length}):\n`+l.map(c=>'• '+c.nome).join('\n')+'\n' : '';
-  return `*${diaLongo(p.data)}*${p.titulo?' – '+p.titulo:''}\nHorário: ${p.hIni||'?'} às ${p.hFim||'?'}\n`+bl('✅ Vêm',g('sim'))+bl('❌ Não vêm',g('nao'))+bl('⏳ Sem resposta',g('pend'));
+  const ordNum=(a,b)=>String(a.c.num).localeCompare(String(b.c.num),'pt',{numeric:true});
+  const todos=Object.entries(p.pessoas).map(([id,v])=>({id,v,c:nomeCol(id)})).sort(ordNum);
+  const lista=l=>l.map((x,k)=>`${k+1}. ${x.c.num} – ${x.c.nome}`+(x.extra||'')).join('\n');
+  const prev=hDe(p.hIni,p.hFim);
+  const agora=new Date(), quando=`${dataPT(dLocal(agora))} às ${horaLocal(agora)}`;
+  let t=`*EFAFLU · Parque de Máquinas*\n${p.fechado?'Presenças':'Pedido de trabalho'}\n\n📅 *${diaLongo(p.data)}*\n`;
+  if(p.titulo) t+=`🔧 ${p.titulo}\n`;
+  t+=`🕗 Horário${p.fechado?' previsto':''}: ${p.hIni||'?'} às ${p.hFim||'?'}${prev?' ('+hm(prev)+')':''}\n📝 Registo: ${TIPO_PL[p.tipo]}\n`;
+  if(!p.fechado){
+    const g=e=>todos.filter(x=>x.v.estado===e), sim=g('sim'), nao=g('nao'), pend=g('pend');
+    t+=`\n📊 *Resumo:* ${todos.length} chamados\n✅ Vêm: ${sim.length}  ·  ❌ Não vêm: ${nao.length}  ·  ⏳ Sem resposta: ${pend.length}\n`;
+    if(sim.length)  t+=`\n✅ *VÊM (${sim.length})*\n${lista(sim)}\n`;
+    if(nao.length)  t+=`\n❌ *NÃO VÊM (${nao.length})*\n${lista(nao)}\n`;
+    if(pend.length) t+=`\n⏳ *SEM RESPOSTA (${pend.length})*\n${lista(pend)}\n`;
+    if(sim.length && prev) t+=`\n⏱️ Horas previstas: ${sim.length} × ${hm(prev)} = *${hm(sim.length*prev)}*\n`;
+  } else {
+    const vieram=todos.filter(x=>x.v.veio).map(x=>({...x,extra:(x.v.hIni&&x.v.hFim?` – ${x.v.hIni} às ${x.v.hFim}`:'')+(x.v.horas?` (${hm(x.v.horas)})`:'')+(x.v.estado!=='sim'?' _(não tinha confirmado)_':'')}));
+    const nao=todos.filter(x=>!x.v.veio).map(x=>({...x,extra:x.v.estado==='sim'?' _(tinha dito que vinha)_':''}));
+    const tot=vieram.reduce((s,x)=>s+(x.v.horas||0),0);
+    t+=`\n📊 *Resumo:* ${todos.length} chamados  ·  ✅ Vieram: ${vieram.length}  ·  ❌ Faltaram: ${nao.length}\n`;
+    if(vieram.length) t+=`\n✅ *VIERAM (${vieram.length})*\n${lista(vieram)}\n`;
+    if(nao.length)    t+=`\n❌ *NÃO VIERAM (${nao.length})*\n${lista(nao)}\n`;
+    if(tot) t+=`\n⏱️ Total de horas: *${hm(tot)}*\n`;
+  }
+  return t+`\n_Atualizado a ${quando}_`;
 }
 async function copiarPlano(pid){
   const t=textoPlano(planos.find(x=>x.id===pid));
@@ -919,7 +941,7 @@ async function gravarFecho(pid){
     if(regs.some(r=>r.colId===cid && r.data===p.data && r.tipo===tipo)) dup.push(c.nome);
     const r={id:uid(), colId:cid, tipo, mov, data:p.data, fim:'', dias:tipo==='sabado'?1:0, horas, hIni:x.i, hFim:x.f, motivo:'',
              obs:'📅 '+(p.titulo||'Pedido de trabalho'), plano:p.id, criado:new Date().toISOString()};
-    novos.push(r); pessoas[cid].horas=horas; pessoas[cid].regId=r.id;
+    novos.push(r); Object.assign(pessoas[cid],{horas, hIni:x.i, hFim:x.f, regId:r.id});
   }
   if(erros.length) return aviso('Corrige primeiro:\n• '+erros.join('\n• '));
   const naoVieram = Object.values(v).filter(x=>!x.veio).length;
@@ -943,7 +965,9 @@ function cartaoPlano(p){
     return `<div class="plano">${cab}
       <div class="chips"><span class="chip sim">Vieram: ${vieram.length}</span><span class="chip">Total: ${hm(vieram.reduce((s,[,v])=>s+(v.horas||0),0))}</span></div>
       <div class="small">${vieram.map(([id,v])=>esc(nomeCol(id).nome)+(v.horas?' ('+hm(v.horas)+')':'')).join(' · ')||'Ninguém veio.'}</div>
-      <div class="acoes"><button class="btn sec" onclick="apagarPlano('${p.id}')">🗑️ Apagar pedido</button></div></div>`;
+      <div class="acoes"><button class="btn sec" onclick="copiarPlano('${p.id}')">📋 Copiar relatório</button>
+        <button class="btn sec" onclick="whatsPlano('${p.id}')">💬 WhatsApp</button>
+        <button class="btn sec" onclick="apagarPlano('${p.id}')">🗑️ Apagar pedido</button></div></div>`;
   }
   if(fecharId===p.id){
     const ordem=[...ent].sort((a,b)=>(a[1].estado==='sim'?0:1)-(b[1].estado==='sim'?0:1));
