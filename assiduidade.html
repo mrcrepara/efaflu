@@ -198,7 +198,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
   <button class="btn sec hide" id="lkCancel">Cancelar</button>
   <p id="lkErr"></p>
   <a href="#" id="lkEsq" class="small hide" style="color:var(--pri)">Esqueci-me da palavra-passe</a>
-  <div class="small" style="margin-top:14px;opacity:.6">versão 02/11 · login por email</div>
+  <div class="small" style="margin-top:14px;opacity:.6">versão 02/11b · login por email</div>
 </div></div>
 <header>
   <span class="logo"><img src="" data-logo alt="EFAFLU"></span>
@@ -404,7 +404,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
       <div class="row" style="margin-top:10px">
         <div><label>Observações</label><input id="rObs" placeholder="ex.: avaria urgente, máquina parada…"></div>
         <div style="flex:0"><button class="btn" onclick="guardarRegisto()">💾 Guardar</button></div>
-        <div style="flex:0" id="boxCancel" class="hide"><button class="btn sec" onclick="limparForm()">Cancelar</button></div>
+        <div style="flex:0" id="boxCancel" class="hide"><button class="btn sec" onclick="limparForm(); if(voltarMapa){ voltarMapa=false; mostrar('mapa'); }">Cancelar</button></div>
         <div style="flex:0" id="boxApagar" class="hide"><button class="btn stop" onclick="apagarEmEdicao()">🗑️ Apagar registo</button></div>
       </div>
       <p class="small" id="dica"></p>
@@ -853,7 +853,7 @@ async function guardarRegisto(){
   await salvar(COL_REG, r);
   const eraEdit = !!editReg;
   limparForm();
-  if(eraEdit) mostrar('hist'); else { $('dica').textContent='✅ Registo guardado.'; }
+  if(eraEdit){ mostrar(voltarMapa?'mapa':'hist'); voltarMapa=false; } else { $('dica').textContent='✅ Registo guardado.'; }
 }
 function limparForm(){
   editReg=null; $('regTitulo').textContent='Novo registo'; $('boxCancel').classList.add('hide'); $('boxApagar').classList.add('hide');
@@ -863,7 +863,7 @@ function limparForm(){
   ajustarForm();
 }
 function editarReg(id){
-  const r=regs.find(x=>x.id===id); editReg=id;
+  const r=regs.find(x=>x.id===id); editReg=id; voltarMapa=false;
   mostrar('reg');
   $('rCol').value=r.colId; $('rTipo').value = r.tipo==='ausencia' ? 'aus:'+motAus(r) : r.tipo; ajustarForm();
   $('rData').value=r.data; rotulosDia(); $('rFim').value=r.fim||''; $('rDias').value=r.dias||0; $('rHoras').value=r.horas||'';
@@ -881,7 +881,7 @@ async function apagarReg(id){
 async function apagarEmEdicao(){
   const id=editReg, r=regs.find(x=>x.id===id); if(!r) return limparForm();
   if(!await perguntar('Apagar este registo?\n\n'+descReg(r),'🗑️ Apagar','Não')) return;
-  await apagar(COL_REG,id); limparForm(); mostrar('hist');
+  await apagar(COL_REG,id); limparForm(); mostrar(voltarMapa?'mapa':'hist'); voltarMapa=false;
 }
 
 /* ---------------- DATAS ---------------- */
@@ -1405,12 +1405,12 @@ function cobre(r, d){ return r.data<=d && d<=(r.fim||r.data); }
 function ausente(colId, d){ return regs.find(r=>r.colId===colId && cobre(r,d) && (r.tipo==='ausencia' || ((r.tipo==='falta_i'||r.tipo==='falta_j') && r.dias>0))); }
 function celula(colId, d){
   const rs=regs.filter(r=>r.colId===colId && cobre(r,d));
-  const a=rs.find(r=>r.tipo==='ausencia'); if(a){ const m=AUS[motAus(a)]; return {sig:m.sig, cor:m.cor, txt:m.curto}; }
-  const fi=rs.find(r=>r.tipo==='falta_i'); if(fi) return {sig:fi.dias?'FI':'fi', cor:'var(--falta)', txt:'Falta injustificada'+(fi.horas?' ('+hm(fi.horas)+')':'')};
-  const fj=rs.find(r=>r.tipo==='falta_j'); if(fj) return {sig:fj.dias?'FJ':'fj', cor:'#e48a8a', txt:'Falta justificada'+(fj.horas?' ('+hm(fj.horas)+')':'')};
-  const sb=rs.find(r=>r.tipo==='sabado'); if(sb) return {sig:'S', cor:'var(--sab)', txt:'Sábado trabalhado'+(sb.horas?' ('+hm(sb.horas)+')':'')};
-  const ex=rs.filter(r=>r.tipo==='extra'); if(ex.length) return {sig:'HE', cor:'var(--extra)', txt:'Horas extra: '+hm(ex.reduce((s,r)=>s+(r.horas||0),0))};
-  const bk=rs.find(r=>r.tipo==='banco'); if(bk) return {sig:bk.mov==='-'?'B−':'B+', cor:'var(--banco)', txt:'Banco de horas '+(bk.mov==='-'?'−':'+')+hm(bk.horas)};
+  const a=rs.find(r=>r.tipo==='ausencia'); if(a){ const m=AUS[motAus(a)]; return {sig:m.sig, cor:m.cor, txt:m.curto+(a.fim?' ('+dataPT(a.data)+' a '+dataPT(a.fim)+')':''), id:a.id}; }
+  const fi=rs.find(r=>r.tipo==='falta_i'); if(fi) return {sig:fi.dias?'FI':'fi', cor:'var(--falta)', txt:'Falta injustificada'+(fi.horas?' ('+hm(fi.horas)+')':''), id:fi.id};
+  const fj=rs.find(r=>r.tipo==='falta_j'); if(fj) return {sig:fj.dias?'FJ':'fj', cor:'#e48a8a', txt:'Falta justificada'+(fj.horas?' ('+hm(fj.horas)+')':''), id:fj.id};
+  const sb=rs.find(r=>r.tipo==='sabado'); if(sb) return {sig:'S', cor:'var(--sab)', txt:'Sábado trabalhado'+(sb.horas?' ('+hm(sb.horas)+')':''), id:sb.id};
+  const ex=rs.filter(r=>r.tipo==='extra'); if(ex.length) return {sig:'HE', cor:'var(--extra)', txt:'Horas extra: '+hm(ex.reduce((s,r)=>s+(r.horas||0),0)), id:ex[0].id};
+  const bk=rs.find(r=>r.tipo==='banco'); if(bk) return {sig:bk.mov==='-'?'B−':'B+', cor:'var(--banco)', txt:'Banco de horas '+(bk.mov==='-'?'−':'+')+hm(bk.horas), id:bk.id};
   const pl=planos.find(p=>!p.fechado && p.data===d && p.pessoas[colId] && p.pessoas[colId].estado==='sim');
   if(pl) return {sig:'✓', cor:'', txt:'Chamado – disse que vem ('+(pl.hIni||'')+'–'+(pl.hFim||'')+')', plan:true};
   return null;
@@ -1426,8 +1426,8 @@ function renderMapa(){
   let h='<table class="mapa"><thead><tr><th class="nmc">Colaborador</th>'+dias.map(x=>`<th class="${x.cls}" ${x.fer?`data-tip="🎉 ${esc(x.fer)}"`:''}><div>${x.fer?'🎉':ini[x.w]}</div>${x.i}</th>`).join('')+'</tr></thead><tbody>';
   h+=cols.map(c=>`<tr><td class="nmc" title="${esc(c.nome)}">${esc(c.num)} ${esc(primeiroNome(c.nome))}</td>`+dias.map(x=>{
     const ce=celula(c.id,x.d), cls=x.cls;
-    const tip=`${c.nome}\n${diaLongo(x.d)}${x.fer?'\n🎉 '+x.fer:''}${ce?'\n'+ce.txt:''}${papel==='consulta'?'':'\n(clica para registar)'}`;
-    return `<td class="${cls}" data-tip="${esc(tip)}" onclick="registarEm('${c.id}','${x.d}')">${ce?`<span class="mc ${ce.plan?'plan':''}" style="${ce.cor?'background:'+ce.cor:''}">${ce.sig}</span>`:''}</td>`;
+    const tip=`${c.nome}\n${diaLongo(x.d)}${x.fer?'\n🎉 '+x.fer:''}${ce?'\n'+ce.txt:''}${papel==='consulta'?'':ce&&ce.id?'\n(clica para corrigir ou apagar)':'\n(clica para registar)'}`;
+    return `<td class="${cls}" data-tip="${esc(tip)}" onclick="${ce&&ce.id?`abrirDoMapa('${ce.id}')`:`registarEm('${c.id}','${x.d}')`}">${ce?`<span class="mc ${ce.plan?'plan':''}" style="${ce.cor?'background:'+ce.cor:''}">${ce.sig}</span>`:''}</td>`;
   }).join('')+'</tr>').join('');
   const ativos=ordCol().filter(c=>c.ativo!==false);
   h+='<tr class="disp"><td class="nmc">Disponíveis</td>'+dias.map(x=>{ const k=ativos.filter(c=>!ausente(c.id,x.d)).length;
@@ -1436,6 +1436,8 @@ function renderMapa(){
   $('mpTab').innerHTML = cols.length ? h+'</tbody></table>' : '<div class="vazio">Sem colaboradores.</div>';
   const mt=new Date(v+'-15T12:00').toLocaleDateString('pt-PT',{month:'long',year:'numeric'}); $('mpTit').textContent = mt.charAt(0).toUpperCase()+mt.slice(1);
 }
+function abrirDoMapa(id){ if(papel==='consulta') return; editarReg(id); voltarMapa=true; window.scrollTo(0,0); }
+let voltarMapa=false;
 function registarEm(colId, d){
   if(papel==='consulta') return;
   limparForm(); mostrar('reg'); $('rCol').value=colId; $('rData').value=d; rotulosDia();
