@@ -1,0 +1,15 @@
+{
+  "name": "Assiduidade EFAFLU",
+  "short_name": "Assiduidade",
+  "description": "Assiduidade dos colaboradores – Parque de Máquinas EFAFLU",
+  "lang": "pt-PT",
+  "start_url": "./assiduidade.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#b82d36",
+  "theme_color": "#b82d36",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

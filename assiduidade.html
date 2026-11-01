@@ -3,6 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#b82d36">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Assiduidade">
 <title>Assiduidade – EFAFLU</title>
 <!-- Firebase (opcional) – só é usado se preencheres FIREBASE_CONFIG mais abaixo -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -76,6 +82,15 @@ button.edit{background:none;border:0;color:var(--pri);cursor:pointer;font-size:1
 .timer .act button{flex:1}
 .pulse{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--falta);margin-right:6px;animation:p 1.2s infinite}
 @keyframes p{50%{opacity:.25}}
+#pnFundo{position:fixed;inset:0;background:rgba(15,20,30,.55);display:flex;align-items:center;justify-content:center;padding:16px;z-index:980}
+#pn{background:#fff;border-radius:14px;max-width:560px;width:100%;max-height:90vh;overflow:auto;padding:18px;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+#pn textarea{height:46vh;font-family:inherit;font-size:14px;line-height:1.45;resize:vertical}
+.lemb{display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line);padding:9px 0}
+.lemb .nm{flex:1}
+.wa{background:#25d366!important;color:#fff!important}
+button.wa-mini{background:#e7f8ee;color:#128c4b;border:0;border-radius:8px;padding:5px 9px;cursor:pointer;font-size:13px;white-space:nowrap}
+.motivo{font-size:13px;padding:5px 8px;margin-top:6px;max-width:260px}
+@media (max-width:640px){ .plrow td{display:block;border:0;padding:4px 0} .plrow{display:block;border-bottom:1px solid var(--line);padding:6px 0} .plrow .est{justify-content:flex-start!important;flex-wrap:wrap} }
 #dlgFundo{position:fixed;inset:0;background:rgba(15,20,30,.55);display:flex;align-items:center;justify-content:center;padding:16px;z-index:999}
 #dlg{background:#fff;border-radius:14px;max-width:420px;width:100%;padding:20px;box-shadow:0 10px 40px rgba(0,0,0,.3)}
 #dlgMsg{white-space:pre-line;font-size:16px;line-height:1.45;margin-bottom:18px}
@@ -87,6 +102,21 @@ body.locked header,body.locked main{display:none}
 .lockbox input{margin-top:10px;text-align:center;font-size:18px}
 .lockbox .btn{width:100%;margin-top:14px;padding:12px}
 #lkErr{color:var(--falta);font-weight:600;min-height:20px;margin:10px 0 0;font-size:14px}
+/* mapa */
+.mapa{border-collapse:collapse;font-size:12px;min-width:100%}
+.mapa th,.mapa td{border:1px solid var(--line);text-align:center;padding:0;width:28px;min-width:28px;height:28px}
+.mapa th{font-weight:600;color:var(--muted);font-size:11px;padding:3px 0}
+.mapa th div{font-weight:400;font-size:10px}
+.mapa .nmc{text-align:left;padding:0 8px;white-space:nowrap;min-width:110px;width:auto;position:sticky;left:0;background:#fff;z-index:1;color:var(--txt);font-size:13px}
+.mapa .fds{background:#f1f2f6}
+.mapa th.hj,.mapa td.hj{box-shadow:inset 0 0 0 2px var(--pri)}
+.mapa td{cursor:pointer}
+.mapa td:hover{background:var(--pri2)}
+.mapa .mc{display:inline-flex;align-items:center;justify-content:center;width:24px;height:22px;border-radius:4px;color:#fff;font-weight:700;font-size:10px}
+.mapa .mc.plan{background:#fff;border:2px dashed var(--sab);color:var(--sab)}
+.mapa tr.disp td{font-weight:700;color:var(--extra);cursor:default}
+.mapa tr.disp td.menos{color:var(--aus)}
+.mapa tr.disp .nmc{color:var(--muted);font-weight:600}
 /* planeamento */
 .plano{border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px;background:#fff}
 .plano.hoje{border:2px solid var(--pri)}
@@ -160,7 +190,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
   <button class="btn sec hide" id="lkCancel">Cancelar</button>
   <p id="lkErr"></p>
   <a href="#" id="lkEsq" class="small hide" style="color:var(--pri)">Esqueci-me da palavra-passe</a>
-  <div class="small" style="margin-top:14px;opacity:.6">versão 30/10 · login por email</div>
+  <div class="small" style="margin-top:14px;opacity:.6">versão 01/11 · login por email</div>
 </div></div>
 <header>
   <span class="logo"><img src="" data-logo alt="EFAFLU"></span>
@@ -177,6 +207,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
     <button data-t="folha">🗓️ Folha do dia</button>
     <button data-t="reg">➕ Registar</button>
     <button data-t="rel">⏱️ Relógio<span class="badge hide" id="nTimers"></span></button>
+    <button data-t="mapa">🏖️ Mapa</button>
     <button data-t="hist">📋 Histórico</button>
     <button data-t="col">👥 Colaboradores</button>
   </div>
@@ -193,6 +224,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
         <div><label>Mês</label><input type="month" id="fMes"></div>
         <div><label>Ano</label><input type="number" id="fAno" min="2020" max="2100"></div>
         <div style="min-width:220px"><label>Colaborador</label><select id="fCol"></select></div>
+        <div style="flex:0"><button class="btn wa" onclick="abrirRelatorio()">💬 Relatório</button></div>
         <div style="flex:0"><button class="btn sec" onclick="window.print()">🖨️ Imprimir</button></div>
         <div style="flex:0"><button class="btn sec" onclick="exportCSV()">⬇️ Excel (CSV)</button></div>
       </div>
@@ -363,6 +395,26 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
     </div>
   </section>
 
+  <!-- ============ MAPA ============ -->
+  <section id="t-mapa" class="hide">
+    <div class="card">
+      <div class="row" style="align-items:center">
+        <div style="flex:0;min-width:0"><button class="btn sec" onclick="moverMapa(-1)">◀</button></div>
+        <div style="text-align:center;min-width:0"><h2 id="mpTit" style="margin:0"></h2></div>
+        <div style="flex:0;min-width:0"><button class="btn sec" onclick="moverMapa(1)">▶</button></div>
+        <div style="flex:0;min-width:150px"><input type="month" id="mpMes"></div>
+      </div>
+      <div class="lg" style="flex-wrap:wrap;margin:12px 0 0">
+        <span><i style="background:var(--aus)"></i>Ausência (F férias · B baixa · AF assist. família · FM formação · L licença)</span>
+        <span><i style="background:var(--falta)"></i>Falta injust.</span><span><i style="background:#e48a8a"></i>Falta just.</span>
+        <span><i style="background:var(--sab)"></i>S sábado</span><span><i style="background:var(--extra)"></i>HE horas extra</span>
+        <span><i style="background:var(--banco)"></i>Banco</span><span><i style="border:2px dashed var(--sab);background:#fff"></i>✓ chamado, disse que vem</span>
+      </div>
+    </div>
+    <div class="card"><div class="wrap" id="mpTab"></div>
+      <p class="small" style="margin:10px 0 0">Passa o rato (ou toca) num quadrado para ver o detalhe. Clica para registar uma ausência ou falta nesse dia. A linha "Disponíveis" mostra quantas pessoas não estão de férias nem a faltar.</p></div>
+  </section>
+
   <!-- ============ HISTÓRICO ============ -->
   <section id="t-hist" class="hide">
     <div class="card">
@@ -391,11 +443,12 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
         <div style="max-width:140px"><label>Nº colab.</label><input id="cNum" name="colab_codigo" autocomplete="off" data-lpignore="true" placeholder="ex.: 001"></div>
         <div><label>Nome</label><input id="cNome" placeholder="Nome completo"></div>
         <div><label>Função (opcional)</label><input id="cFun" placeholder="ex.: Operador"></div>
+        <div><label>Telemóvel (opcional)</label><input id="cTel" type="tel" inputmode="tel" autocomplete="off" placeholder="ex.: 912 345 678"></div>
         <div style="flex:0"><button class="btn" onclick="guardarCol()">💾 Guardar</button></div>
       </div>
     </div>
     <div class="card"><div class="wrap"><table class="tbl">
-      <thead><tr><th>Nº colab.</th><th>Nome</th><th>Função</th><th>Saldo banco</th><th>Estado</th><th></th></tr></thead>
+      <thead><tr><th>Nº colab.</th><th>Nome</th><th>Função</th><th>Telemóvel</th><th>Saldo banco</th><th>Estado</th><th></th></tr></thead>
       <tbody id="tbCol"></tbody>
     </table></div></div>
     <div class="card noprint">
@@ -415,6 +468,10 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
 </main>
 
 <div id="tip" class="hide"></div>
+<div id="pnFundo" class="hide" onclick="if(event.target===this)fecharPainel()"><div id="pn">
+  <div class="row" style="align-items:center;margin-bottom:10px"><div><h2 id="pnTit" style="margin:0"></h2></div>
+    <div style="flex:0;min-width:0"><button class="btn sec" onclick="fecharPainel()">✖</button></div></div>
+  <div id="pnBody"></div></div></div>
 <div id="dlgFundo" class="hide"><div id="dlg"><div id="dlgMsg"></div><div class="bt">
   <button class="btn sec" id="dlgNao"></button><button class="btn" id="dlgSim"></button></div></div></div>
 
@@ -541,16 +598,17 @@ const opcoesCol = lista => lista.length ? lista.map(c=>`<option value="${c.id}">
                                         : '<option value="">(sem colaboradores)</option>';
 
 async function guardarCol(){
-  const num=$('cNum').value.trim(), nome=$('cNome').value.trim(), funcao=$('cFun').value.trim();
+  const num=$('cNum').value.trim(), nome=$('cNome').value.trim(), funcao=$('cFun').value.trim(), tel=$('cTel').value.trim();
   if(!num||!nome) return aviso('Preenche o número e o nome.');
   if(colabs.some(c=>c.num===num && c.id!==editCol)) return aviso('Já existe um colaborador com o número '+num+'.');
   const base = editCol ? colabs.find(c=>c.id===editCol) : {id:uid(),ativo:true};
-  await salvar(COL_COLAB,{...base,num,nome,funcao});
-  editCol=null; $('cNum').value=$('cNome').value=$('cFun').value=''; $('colTitulo').textContent='Adicionar colaborador';
+  if(tel && !telWa(tel)) return aviso('O número de telemóvel não parece válido.\nEx.: 912 345 678');
+  await salvar(COL_COLAB,{...base,num,nome,funcao,tel});
+  editCol=null; $('cNum').value=$('cNome').value=$('cFun').value=$('cTel').value=''; $('colTitulo').textContent='Adicionar colaborador';
 }
 function editarCol(id){
   const c=colabs.find(x=>x.id===id); editCol=id;
-  $('cNum').value=c.num; $('cNome').value=c.nome; $('cFun').value=c.funcao||'';
+  $('cNum').value=c.num; $('cNome').value=c.nome; $('cFun').value=c.funcao||''; $('cTel').value=c.tel||'';
   $('colTitulo').textContent='Editar colaborador'; $('cNome').focus();
 }
 async function toggleCol(id){ const c=colabs.find(x=>x.id===id); await salvar(COL_COLAB,{...c,ativo:c.ativo===false}); }
@@ -851,7 +909,9 @@ function marcarTodos(v){ document.querySelectorAll('#plPick input').forEach(i=>i
 function renderPick(sel){
   const ativos=ordCol().filter(c=>c.ativo!==false);
   const extra = sel ? Object.keys(sel).filter(id=>!ativos.some(c=>c.id===id)).map(nomeCol) : [];
-  $("plPick").innerHTML = ativos.length||extra.length ? [...ativos,...extra].map(c=>`<label><input type="checkbox" value="${c.id}" ${sel&&sel[c.id]?'checked':''}> ${esc(c.num)} – ${esc(c.nome)}</label>`).join('')
+  const d=$('plData').value;
+  $("plPick").innerHTML = ativos.length||extra.length ? [...ativos,...extra].map(c=>{ const au=d&&ausente(c.id,d);
+    return `<label><input type="checkbox" value="${c.id}" ${sel&&sel[c.id]?'checked':''}> <span>${esc(c.num)} – ${esc(c.nome)}${au?`<br><span class="small" style="color:var(--aus);font-weight:600">🏖️ ${au.tipo==='ausencia'?esc(au.motivo||'Ausência'):'Falta'} nesse dia</span>`:''}</span></label>`; }).join('')
     : '<span class="small">Adiciona primeiro colaboradores.</span>';
 }
 function toggleFormPlano(){ $('plForm').classList.contains('hide') ? abrirFormPlano(null) : fecharFormPlano(); }
@@ -862,7 +922,7 @@ function abrirFormPlano(id){
   if(p){ $('plData').value=p.data; $('plIni').value=p.hIni||''; $('plFim').value=p.hFim||''; $('plTipo').value=p.tipo; $('plDesc').value=p.titulo||''; }
   else { proxSabado(); $('plIni').value='08:00'; $('plFim').value='13:00'; $('plTipo').value='sabado'; $('plDesc').value=''; }
   rotuloPl();
-  renderPick(p ? p.pessoas : Object.fromEntries(ordCol().filter(c=>c.ativo!==false).map(c=>[c.id,1])));
+  renderPick(p ? p.pessoas : Object.fromEntries(ordCol().filter(c=>c.ativo!==false && !ausente(c.id,$('plData').value)).map(c=>[c.id,1])));
   mostrar('plan'); window.scrollTo(0,0);
 }
 function fecharFormPlano(){ editPlano=null; $('plForm').classList.add('hide'); $('plToggle').classList.remove('hide'); $('plTit').textContent='Pedidos de trabalho'; }
@@ -896,7 +956,7 @@ function textoPlano(p){
   if(p.titulo) t+=`🔧 ${p.titulo}\n`;
   t+=`🕗 Horário${p.fechado?' previsto':''}: ${p.hIni||'?'} às ${p.hFim||'?'}${prev?' ('+hm(prev)+')':''}\n📝 Registo: ${TIPO_PL[p.tipo]}\n`;
   if(!p.fechado){
-    const g=e=>todos.filter(x=>x.v.estado===e), sim=g('sim'), nao=g('nao'), pend=g('pend');
+    const g=e=>todos.filter(x=>x.v.estado===e), sim=g('sim'), nao=g('nao').map(x=>({...x,extra:x.v.motivo?' – '+x.v.motivo:''})), pend=g('pend');
     t+=`\n📊 *Resumo:* ${todos.length} chamados\n✅ Vêm: ${sim.length}  ·  ❌ Não vêm: ${nao.length}  ·  ⏳ Sem resposta: ${pend.length}\n`;
     if(sim.length)  t+=`\n✅ *VÊM (${sim.length})*\n${lista(sim)}\n`;
     if(nao.length)  t+=`\n❌ *NÃO VÊM (${nao.length})*\n${lista(nao)}\n`;
@@ -904,7 +964,7 @@ function textoPlano(p){
     if(sim.length && prev) t+=`\n⏱️ Horas previstas: ${sim.length} × ${hm(prev)} = *${hm(sim.length*prev)}*\n`;
   } else {
     const vieram=todos.filter(x=>x.v.veio).map(x=>({...x,extra:(x.v.hIni&&x.v.hFim?` – ${x.v.hIni} às ${x.v.hFim}`:'')+(x.v.horas?` (${hm(x.v.horas)})`:'')+(x.v.estado!=='sim'?' _(não tinha confirmado)_':'')}));
-    const nao=todos.filter(x=>!x.v.veio).map(x=>({...x,extra:x.v.estado==='sim'?' _(tinha dito que vinha)_':''}));
+    const nao=todos.filter(x=>!x.v.veio).map(x=>({...x,extra:(x.v.motivo?' – '+x.v.motivo:'')+(x.v.estado==='sim'?' _(tinha dito que vinha)_':'')}));
     const tot=vieram.reduce((s,x)=>s+(x.v.horas||0),0);
     t+=`\n📊 *Resumo:* ${todos.length} chamados  ·  ✅ Vieram: ${vieram.length}  ·  ❌ Faltaram: ${nao.length}\n`;
     if(vieram.length) t+=`\n✅ *VIERAM (${vieram.length})*\n${lista(vieram)}\n`;
@@ -978,7 +1038,7 @@ function cartaoPlano(p){
       ${ordem.map(([id,v])=>{ const c=nomeCol(id); return `<tr data-fc="${id}">
         <td><input type="checkbox" data-k="v" ${v.estado==='sim'?'checked':''}></td>
         <td style="white-space:nowrap">${esc(c.num)} – ${esc(c.nome)}</td>
-        <td class="small" style="white-space:nowrap">${EST[v.estado]}</td>
+        <td class="small" style="white-space:nowrap">${EST[v.estado]}${v.motivo?'<div>'+esc(v.motivo)+'</div>':''}</td>
         <td><input type="time" data-k="i" value="${esc(p.hIni||'')}"></td>
         <td><input type="time" data-k="f" value="${esc(p.hFim||'')}"></td>
         <td><input type="number" data-k="h" step="0.25" min="0" value="${p.hIni&&p.hFim?hDe(p.hIni,p.hFim):''}"></td></tr>`;}).join('')}
@@ -989,14 +1049,17 @@ function cartaoPlano(p){
   return `<div class="plano ${cls}">${cab}
     <div class="chips"><span class="chip sim">✅ Vêm: ${n('sim')}</span><span class="chip nao">❌ Não: ${n('nao')}</span><span class="chip pend">⏳ Sem resposta: ${n('pend')}</span></div>
     <div class="wrap"><table class="tbl"><tbody>
-    ${ent.map(([id,v])=>{ const c=nomeCol(id); return `<tr><td style="white-space:nowrap">${esc(c.num)} – ${esc(c.nome)}</td>
-      <td><div class="est" style="justify-content:flex-end">${['sim','nao','pend'].map(e=>`<button class="${e} ${v.estado===e?'on':''}" onclick="setEstado('${p.id}','${id}','${e}')">${EST[e]}</button>`).join('')}</div></td></tr>`;}).join('')}
+    ${ent.map(([id,v])=>{ const c=nomeCol(id), au=ausente(id,p.data); return `<tr class="plrow"><td style="white-space:nowrap">${esc(c.num)} – ${esc(c.nome)}
+        ${au?`<div class="small" style="color:var(--aus);font-weight:600">🏖️ ${au.tipo==='ausencia'?esc(au.motivo||'Ausência'):'Falta registada'} nesse dia</div>`:''}
+        ${v.estado==='nao'?`<input class="motivo" placeholder="Motivo (opcional)" value="${esc(v.motivo||'')}" onchange="setMotivo('${p.id}','${id}',this.value)">`:''}</td>
+      <td><div class="est" style="justify-content:flex-end">${c.tel?`<button class="wa-mini" title="Enviar mensagem a ${esc(c.nome)}" onclick="waPessoa('${p.id}','${id}')">💬</button>`:''}${['sim','nao','pend'].map(e=>`<button class="${e} ${v.estado===e?'on':''}" onclick="setEstado('${p.id}','${id}','${e}')">${EST[e]}</button>`).join('')}</div></td></tr>`;}).join('')}
     </tbody></table></div>
     ${p.data<hj?'<div class="aviso">⚠️ Este dia já passou – falta confirmar quem veio.</div>':''}
     <div class="acoes">
       <button class="btn" onclick="abrirFecho('${p.id}')">✔️ Confirmar quem veio</button>
       <button class="btn sec" onclick="copiarPlano('${p.id}')">📋 Copiar lista</button>
       <button class="btn sec" onclick="whatsPlano('${p.id}')">💬 WhatsApp</button>
+      ${n('pend')?`<button class="btn sec" onclick="lembrarPend('${p.id}')">🔔 Lembrar quem não respondeu</button>`:''}
       <button class="btn sec" onclick="abrirFormPlano('${p.id}')">✏️ Editar</button>
       <button class="btn sec" onclick="apagarPlano('${p.id}')">🗑️</button></div></div>`;
 }
@@ -1017,6 +1080,116 @@ function renderPlanos(forcar){
   if(ch!==plChave && !$('plForm').classList.contains('hide')){
     const sel=Object.fromEntries([...document.querySelectorAll('#plPick input:checked')].map(i=>[i.value,1])); renderPick(sel); }
   plChave=ch;
+}
+
+/* ---------------- WHATSAPP / PAINEL ---------------- */
+function telWa(t){ let d=String(t||'').replace(/\D/g,''); if(d.startsWith('00')) d=d.slice(2); if(d.length===9) d='351'+d; return d.length>=11&&d.length<=15 ? d : ''; }
+function abrirWa(texto, tel){ const n=telWa(tel); window.open('https://wa.me/'+(n||'')+'?text='+encodeURIComponent(texto),'_blank'); }
+async function copiarTexto(t){
+  try{ await navigator.clipboard.writeText(t); }
+  catch(e){ const a=document.createElement('textarea'); a.value=t; document.body.appendChild(a); a.select(); try{document.execCommand('copy');}catch(_){} a.remove(); }
+}
+function abrirPainel(tit, html){ $('pnTit').textContent=tit; $('pnBody').innerHTML=html; $('pnFundo').classList.remove('hide'); }
+function fecharPainel(){ $('pnFundo').classList.add('hide'); $('pnBody').innerHTML=''; }
+let pnTexto='';
+function painelTexto(tit, texto, tel){
+  pnTexto=texto;
+  abrirPainel(tit, `<textarea id="pnTxt">${esc(texto)}</textarea>
+    <p class="small" style="margin:6px 0 0">Podes alterar o texto antes de enviar.</p>
+    <div class="acoes" style="justify-content:flex-end">
+      <button class="btn sec" onclick="copiarTexto($('pnTxt').value).then(()=>{this.textContent='✅ Copiado'})">📋 Copiar</button>
+      <button class="btn wa" onclick="abrirWa($('pnTxt').value, ${tel?`'${esc(tel)}'`:"''"})">💬 Enviar por WhatsApp</button></div>`);
+}
+const primeiroNome = n => String(n||'').trim().split(/\s+/)[0];
+function msgConvite(p, c){
+  return `Olá ${primeiroNome(c.nome)}! 👋\nPrecisamos de ti no *Parque de Máquinas* da EFAFLU:\n\n📅 *${diaLongo(p.data)}*\n🕗 ${p.hIni||'?'} às ${p.hFim||'?'}${p.titulo?'\n🔧 '+p.titulo:''}\n\nPodes vir? Responde só *SIM* ou *NÃO*. Obrigado!`;
+}
+function waPessoa(pid, cid){
+  const p=planos.find(x=>x.id===pid), c=nomeCol(cid);
+  if(!c.tel) return aviso(`${c.nome} não tem telemóvel registado.\nAcrescenta em 👥 Colaboradores (✏️).`);
+  abrirWa(msgConvite(p,c), c.tel);
+}
+function lembrarPend(pid){
+  const p=planos.find(x=>x.id===pid);
+  const pend=Object.entries(p.pessoas).filter(([,v])=>v.estado==='pend').map(([id])=>nomeCol(id));
+  if(!pend.length) return aviso('Toda a gente já respondeu. 👍');
+  abrirPainel('🔔 Lembrar quem não respondeu',
+    `<p class="small" style="margin-top:0">O WhatsApp só deixa enviar a uma pessoa de cada vez. Carrega em cada botão – a mensagem já vai escrita.</p>`+
+    pend.map(c=>`<div class="lemb"><div class="nm">${esc(c.num)} – ${esc(c.nome)}<div class="small">${c.tel?esc(c.tel):'sem telemóvel registado'}</div></div>
+      ${c.tel?`<button class="btn wa" onclick="waPessoa('${p.id}','${c.id}');this.textContent='✅ Aberto'">💬 Enviar</button>`:''}</div>`).join(''));
+}
+async function setMotivo(pid, cid, txt){
+  const p=planos.find(x=>x.id===pid); if(!p) return;
+  await salvar(COL_PLAN,{...p, pessoas:{...p.pessoas, [cid]:{...p.pessoas[cid], motivo:txt.trim()}}});
+}
+
+/* ---------------- RELATÓRIO DO PERÍODO ---------------- */
+function textoRelatorio(){
+  const L=calcResumo(), sel=regs.filter(noPeriodo);
+  const p = $('fPer').value==='ano' ? 'ano de '+$('fAno').value
+          : new Date($('fMes').value+'-15T12:00').toLocaleDateString('pt-PT',{month:'long',year:'numeric'});
+  const tot=k=>L.reduce((s,l)=>s+l[k],0);
+  let t=`*EFAFLU · Parque de Máquinas*\nRelatório de assiduidade – *${p}*\n\n📊 *TOTAIS*\n`+
+    `⏱️ Horas extra: ${hm(tot('ext'))}\n📅 Sábados trabalhados: ${fmt(tot('sab'))}${tot('sabH')?' ('+hm(tot('sabH'))+')':''}\n`+
+    `❌ Faltas: ${fmtD(tot('fjD')+tot('fiD'))} (just. ${fmt(tot('fjD'))} · injust. ${fmt(tot('fiD'))})\n`+
+    `🏖️ Ausências: ${fmtD(tot('aus'))}\n🏦 Banco de horas (saldo): ${tot('saldo')>0?'+':''}${hm(tot('saldo'))}\n`;
+  const com=[], sem=[];
+  L.forEach(l=>{
+    const it=[];
+    if(l.ext) it.push('⏱️ Horas extra: '+hm(l.ext));
+    if(l.sab) it.push('📅 Sábados: '+fmt(l.sab)+(l.sabH?' ('+hm(l.sabH)+')':''));
+    if(l.fiD||l.fiH) it.push('❌ Faltas injust.: '+diasHoras(l.fiD,l.fiH));
+    if(l.fjD||l.fjH) it.push('🟠 Faltas just.: '+diasHoras(l.fjD,l.fjH));
+    if(l.aus){ const mot=[...new Set(sel.filter(r=>r.colId===l.c.id&&r.tipo==='ausencia').map(r=>r.motivo).filter(Boolean))];
+      it.push('🏖️ Ausências: '+fmt(l.aus)+' d'+(mot.length?' ('+mot.join(', ').toLowerCase()+')':'')); }
+    if(l.bMais||l.bMenos||l.saldo) it.push('🏦 Banco: '+(l.saldo>0?'+':'')+hm(l.saldo)+(l.bMais||l.bMenos?` (no período +${hm(l.bMais)} / −${hm(l.bMenos)})`:''));
+    it.length ? com.push(`*${l.c.num} – ${l.c.nome}*\n`+it.join('\n')) : sem.push(l.c.nome);
+  });
+  if(com.length) t+='\n👥 *POR COLABORADOR*\n\n'+com.join('\n\n')+'\n';
+  if(sem.length) t+=`\n✅ Sem ocorrências: ${sem.join(', ')}\n`;
+  const agora=new Date();
+  return t+`\n_Gerado a ${dataPT(dLocal(agora))} às ${horaLocal(agora)}_`;
+}
+function abrirRelatorio(){ painelTexto('💬 Relatório para enviar', textoRelatorio()); }
+
+/* ---------------- MAPA ---------------- */
+const MOT_SIG = {'Férias':'F','Baixa médica':'B','Assistência à família':'AF','Formação':'FM','Licença':'L','Outro':'O'};
+function cobre(r, d){ return r.data<=d && d<=(r.fim||r.data); }
+function ausente(colId, d){ return regs.find(r=>r.colId===colId && cobre(r,d) && (r.tipo==='ausencia' || ((r.tipo==='falta_i'||r.tipo==='falta_j') && r.dias>0))); }
+function celula(colId, d){
+  const rs=regs.filter(r=>r.colId===colId && cobre(r,d));
+  const a=rs.find(r=>r.tipo==='ausencia'); if(a) return {sig:MOT_SIG[a.motivo]||'A', cor:'var(--aus)', txt:'Ausência'+(a.motivo?' – '+a.motivo:'')};
+  const fi=rs.find(r=>r.tipo==='falta_i'); if(fi) return {sig:fi.dias?'FI':'fi', cor:'var(--falta)', txt:'Falta injustificada'+(fi.horas?' ('+hm(fi.horas)+')':'')};
+  const fj=rs.find(r=>r.tipo==='falta_j'); if(fj) return {sig:fj.dias?'FJ':'fj', cor:'#e48a8a', txt:'Falta justificada'+(fj.horas?' ('+hm(fj.horas)+')':'')};
+  const sb=rs.find(r=>r.tipo==='sabado'); if(sb) return {sig:'S', cor:'var(--sab)', txt:'Sábado trabalhado'+(sb.horas?' ('+hm(sb.horas)+')':'')};
+  const ex=rs.filter(r=>r.tipo==='extra'); if(ex.length) return {sig:'HE', cor:'var(--extra)', txt:'Horas extra: '+hm(ex.reduce((s,r)=>s+(r.horas||0),0))};
+  const bk=rs.find(r=>r.tipo==='banco'); if(bk) return {sig:bk.mov==='-'?'B−':'B+', cor:'var(--banco)', txt:'Banco de horas '+(bk.mov==='-'?'−':'+')+hm(bk.horas)};
+  const pl=planos.find(p=>!p.fechado && p.data===d && p.pessoas[colId] && p.pessoas[colId].estado==='sim');
+  if(pl) return {sig:'✓', cor:'', txt:'Chamado – disse que vem ('+(pl.hIni||'')+'–'+(pl.hFim||'')+')', plan:true};
+  return null;
+}
+function moverMapa(k){ const [y,m]=$('mpMes').value.split('-').map(Number); const d=new Date(y,m-1+k,1); $('mpMes').value=d.getFullYear()+'-'+pad(d.getMonth()+1); renderMapa(); }
+function renderMapa(){
+  const v=$('mpMes').value; if(!v) return;
+  const [y,m]=v.split('-').map(Number), n=new Date(y,m,0).getDate(), hj=hoje();
+  const dias=[...Array(n)].map((_,i)=>{ const d=v+'-'+pad(i+1), w=new Date(d+'T12:00').getDay(); return {d,i:i+1,w}; });
+  const cols=ordCol().filter(c=>c.ativo!==false || regs.some(r=>r.colId===c.id && r.data.slice(0,7)===v));
+  const ini='DSTQQSS';
+  let h='<table class="mapa"><thead><tr><th class="nmc">Colaborador</th>'+dias.map(x=>`<th class="${x.w===0||x.w===6?'fds':''} ${x.d===hj?'hj':''}"><div>${ini[x.w]}</div>${x.i}</th>`).join('')+'</tr></thead><tbody>';
+  h+=cols.map(c=>`<tr><td class="nmc" title="${esc(c.nome)}">${esc(c.num)} ${esc(primeiroNome(c.nome))}</td>`+dias.map(x=>{
+    const ce=celula(c.id,x.d), cls=(x.w===0||x.w===6?'fds ':'')+(x.d===hj?'hj ':'');
+    const tip=`${c.nome}\n${diaLongo(x.d)}${ce?'\n'+ce.txt:''}\n(clica para registar)`;
+    return `<td class="${cls}" data-tip="${esc(tip)}" onclick="registarEm('${c.id}','${x.d}')">${ce?`<span class="mc ${ce.plan?'plan':''}" style="${ce.cor?'background:'+ce.cor:''}">${ce.sig}</span>`:''}</td>`;
+  }).join('')+'</tr>').join('');
+  const ativos=ordCol().filter(c=>c.ativo!==false);
+  h+='<tr class="disp"><td class="nmc">Disponíveis</td>'+dias.map(x=>{ const k=ativos.filter(c=>!ausente(c.id,x.d)).length;
+    return `<td class="${x.w===0||x.w===6?'fds':''} ${k<ativos.length?'menos':''}" data-tip="${diaLongo(x.d)}\n${k} de ${ativos.length} disponíveis">${k}</td>`; }).join('')+'</tr>';
+  $('mpTab').innerHTML = cols.length ? h+'</tbody></table>' : '<div class="vazio">Sem colaboradores.</div>';
+  const mt=new Date(v+'-15T12:00').toLocaleDateString('pt-PT',{month:'long',year:'numeric'}); $('mpTit').textContent = mt.charAt(0).toUpperCase()+mt.slice(1);
+}
+function registarEm(colId, d){
+  limparForm(); mostrar('reg'); $('rCol').value=colId; $('rData').value=d; rotulosDia();
+  $('rTipo').value='ausencia'; ajustarForm(); window.scrollTo(0,0);
 }
 
 /* ---------------- GRÁFICOS ---------------- */
@@ -1094,12 +1267,13 @@ function render(){
 
   $('tbCol').innerHTML = colabs.length ? ordCol().map(c=>`<tr>
     <td>${esc(c.num)}</td><td>${esc(c.nome)}</td><td>${esc(c.funcao||'')}</td>
+    <td style="white-space:nowrap">${c.tel?`<a href="tel:${esc(c.tel.replace(/\s/g,''))}" style="color:var(--pri)">${esc(c.tel)}</a>`:''}</td>
     <td class="n">${saldoHTML(saldoBanco(c.id))}</td>
     <td>${c.ativo!==false?'Ativo':'<span class="small">Inativo</span>'}</td>
     <td style="white-space:nowrap"><button class="edit" title="Editar" onclick="editarCol('${c.id}')">✏️</button>
       <button class="edit" title="Ativar/Desativar" onclick="toggleCol('${c.id}')">${c.ativo!==false?'⏸️':'▶️'}</button>
       <button class="del" title="Apagar" onclick="apagarCol('${c.id}')">🗑️</button></td></tr>`).join('')
-    : '<tr><td colspan="6" class="vazio">Sem colaboradores.</td></tr>';
+    : '<tr><td colspan="7" class="vazio">Sem colaboradores.</td></tr>';
 
   const fc=$('hCol').value, ft=$('hTipo').value, fm=$('hMes').value;
   const h = regs.filter(r=>(!fc||r.colId===fc)&&(!ft||r.tipo===ft)&&(!fm||r.data.slice(0,7)===fm))
@@ -1118,6 +1292,7 @@ function render(){
   if(chave!==fdChave) renderFolha(false); else renderFolhaJa();
   renderTimers();
   renderPlanos(false);
+  renderMapa();
   renderResumo();
 }
 function mostrar(t){
@@ -1174,7 +1349,12 @@ $('rData').addEventListener('change',rotulosDia);
 $('fdData').addEventListener('change',()=>{ rotulosDia(); renderFolhaJa(); $('fdMsg').textContent=''; });
 $('tbFolha').addEventListener('change',e=>{ if(e.target.type==='time') calcLinha(e.target.closest('tr')); });
 $('fdData').value=hoje();
-$('plData').addEventListener('change',rotuloPl);
+$('mpMes').value=hoje().slice(0,7);
+$('mpMes').addEventListener('change',renderMapa);
+$('plData').addEventListener('change',()=>{ rotuloPl();
+  const sel=Object.fromEntries([...document.querySelectorAll('#plPick input:checked')].map(i=>[i.value,1]));
+  if(!editPlano) ordCol().forEach(c=>{ if(ausente(c.id,$('plData').value)) delete sel[c.id]; });
+  renderPick(sel); });
 $('plAbertos').addEventListener('change',e=>{ if(e.target.type==='time') calcFecho(e.target.closest('tr')); });
 $('plTit').textContent='Pedidos de trabalho';
 $('fMes').value=hoje().slice(0,7); $('fAno').value=new Date().getFullYear();
@@ -1280,6 +1460,7 @@ $('lkCancel').onclick=desbloquear;
 setInterval(()=>{ if(!document.body.classList.contains('locked') && Date.now()-ultimoUso>MIN_BLOQ*60000) bloquear(); },30000);
 document.querySelectorAll('input:not([type=password])').forEach(i=>{ if(!i.hasAttribute('autocomplete')) i.setAttribute('autocomplete','off'); });
 
+if(location.protocol==='https:' && 'serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 iniciar().then(async()=>{
   if(fbAuth || fbFalhou) return;           // com Firebase, o login trata de tudo
   pwHash=await lerHash();
