@@ -38,6 +38,7 @@ main{max-width:1150px;margin:0 auto;padding:16px}
 .card h2{font-size:16px;margin:0 0 12px}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
 .row>div{display:flex;flex-direction:column;gap:4px;flex:1;min-width:130px}
+.row>div[style*="flex:0"]{flex:0 0 auto!important;min-width:0!important}
 label{font-size:12px;color:var(--muted);font-weight:600}
 input,select,textarea{padding:9px 10px;border:1px solid var(--line);border-radius:8px;font-size:15px;font-family:inherit;background:#fff;width:100%}
 .inline{display:flex;gap:6px}
@@ -102,6 +103,12 @@ body.locked header,body.locked main{display:none}
 .lockbox input{margin-top:10px;text-align:center;font-size:18px}
 .lockbox .btn{width:100%;margin-top:14px;padding:12px}
 #lkErr{color:var(--falta);font-weight:600;min-height:20px;margin:10px 0 0;font-size:14px}
+/* modo só consulta */
+body.ro .tabs button[data-t=folha],body.ro .tabs button[data-t=reg],body.ro .tabs button[data-t=rel],
+body.ro .edit,body.ro .del,body.ro .w,body.ro #plToggle,body.ro .wa-mini{display:none!important}
+body.ro .est button{pointer-events:none}body.ro .est button:not(.on){display:none}
+body.ro .motivo{pointer-events:none;border-color:transparent}
+body.ro .mapa td{cursor:default}
 /* mapa */
 .mapa{border-collapse:collapse;font-size:12px;min-width:100%}
 .mapa th,.mapa td{border:1px solid var(--line);text-align:center;padding:0;width:28px;min-width:28px;height:28px}
@@ -109,6 +116,7 @@ body.locked header,body.locked main{display:none}
 .mapa th div{font-weight:400;font-size:10px}
 .mapa .nmc{text-align:left;padding:0 8px;white-space:nowrap;min-width:110px;width:auto;position:sticky;left:0;background:#fff;z-index:1;color:var(--txt);font-size:13px}
 .mapa .fds{background:#f1f2f6}
+.mapa .fer{background:#fff3cf}
 .mapa th.hj,.mapa td.hj{box-shadow:inset 0 0 0 2px var(--pri)}
 .mapa td{cursor:pointer}
 .mapa td:hover{background:var(--pri2)}
@@ -190,7 +198,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
   <button class="btn sec hide" id="lkCancel">Cancelar</button>
   <p id="lkErr"></p>
   <a href="#" id="lkEsq" class="small hide" style="color:var(--pri)">Esqueci-me da palavra-passe</a>
-  <div class="small" style="margin-top:14px;opacity:.6">versão 01/11b · login por email</div>
+  <div class="small" style="margin-top:14px;opacity:.6">versão 02/11 · login por email</div>
 </div></div>
 <header>
   <span class="logo"><img src="" data-logo alt="EFAFLU"></span>
@@ -225,10 +233,12 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
         <div><label>Ano</label><input type="number" id="fAno" min="2020" max="2100"></div>
         <div style="min-width:220px"><label>Colaborador</label><select id="fCol"></select></div>
         <div style="flex:0"><button class="btn wa" onclick="abrirRelatorio()">💬 Relatório</button></div>
+        <div style="flex:0"><button class="btn sec" onclick="relatorioPDF()">📄 PDF</button></div>
         <div style="flex:0"><button class="btn sec" onclick="window.print()">🖨️ Imprimir</button></div>
         <div style="flex:0"><button class="btn sec" onclick="exportCSV()">⬇️ Excel (CSV)</button></div>
       </div>
     </div>
+    <div class="card hide" id="avisosCard" style="border-left:5px solid var(--aus)"><h2>⚠️ Avisos</h2><ul id="avisosLista" style="margin:0;padding-left:20px;line-height:1.7"></ul></div>
     <div class="kpis">
       <div class="kpi k-falta"><div class="l">FALTAS (dias)</div><div class="v" id="kFal">0</div><div class="small" id="kFal2"></div></div>
       <div class="kpi k-extra"><div class="l">HORAS EXTRA</div><div class="v" id="kExt">0</div></div>
@@ -244,7 +254,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
     </div>
     <div class="card hide" id="fichaCol">
       <div class="row" style="align-items:center;margin-bottom:10px">
-        <div><h2 id="fichaTit" style="margin:0"></h2></div>
+        <div><h2 id="fichaTit" style="margin:0"></h2><div class="small" id="fichaFer" style="margin-top:4px"></div></div>
         <div style="flex:0" class="noprint"><button class="btn sec" onclick="verCol('')">✖ Ver todos</button></div>
       </div>
       <div class="wrap"><table class="tbl">
@@ -412,6 +422,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
       </div>
       <div class="lg" style="flex-wrap:wrap;margin:12px 0 0">
         <span id="mpLegAus"></span>
+        <span><i style="background:#ffe9b3"></i>🎉 Feriado</span>
         <span><i style="background:var(--falta)"></i>Falta injust.</span><span><i style="background:#e48a8a"></i>Falta just.</span>
         <span><i style="background:var(--sab)"></i>S sábado</span><span><i style="background:var(--extra)"></i>HE horas extra</span>
         <span><i style="background:var(--banco)"></i>Banco</span><span><i style="border:2px dashed var(--sab);background:#fff"></i>✓ chamado, disse que vem</span>
@@ -445,24 +456,50 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
       <thead><tr><th>Data</th><th>Nº</th><th>Nome</th><th>Tipo</th><th>Horário</th><th>Dias</th><th>Horas</th><th>Obs.</th><th></th></tr></thead>
       <tbody id="tbHist"></tbody>
     </table></div></div>
+    <div class="card"><details id="logDet"><summary style="cursor:pointer;font-weight:700">📜 Últimas alterações</summary>
+      <div class="wrap" style="margin-top:10px"><table class="tbl"><thead><tr><th>Quando</th><th>Quem</th><th>O quê</th></tr></thead><tbody id="tbLog"></tbody></table></div>
+      <p class="small" style="margin:8px 0 0">Mostra as últimas 150 alterações (criar, alterar e apagar registos, pedidos e colaboradores).</p></details></div>
   </section>
 
   <!-- ============ COLABORADORES ============ -->
   <section id="t-col" class="hide">
-    <div class="card">
+    <div class="card w">
       <h2 id="colTitulo">Adicionar colaborador</h2>
       <div class="row">
         <div style="max-width:140px"><label>Nº colab.</label><input id="cNum" name="colab_codigo" autocomplete="off" data-lpignore="true" placeholder="ex.: 001"></div>
         <div><label>Nome</label><input id="cNome" placeholder="Nome completo"></div>
         <div><label>Função (opcional)</label><input id="cFun" placeholder="ex.: Operador"></div>
+        <div style="max-width:150px"><label>Dias de férias/ano</label><input id="cFer" type="number" min="0" max="60" value="22"></div>
         <div><label>Telemóvel (opcional)</label><input id="cTel" type="tel" inputmode="tel" autocomplete="off" placeholder="ex.: 912 345 678"></div>
         <div style="flex:0"><button class="btn" onclick="guardarCol()">💾 Guardar</button></div>
       </div>
     </div>
     <div class="card"><div class="wrap"><table class="tbl">
-      <thead><tr><th>Nº colab.</th><th>Nome</th><th>Função</th><th>Telemóvel</th><th>Saldo banco</th><th>Estado</th><th></th></tr></thead>
+      <thead><tr><th>Nº colab.</th><th>Nome</th><th>Função</th><th>Telemóvel</th><th id="thFer">Férias</th><th>Saldo banco</th><th>Estado</th><th></th></tr></thead>
       <tbody id="tbCol"></tbody>
     </table></div></div>
+    <div class="card noprint w" id="acessosCard">
+      <h2>👥 Acessos à página</h2>
+      <p class="small" style="margin-top:0">Os <b>editores</b> podem registar e alterar tudo. Quem tem <b>só consulta</b> (ex.: a chefia) vê o resumo, o mapa, os gráficos e os relatórios, mas não consegue alterar nada.<br>
+      A pessoa precisa também de uma conta no Firebase (Authentication → Usuários → Adicionar usuário).</p>
+      <div id="acessosLista"></div>
+      <div class="row" style="margin-top:10px">
+        <div><label>Email</label><input type="email" id="acEmail" autocomplete="off" placeholder="email@exemplo.pt"></div>
+        <div style="max-width:200px"><label>Acesso</label><select id="acPapel"><option value="consulta">👁️ Só consulta</option><option value="editores">✏️ Editor</option></select></div>
+        <div style="flex:0"><button class="btn" onclick="addAcesso()">➕ Adicionar</button></div>
+      </div>
+    </div>
+    <div class="card noprint w">
+      <h2>🎉 Feriados</h2>
+      <p class="small" style="margin-top:0">Os feriados nacionais já estão incluídos. Não contam como dias úteis nas férias e aparecem no Mapa.</p>
+      <div class="row">
+        <div style="max-width:180px"><label>Feriado municipal (dia)</label><input type="date" id="fmData"></div>
+        <div><label>Nome</label><input id="fmNome" placeholder="ex.: Feriado municipal de …"></div>
+        <div style="flex:0;min-width:0"><label style="display:flex;gap:6px;align-items:center;white-space:nowrap;padding-bottom:10px"><input type="checkbox" id="fmCarn" style="width:auto"> Carnaval é folga</label></div>
+        <div style="flex:0"><button class="btn" onclick="guardarFeriados()">💾 Guardar</button></div>
+      </div>
+      <p class="small" id="fmLista" style="margin-bottom:0"></p>
+    </div>
     <div class="card noprint">
       <h2>Segurança</h2>
       <div class="row" style="margin-bottom:16px">
@@ -472,7 +509,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
       <h2>Cópia de segurança</h2>
       <div class="row">
         <div style="flex:0"><button class="btn sec" onclick="exportJSON()">⬇️ Exportar backup</button></div>
-        <div style="flex:0"><button class="btn sec" onclick="document.getElementById('fImp').click()">⬆️ Importar backup</button></div>
+        <div style="flex:0" class="w"><button class="btn sec" onclick="document.getElementById('fImp').click()">⬆️ Importar backup</button></div>
         <input type="file" id="fImp" accept=".json" class="hide" onchange="importJSON(this)">
       </div>
     </div>
@@ -525,6 +562,8 @@ const COL_COLAB = 'assid_colaboradores';
 const COL_REG   = 'assid_registos';
 const COL_REL   = 'assid_relogio';
 const COL_PLAN  = 'assid_planos';
+const COL_CFG   = 'assid_config';
+const COL_LOG   = 'assid_log';
 const LS_KEY    = 'mrc_assiduidade_v1';
 const LS_PW     = 'mrc_assiduidade_pw';
 const MIN_BLOQ  = 15;   // minutos sem uso até bloquear
@@ -540,7 +579,7 @@ const motAus = r => AUS[r.motivo] ? r.motivo : 'Outro';
 const nomeTipo = r => r.tipo==='ausencia' ? AUS[motAus(r)].curto : TIPOS[r.tipo]+(r.tipo==='banco'?(r.mov==='-'?' −':' +'):'');
 const tagReg = r => r.tipo==='ausencia' ? `<span class="tag" style="background:${AUS[motAus(r)].cor}">${AUS[motAus(r)].curto}</span>` : `<span class="tag t-${r.tipo}">${nomeTipo(r)}</span>`;
 const valTipo = () => { const v=$('rTipo').value; return v.startsWith('aus:') ? 'ausencia' : v; };
-let colabs = [], regs = [], relogios = [], planos = [], db = null, editReg = null, editCol = null;
+let colabs = [], regs = [], relogios = [], planos = [], logs = [], cfg = {geral:{}, acessos:null}, papel = 'editor', db = null, editReg = null, editCol = null;
 const $ = id => document.getElementById(id);
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
 const pad = n => String(n).padStart(2,'0');
@@ -581,25 +620,61 @@ async function iniciar(){
     $('lkBtn').textContent='🔄 Tentar outra vez'; $('lkBtn').onclick=()=>location.reload();
     fbFalhou=true; return;
   }
-  try{ const d = JSON.parse(localStorage.getItem(LS_KEY)||'{}'); colabs=d.colabs||[]; regs=d.regs||[]; relogios=d.relogios||[]; planos=d.planos||[]; }catch(e){}
+  try{ const d = JSON.parse(localStorage.getItem(LS_KEY)||'{}'); colabs=d.colabs||[]; regs=d.regs||[]; relogios=d.relogios||[]; planos=d.planos||[]; logs=d.logs||[]; cfg.geral=d.cfgGeral||{}; }catch(e){}
   estado('💾 Local (este dispositivo)');
   render();
 }
 let fbAuth=null, unsubs=[], fbFalhou=false;
 function ligarDados(){
   desligarDados();
+  const semAcesso = e=>{ console.error(e);
+    if(e.code==='permission-denied'){ aviso('Esta conta não tem acesso aos dados.\nPede ao responsável para te dar acesso.'); fbAuth.signOut(); } };
   unsubs=[COL_COLAB,COL_REG,COL_REL,COL_PLAN].map(col=>
-    db.collection(col).onSnapshot(s=>{ setArr(col, s.docs.map(d=>({id:d.id,...d.data()}))); render(); },
-      e=>{ console.error(e);
-        if(e.code==='permission-denied'){ aviso('Esta conta não tem acesso aos dados.\nPede ao responsável para adicionar o teu email às regras do Firebase.'); fbAuth.signOut(); } }));
+    db.collection(col).onSnapshot(s=>{ setArr(col, s.docs.map(d=>({id:d.id,...d.data()}))); render(); }, semAcesso));
+  unsubs.push(db.collection(COL_CFG).doc('acessos').onSnapshot(async d=>{
+    const me=meuEmail();
+    if(!d.exists){ try{ await db.collection(COL_CFG).doc('acessos').set({editores:[me], consulta:[]}); }catch(e){} cfg.acessos=null; definirPapel('editor'); return; }
+    cfg.acessos={editores:[],consulta:[],...d.data()};
+    definirPapel(cfg.acessos.consulta.map(x=>x.toLowerCase()).includes(me) && !cfg.acessos.editores.map(x=>x.toLowerCase()).includes(me) ? 'consulta' : 'editor');
+    renderAcessos();
+  }, e=>console.warn('acessos',e)));
+  unsubs.push(db.collection(COL_CFG).doc('geral').onSnapshot(d=>{ cfg.geral=d.exists?d.data():{}; ferCache={}; render(); }, e=>console.warn('cfg',e)));
+  unsubs.push(db.collection(COL_LOG).orderBy('quando','desc').limit(150).onSnapshot(s=>{ logs=s.docs.map(d=>({id:d.id,...d.data()})); renderLog(); }, e=>console.warn('log',e)));
+}
+const meuEmail = () => (fbAuth && fbAuth.currentUser && fbAuth.currentUser.email || 'local').toLowerCase();
+const quemCurto = e => e ? String(e).split('@')[0] : '';
+function definirPapel(p){
+  papel=p; document.body.classList.toggle('ro', p==='consulta');
+  if(fbAuth && fbAuth.currentUser) estado((p==='consulta'?'👁️ ':'☁️ ')+fbAuth.currentUser.email+(p==='consulta'?' (só consulta)':''));
+  const at=document.querySelector('.tabs button.on'); if(p==='consulta' && at && ['folha','reg','rel'].includes(at.dataset.t)) mostrar('dash');
 }
 function desligarDados(){
   unsubs.forEach(u=>{ try{u();}catch(e){} }); unsubs=[];
-  colabs=[]; regs=[]; relogios=[]; planos=[]; render();
+  colabs=[]; regs=[]; relogios=[]; planos=[]; logs=[]; cfg={geral:{},acessos:null}; definirPapel('editor'); render();
 }
-function gravarLocal(){ try{ localStorage.setItem(LS_KEY, JSON.stringify({colabs,regs,relogios,planos})); }catch(e){} }
+function gravarLocal(){ try{ localStorage.setItem(LS_KEY, JSON.stringify({colabs,regs,relogios,planos,logs:logs.slice(0,200),cfgGeral:cfg.geral})); }catch(e){} }
 
-async function salvar(col, obj){
+const COL_NOME={[COL_REG]:'registo',[COL_PLAN]:'pedido',[COL_COLAB]:'colaborador'};
+function descObj(col,o){
+  if(col===COL_REG) return descReg(o).replace(/\n/g,' · ');
+  if(col===COL_PLAN) return 'Pedido de '+diaLongo(o.data);
+  if(col===COL_COLAB) return 'Colaborador '+o.num+' – '+o.nome;
+  return '';
+}
+async function registarLog(acao, col, o){
+  if(!COL_NOME[col]) return;
+  const e={id:uid(), quando:new Date().toISOString(), quem:meuEmail(), acao, tipo:COL_NOME[col], txt:descObj(col,o)};
+  if(db){ try{ const {id,...d}=e; await db.collection(COL_LOG).doc(id).set(d); }catch(x){ console.warn(x); } }
+  else { logs.unshift(e); logs=logs.slice(0,200); }
+}
+async function salvar(col, obj, opt={}){
+  if(papel==='consulta'){ aviso('Tens acesso só de consulta – não podes alterar dados.'); throw new Error('ro'); }
+  const existia = getArr(col).find(x=>x.id===obj.id);
+  if(COL_NOME[col] && !opt.semLog){
+    const agora=new Date().toISOString(), me=meuEmail();
+    obj={...obj, criadoPor:obj.criadoPor||(existia&&existia.criadoPor)||me, criadoEm:obj.criadoEm||(existia&&existia.criadoEm)||obj.criado||agora, alteradoPor:me, alteradoEm:agora};
+    registarLog(existia?'alterou':'criou', col, obj);
+  }
   if(db){ const {id,...dados}=obj; await db.collection(col).doc(id).set(dados); }
   else{
     const arr = getArr(col), i = arr.findIndex(x=>x.id===obj.id);
@@ -608,6 +683,8 @@ async function salvar(col, obj){
   }
 }
 async function apagar(col, id){
+  if(papel==='consulta'){ aviso('Tens acesso só de consulta – não podes apagar dados.'); throw new Error('ro'); }
+  const o=getArr(col).find(x=>x.id===id); if(o) registarLog('apagou', col, o);
   if(db){ await db.collection(col).doc(id).delete(); }
   else{ setArr(col, getArr(col).filter(x=>x.id!==id)); gravarLocal(); render(); }
 }
@@ -615,22 +692,28 @@ async function apagar(col, id){
 /* ---------------- COLABORADORES ---------------- */
 const ordCol = () => [...colabs].sort((a,b)=>String(a.num).localeCompare(String(b.num),'pt',{numeric:true}));
 const nomeCol = id => colabs.find(c=>c.id===id) || {num:'?',nome:'(removido)'};
+const direitoFerias = colId => { const c=colabs.find(x=>x.id===colId); return c && c.diasFerias!=null ? +c.diasFerias : 22; };
+const feriasGozadas = (colId, ano, excl) => regs.filter(r=>r.colId===colId && r.id!==excl && r.tipo==='ausencia' && motAus(r)==='Férias' && r.data.slice(0,4)===ano).reduce((s,r)=>s+(r.dias||0),0);
+function feriasHTML(colId, ano){
+  const d=direitoFerias(colId), g=feriasGozadas(colId,ano), f=d-g;
+  return `<span title="Gozou ${fmt(g)} de ${fmt(d)} dias em ${ano}">${fmt(g)}/${fmt(d)} · <b class="${f<0?'neg':f<=3?'':'pos'}">${f<0?'excedeu '+fmt(-f):'faltam '+fmt(f)}</b></span>`;
+}
 const saldoBanco = (colId, ate) => regs.filter(r=>r.colId===colId && (!ate || ate(r))).reduce((s,r)=>s+valBanco(r),0);
 const opcoesCol = lista => lista.length ? lista.map(c=>`<option value="${c.id}">${esc(c.num)} – ${esc(c.nome)}</option>`).join('')
                                         : '<option value="">(sem colaboradores)</option>';
 
 async function guardarCol(){
-  const num=$('cNum').value.trim(), nome=$('cNome').value.trim(), funcao=$('cFun').value.trim(), tel=$('cTel').value.trim();
+  const num=$('cNum').value.trim(), nome=$('cNome').value.trim(), funcao=$('cFun').value.trim(), tel=$('cTel').value.trim(), diasFerias=parseFloat($('cFer').value);
   if(!num||!nome) return aviso('Preenche o número e o nome.');
   if(colabs.some(c=>c.num===num && c.id!==editCol)) return aviso('Já existe um colaborador com o número '+num+'.');
   const base = editCol ? colabs.find(c=>c.id===editCol) : {id:uid(),ativo:true};
   if(tel && !telWa(tel)) return aviso('O número de telemóvel não parece válido.\nEx.: 912 345 678');
-  await salvar(COL_COLAB,{...base,num,nome,funcao,tel});
-  editCol=null; $('cNum').value=$('cNome').value=$('cFun').value=$('cTel').value=''; $('colTitulo').textContent='Adicionar colaborador';
+  await salvar(COL_COLAB,{...base,num,nome,funcao,tel,diasFerias:isNaN(diasFerias)?22:diasFerias});
+  editCol=null; $('cNum').value=$('cNome').value=$('cFun').value=$('cTel').value=''; $('cFer').value=22; $('colTitulo').textContent='Adicionar colaborador';
 }
 function editarCol(id){
   const c=colabs.find(x=>x.id===id); editCol=id;
-  $('cNum').value=c.num; $('cNome').value=c.nome; $('cFun').value=c.funcao||''; $('cTel').value=c.tel||'';
+  $('cNum').value=c.num; $('cNome').value=c.nome; $('cFun').value=c.funcao||''; $('cTel').value=c.tel||''; $('cFer').value=c.diasFerias??22;
   $('colTitulo').textContent='Editar colaborador'; $('cNome').focus();
 }
 async function toggleCol(id){ const c=colabs.find(x=>x.id===id); await salvar(COL_COLAB,{...c,ativo:c.ativo===false}); }
@@ -692,10 +775,26 @@ function renderTimers(){
 }
 
 /* ---------------- REGISTOS ---------------- */
+/* ---------------- FERIADOS ---------------- */
+let ferCache={};
+function pascoa(y){ const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),
+  h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mes=Math.floor((h+l-7*m+114)/31),dia=((h+l-7*m+114)%31)+1;
+  return new Date(y,mes-1,dia,12); }
+function feriados(y){
+  if(ferCache[y]) return ferCache[y];
+  const F={}, add=(d,n)=>F[d]=n, fx=(md,n)=>add(y+'-'+md,n), rel=k=>{ const d=pascoa(y); d.setDate(d.getDate()+k); return dLocal(d); };
+  fx('01-01','Ano Novo'); add(rel(-2),'Sexta-feira Santa'); add(rel(0),'Páscoa'); fx('04-25','Dia da Liberdade'); fx('05-01','Dia do Trabalhador');
+  add(rel(60),'Corpo de Deus'); fx('06-10','Dia de Portugal'); fx('08-15','Assunção de Nossa Senhora'); fx('10-05','Implantação da República');
+  fx('11-01','Todos os Santos'); fx('12-01','Restauração da Independência'); fx('12-08','Imaculada Conceição'); fx('12-25','Natal');
+  if(cfg.geral.carnaval) add(rel(-47),'Carnaval');
+  if(cfg.geral.municipal) fx(cfg.geral.municipal, cfg.geral.municipalNome||'Feriado municipal');
+  return ferCache[y]=F;
+}
+const feriado = d => d ? feriados(+d.slice(0,4))[d] : null;
 function diasUteis(a,b){
   if(!a||!b||b<a) return null;
   let n=0, d=new Date(a+'T12:00'), f=new Date(b+'T12:00');
-  while(d<=f){ const w=d.getDay(); if(w>0&&w<6) n++; d.setDate(d.getDate()+1); }
+  while(d<=f){ const w=d.getDay(); if(w>0&&w<6&&!feriado(dLocal(d))) n++; d.setDate(d.getDate()+1); }
   return n;
 }
 function agoraEm(id){ $(id).value=horaLocal(new Date()); calcHoras(); }
@@ -740,6 +839,10 @@ async function guardarRegisto(){
   if(['falta_i','falta_j','ausencia'].includes(tipo) && !dias && !horas) return aviso('Indica dias ou horas.');
   if(horas>12 && !await perguntar(`São ${hm(horas)} – mais de 12 horas.${hIni&&hFim&&hFim<hIni?'\nA hora de fim é mais cedo que a de início, por isso contou como se passasse para o dia seguinte.':''}\n\nEstá certo?`,'Sim, gravar','Corrigir')) return;
   if(tipo==='sabado' && new Date(data+'T12:00').getDay()!==6 && !await perguntar('Essa data não é um sábado. Guardar mesmo assim?')) return;
+  if(tipo==='ausencia' && $('rTipo').value==='aus:Férias'){
+    const ano=data.slice(0,4), d=direitoFerias(colId), g=feriasGozadas(colId,ano,editReg);
+    if(g+dias>d && !await perguntar(`Com estes ${fmtD(dias)}, ${nomeCol(colId).nome} fica com ${fmt(g+dias)} dias de férias em ${ano}, mais do que os ${fmt(d)} a que tem direito.\n\nGuardar mesmo assim?`,'Sim, guardar','Corrigir')) return;
+  }
   if(tipo==='banco' && $('rMov').value==='-'){
     const s=saldoBanco(colId, r=>r.id!==editReg);
     if(horas>s && !await perguntar(`O saldo atual é ${hm(s)}. Com este débito fica negativo (${hm(s-horas)}). Guardar mesmo assim?`)) return;
@@ -785,8 +888,8 @@ async function apagarEmEdicao(){
 const diaSem = d => d ? new Date(d+'T12:00').toLocaleDateString('pt-PT',{weekday:'long'}) : '';
 function setDia(id, delta){ const d=new Date(); d.setDate(d.getDate()+delta); $(id).value=dLocal(d); $(id).dispatchEvent(new Event('change')); }
 function rotulosDia(){
-  const r=$('rData').value; $('rDiaSem').textContent = r ? '('+diaSem(r)+(r===hoje()?', hoje':'')+')' : '';
-  const f=$('fdData').value; $('fdDiaSem').textContent = f ? dataPT(f)+' – '+diaSem(f)+(f===hoje()?' (hoje)':'') : '';
+  const r=$('rData').value; $('rDiaSem').textContent = r ? '('+diaSem(r)+(r===hoje()?', hoje':'')+(feriado(r)?' · 🎉 '+feriado(r):'')+')' : '';
+  const f=$('fdData').value; $('fdDiaSem').textContent = f ? dataPT(f)+' – '+diaSem(f)+(f===hoje()?' (hoje)':'')+(feriado(f)?' · 🎉 '+feriado(f):'') : '';
 }
 
 /* ---------------- FOLHA DO DIA ---------------- */
@@ -895,11 +998,14 @@ function renderResumo(){
           : new Date($('fMes').value+'-15T12:00').toLocaleDateString('pt-PT',{month:'long',year:'numeric'});
   $('tituloResumo').textContent = 'Resumo por colaborador – '+p;
   renderGraficos(L, p);
+  renderAvisos();
   const fc=$('fCol').value;
   $('fichaCol').classList.toggle('hide',!fc); $('cardResumo').classList.toggle('hide',!!fc);
   if(fc){
     const c=nomeCol(fc), lst=regs.filter(r=>r.colId===fc && noPeriodo(r)).sort((a,b)=>(a.data+(a.hIni||'')).localeCompare(b.data+(b.hIni||'')));
     $('fichaTit').textContent = c.num+' – '+c.nome+' · '+p;
+    const anoF = $('fPer').value==='ano' ? String($('fAno').value) : $('fMes').value.slice(0,4);
+    $('fichaFer').innerHTML = '🏖️ Férias '+anoF+': '+feriasHTML(fc, anoF)+(c.tel?' · 📱 '+esc(c.tel):'');
     $('tbFicha').innerHTML = lst.length ? lst.map(r=>`<tr>
       <td style="white-space:nowrap">${dataPT(r.data)}${r.fim?' → '+dataPT(r.fim):''}</td>
       <td style="text-transform:capitalize">${diaSem(r.data).split('-')[0]}</td>
@@ -1048,7 +1154,7 @@ function cartaoPlano(p){
   const n=e=>ent.filter(([,v])=>v.estado===e).length;
   const hj=hoje(), cls = p.data===hj ? 'hoje' : p.data<hj ? 'passou' : '';
   const dias = Math.round((new Date(p.data+'T12:00')-new Date(hj+'T12:00'))/864e5);
-  const quando = p.data===hj ? ' · <b style="color:var(--pri)">HOJE</b>' : dias===1 ? ' · amanhã' : dias>1 ? ` · daqui a ${dias} dias` : '';
+  const quando = (p.data===hj ? ' · <b style="color:var(--pri)">HOJE</b>' : dias===1 ? ' · amanhã' : dias>1 ? ` · daqui a ${dias} dias` : '')+(feriado(p.data)?' · 🎉 '+esc(feriado(p.data)):'');
   const cab = `<div class="tit">${diaLongo(p.data)}${quando}</div>
     <div class="meta">${p.titulo?esc(p.titulo)+' · ':''}${esc(p.hIni||'?')}–${esc(p.hFim||'?')} · registar como ${TIPO_PL[p.tipo]}</div>`;
   if(p.fechado){
@@ -1058,7 +1164,7 @@ function cartaoPlano(p){
       <div class="small">${vieram.map(([id,v])=>esc(nomeCol(id).nome)+(v.horas?' ('+hm(v.horas)+')':'')).join(' · ')||'Ninguém veio.'}</div>
       <div class="acoes"><button class="btn sec" onclick="copiarPlano('${p.id}')">📋 Copiar relatório</button>
         <button class="btn sec" onclick="whatsPlano('${p.id}')">💬 WhatsApp</button>
-        <button class="btn sec" onclick="apagarPlano('${p.id}')">🗑️ Apagar pedido</button></div></div>`;
+        <button class="btn sec w" onclick="apagarPlano('${p.id}')">🗑️ Apagar pedido</button></div></div>`;
   }
   if(fecharId===p.id){
     const ordem=[...ent].sort((a,b)=>(a[1].estado==='sim'?0:1)-(b[1].estado==='sim'?0:1));
@@ -1087,12 +1193,12 @@ function cartaoPlano(p){
     </tbody></table></div>
     ${p.data<hj?'<div class="aviso">⚠️ Este dia já passou – falta confirmar quem veio.</div>':''}
     <div class="acoes">
-      <button class="btn" onclick="abrirFecho('${p.id}')">✔️ Confirmar quem veio</button>
+      <button class="btn w" onclick="abrirFecho('${p.id}')">✔️ Confirmar quem veio</button>
       <button class="btn sec" onclick="copiarPlano('${p.id}')">📋 Copiar lista</button>
       <button class="btn sec" onclick="whatsPlano('${p.id}')">💬 WhatsApp</button>
-      ${n('pend')?`<button class="btn sec" onclick="lembrarPend('${p.id}')">🔔 Lembrar quem não respondeu</button>`:''}
-      <button class="btn sec" onclick="abrirFormPlano('${p.id}')">✏️ Editar</button>
-      <button class="btn sec" onclick="apagarPlano('${p.id}')">🗑️</button></div></div>`;
+      ${n('pend')?`<button class="btn sec w" onclick="lembrarPend('${p.id}')">🔔 Lembrar quem não respondeu</button>`:''}
+      <button class="btn sec w" onclick="abrirFormPlano('${p.id}')">✏️ Editar</button>
+      <button class="btn sec w" onclick="apagarPlano('${p.id}')">🗑️</button></div></div>`;
 }
 function renderPlanos(forcar){
   const abertos=planos.filter(p=>!p.fechado).sort((a,b)=>a.data.localeCompare(b.data));
@@ -1154,6 +1260,79 @@ async function setMotivo(pid, cid, txt){
   await salvar(COL_PLAN,{...p, pessoas:{...p.pessoas, [cid]:{...p.pessoas[cid], motivo:txt.trim()}}});
 }
 
+function renderLog(){
+  const ic={criou:'➕',alterou:'✏️',apagou:'🗑️'};
+  $('tbLog').innerHTML = logs.length ? logs.slice(0,150).map(l=>`<tr><td style="white-space:nowrap">${dataPT(l.quando.slice(0,10))} ${l.quando.slice(11,16)}</td>
+    <td>${esc(quemCurto(l.quem))}</td><td>${ic[l.acao]||''} ${esc(l.acao)} ${esc(l.tipo)}: <span class="small">${esc(l.txt)}</span></td></tr>`).join('')
+    : '<tr><td colspan="3" class="vazio">Ainda sem alterações registadas.</td></tr>';
+}
+
+/* ---------------- ACESSOS / CONFIG ---------------- */
+function renderAcessos(){
+  $('acessosCard').classList.toggle('hide', !db);
+  const a=cfg.acessos||{editores:[meuEmail()],consulta:[]}, me=meuEmail();
+  const linha=(e,pap)=>`<div class="lemb"><div class="nm">${esc(e)}${e.toLowerCase()===me?' <span class="small">(tu)</span>':''}</div>
+    <span class="chip ${pap==='editores'?'sim':''}">${pap==='editores'?'✏️ Editor':'👁️ Só consulta'}</span>
+    ${e.toLowerCase()===me?'':`<button class="del" title="Retirar acesso" onclick="remAcesso('${esc(e)}','${pap}')">✖</button>`}</div>`;
+  $('acessosLista').innerHTML = a.editores.map(e=>linha(e,'editores')).join('')+a.consulta.map(e=>linha(e,'consulta')).join('');
+  const g=cfg.geral||{};
+  if(document.activeElement!==$('fmData') && document.activeElement!==$('fmNome')){
+    $('fmData').value = g.municipal ? new Date().getFullYear()+'-'+g.municipal : ''; $('fmNome').value=g.municipalNome||''; $('fmCarn').checked=!!g.carnaval; }
+  const y=new Date().getFullYear(), F=feriados(y);
+  $('fmLista').innerHTML = '<b>Feriados '+y+':</b> '+Object.keys(F).sort().map(d=>dataPT(d).slice(0,5)+' '+esc(F[d])).join(' · ');
+}
+async function gravarAcessos(a){
+  if(papel==='consulta') return aviso('Só os editores podem mudar acessos.');
+  try{ await db.collection(COL_CFG).doc('acessos').set(a); }catch(e){ aviso('Não foi possível guardar os acessos.\n'+(e.code||e.message)); }
+}
+async function addAcesso(){
+  const e=$('acEmail').value.trim().toLowerCase(), p=$('acPapel').value;
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) return aviso('Escreve um email válido.');
+  const a=cfg.acessos||{editores:[meuEmail()],consulta:[]};
+  const n={editores:a.editores.filter(x=>x!==e), consulta:a.consulta.filter(x=>x!==e)}; n[p].push(e);
+  await gravarAcessos(n); $('acEmail').value='';
+}
+async function remAcesso(e,p){
+  if(!await perguntar('Retirar o acesso a '+e+'?','Retirar','Não')) return;
+  const a=cfg.acessos; await gravarAcessos({...a,[p]:a[p].filter(x=>x!==e)});
+}
+async function guardarFeriados(){
+  const d=$('fmData').value;
+  const g={municipal:d?d.slice(5):'', municipalNome:$('fmNome').value.trim(), carnaval:$('fmCarn').checked};
+  if(db){ try{ await db.collection(COL_CFG).doc('geral').set(g); }catch(e){ return aviso('Não foi possível guardar.\n'+(e.code||e.message)); } }
+  else { cfg.geral=g; gravarLocal(); }
+  ferCache={}; render(); aviso('✅ Feriados guardados.');
+}
+
+/* ---------------- AVISOS ---------------- */
+function calcAvisos(){
+  const L=calcResumo(), A=[], hj=hoje(), porGozar=[];
+  const anoF = $('fPer').value==='ano' ? String($('fAno').value) : $('fMes').value.slice(0,4);
+  L.forEach(l=>{
+    if(l.fiD>=2) A.push({ic:'❌', t:`${l.c.nome} tem ${fmtD(l.fiD)} de faltas injustificadas neste período`, col:l.c.id});
+    if(l.saldo<0) A.push({ic:'🏦', t:`${l.c.nome} tem o banco de horas negativo (${hm(l.saldo)})`, col:l.c.id});
+    if(l.c.ativo!==false){
+      const d=direitoFerias(l.c.id), g=feriasGozadas(l.c.id,anoF), f=d-g;
+      if(f<0) A.push({ic:'🏖️', t:`${l.c.nome} excedeu as férias de ${anoF} em ${fmtD(-f)}`, col:l.c.id});
+      else if(anoF===String(new Date().getFullYear()) && new Date().getMonth()>=9 && f>=5) porGozar.push(primeiroNome(l.c.nome)+' '+fmt(f));
+    }
+  });
+  if(porGozar.length) A.push({ic:'🏖️', t:`Férias de ${anoF} ainda por gozar (dias): ${porGozar.join(' · ')}`});
+  planos.filter(p=>!p.fechado).forEach(p=>{
+    const pend=Object.values(p.pessoas).filter(v=>v.estado==='pend').length;
+    const dd=Math.round((new Date(p.data+'T12:00')-new Date(hj+'T12:00'))/864e5);
+    if(p.data<hj) A.push({ic:'📅', t:`Pedido de ${diaLongo(p.data)} já passou – falta confirmar quem veio`, plan:1});
+    else if(pend && dd<=3) A.push({ic:'⏳', t:`Pedido de ${diaLongo(p.data)}: ${pend} pessoa(s) ainda sem resposta`, plan:1});
+  });
+  relogios.forEach(t=>{ const h=(Date.now()-new Date(t.inicio))/36e5; if(h>12) A.push({ic:'⏱️', t:`O relógio de ${nomeCol(t.colId).nome} está a contar há ${Math.floor(h)} horas – pode ter ficado esquecido`}); });
+  return A;
+}
+function renderAvisos(){
+  const A=calcAvisos();
+  $('avisosCard').classList.toggle('hide',!A.length);
+  $('avisosLista').innerHTML=A.map(a=>`<li style="cursor:${a.col||a.plan?'pointer':'default'}" onclick="${a.col?`verCol('${a.col}')`:a.plan?`mostrar('plan')`:''}">${a.ic} ${esc(a.t)}</li>`).join('');
+}
+
 /* ---------------- RELATÓRIO DO PERÍODO ---------------- */
 function textoRelatorio(){
   const L=calcResumo(), sel=regs.filter(noPeriodo);
@@ -1177,8 +1356,46 @@ function textoRelatorio(){
   });
   if(com.length) t+='\n👥 *POR COLABORADOR*\n\n'+com.join('\n\n')+'\n';
   if(sem.length) t+=`\n✅ Sem ocorrências: ${sem.join(', ')}\n`;
+  const anoF = $('fPer').value==='ano' ? String($('fAno').value) : $('fMes').value.slice(0,4);
+  const fer=L.filter(l=>l.c.ativo!==false).map(l=>{ const d=direitoFerias(l.c.id), g=feriasGozadas(l.c.id,anoF); return `• ${l.c.nome}: gozou ${fmt(g)} de ${fmt(d)} – ${d-g<0?'*excedeu '+fmt(g-d)+'*':'faltam '+fmt(d-g)}`; });
+  if(fer.length) t+=`\n🏖️ *SALDO DE FÉRIAS ${anoF}*\n`+fer.join('\n')+'\n';
+  const av=calcAvisos(); if(av.length) t+=`\n⚠️ *AVISOS*\n`+av.map(a=>a.ic+' '+a.t).join('\n')+'\n';
   const agora=new Date();
   return t+`\n_Gerado a ${dataPT(dLocal(agora))} às ${horaLocal(agora)}_`;
+}
+function relatorioPDF(){
+  const L=calcResumo(), sel=regs.filter(noPeriodo).filter(r=>!$('fCol').value||r.colId===$('fCol').value);
+  const per = $('fPer').value==='ano' ? 'Ano de '+$('fAno').value : (t=>t.charAt(0).toUpperCase()+t.slice(1))(new Date($('fMes').value+'-15T12:00').toLocaleDateString('pt-PT',{month:'long',year:'numeric'}));
+  const anoF = $('fPer').value==='ano' ? String($('fAno').value) : $('fMes').value.slice(0,4);
+  const tot=k=>L.reduce((s,l)=>s+l[k],0), mot=Object.keys(AUS).filter(k=>L.some(l=>l.ausM[k]));
+  const v=x=>x?x:'–', agora=new Date();
+  const kpi=(l,val)=>`<div class="k"><div class="kl">${l}</div><div class="kv">${val}</div></div>`;
+  const av=calcAvisos();
+  const det=L.map(l=>{ const rs=sel.filter(r=>r.colId===l.c.id).sort((a,b)=>a.data.localeCompare(b.data)); if(!rs.length) return '';
+    return `<h3>${esc(l.c.num)} – ${esc(l.c.nome)}</h3><table><thead><tr><th>Data</th><th>Tipo</th><th>Horário</th><th>Dias</th><th>Horas</th><th>Observações</th></tr></thead><tbody>`+
+      rs.map(r=>`<tr><td>${dataPT(r.data)}${r.fim?' → '+dataPT(r.fim):''}</td><td>${esc(nomeTipo(r))}</td><td>${r.hIni&&r.hFim?esc(r.hIni)+'–'+esc(r.hFim):''}</td><td class="n">${r.dias?fmt(r.dias):''}</td><td class="n">${r.horas?hm(r.horas):''}</td><td>${esc(r.obs||'')}</td></tr>`).join('')+'</tbody></table>'; }).join('');
+  const html=`<!doctype html><html lang="pt-PT"><head><meta charset="utf-8"><title>Assiduidade ${esc(per)} – EFAFLU</title><style>
+    @page{size:A4;margin:14mm}*{box-sizing:border-box}body{font-family:system-ui,Segoe UI,Roboto,sans-serif;color:#1d2433;font-size:11px;margin:0}
+    header{display:flex;align-items:center;gap:16px;border-bottom:3px solid #b82d36;padding-bottom:10px;margin-bottom:14px}header img{height:46px}
+    h1{font-size:18px;margin:0}h2{font-size:13px;margin:18px 0 6px;color:#b82d36}h3{font-size:12px;margin:12px 0 4px}.sub{color:#6b7385;font-size:11px}
+    .ks{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}.k{border:1px solid #ddd;border-radius:6px;padding:6px 8px}.kl{font-size:9px;color:#6b7385;font-weight:600}.kv{font-size:16px;font-weight:700}
+    table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #e2e6ee;padding:4px 5px;text-align:left}th{font-size:9.5px;color:#6b7385;border-bottom:2px solid #ccc}td.n,th.n{text-align:right}
+    tr{break-inside:avoid}.av li{margin:2px 0}.ass{display:flex;gap:40px;margin-top:36px}.ass div{flex:1;border-top:1px solid #999;padding-top:4px;color:#6b7385;font-size:10px}
+    footer{margin-top:16px;color:#6b7385;font-size:9px}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  </style></head><body>
+  <header><img src="${LOGO}"><div><h1>Relatório de assiduidade – ${esc(per)}</h1><div class="sub">Parque de Máquinas${$('fCol').value?' · '+esc(nomeCol($('fCol').value).nome):''}</div></div></header>
+  <div class="ks">${kpi('FALTAS (dias)',fmt(tot('fjD')+tot('fiD')))}${kpi('HORAS EXTRA',hm(tot('ext')))}${kpi('SÁBADOS',fmt(tot('sab')))}${kpi('AUSÊNCIAS (dias)',fmt(tot('aus')))}${kpi('BANCO DE HORAS',(tot('saldo')>0?'+':'')+hm(tot('saldo')))}</div>
+  ${av.length?`<h2>⚠️ Avisos</h2><ul class="av">${av.map(a=>`<li>${a.ic} ${esc(a.t)}</li>`).join('')}</ul>`:''}
+  <h2>Resumo por colaborador</h2><table><thead><tr><th>Nº</th><th>Nome</th><th class="n">Faltas just.</th><th class="n">Faltas injust.</th><th class="n">Horas extra</th><th class="n">Sábados</th>${mot.map(k=>`<th class="n">${AUS[k].curto}</th>`).join('')}<th class="n">Banco</th><th class="n">Férias ${anoF}</th></tr></thead><tbody>
+  ${L.map(l=>{ const d=direitoFerias(l.c.id), g=feriasGozadas(l.c.id,anoF); return `<tr><td>${esc(l.c.num)}</td><td>${esc(l.c.nome)}</td><td class="n">${diasHoras(l.fjD,l.fjH)}</td><td class="n">${diasHoras(l.fiD,l.fiH)}</td><td class="n">${l.ext?hm(l.ext):'–'}</td><td class="n">${l.sab?fmt(l.sab)+(l.sabH?' ('+hm(l.sabH)+')':''):'–'}</td>${mot.map(k=>`<td class="n">${v(l.ausM[k]&&fmt(l.ausM[k])+' d')}</td>`).join('')}<td class="n">${l.saldo?(l.saldo>0?'+':'')+hm(l.saldo):'–'}</td><td class="n">${fmt(g)}/${fmt(d)}</td></tr>`; }).join('')}
+  </tbody></table>
+  ${det?'<h2>Detalhe dos registos</h2>'+det:''}
+  <div class="ass"><div>Responsável</div><div>Visto da chefia</div><div>Data</div></div>
+  <footer>Gerado a ${dataPT(dLocal(agora))} às ${horaLocal(agora)}${fbAuth&&fbAuth.currentUser?' por '+esc(fbAuth.currentUser.email):''} · Assiduidade EFAFLU</footer>
+  <script>setTimeout(()=>print(),400)<\/script></body></html>`;
+  const w=window.open('','_blank');
+  if(!w) return aviso('O browser bloqueou a janela do relatório.\nPermite janelas pop-up para esta página e tenta outra vez.');
+  w.document.open(); w.document.write(html); w.document.close();
 }
 function abrirRelatorio(){ painelTexto('💬 Relatório para enviar', textoRelatorio()); }
 
@@ -1205,20 +1422,22 @@ function renderMapa(){
   const dias=[...Array(n)].map((_,i)=>{ const d=v+'-'+pad(i+1), w=new Date(d+'T12:00').getDay(); return {d,i:i+1,w}; });
   const cols=ordCol().filter(c=>c.ativo!==false || regs.some(r=>r.colId===c.id && r.data.slice(0,7)===v));
   const ini='DSTQQSS';
-  let h='<table class="mapa"><thead><tr><th class="nmc">Colaborador</th>'+dias.map(x=>`<th class="${x.w===0||x.w===6?'fds':''} ${x.d===hj?'hj':''}"><div>${ini[x.w]}</div>${x.i}</th>`).join('')+'</tr></thead><tbody>';
+  dias.forEach(x=>{ x.fer=feriado(x.d); x.cls=(x.w===0||x.w===6?'fds ':'')+(x.fer?'fer ':'')+(x.d===hj?'hj ':''); });
+  let h='<table class="mapa"><thead><tr><th class="nmc">Colaborador</th>'+dias.map(x=>`<th class="${x.cls}" ${x.fer?`data-tip="🎉 ${esc(x.fer)}"`:''}><div>${x.fer?'🎉':ini[x.w]}</div>${x.i}</th>`).join('')+'</tr></thead><tbody>';
   h+=cols.map(c=>`<tr><td class="nmc" title="${esc(c.nome)}">${esc(c.num)} ${esc(primeiroNome(c.nome))}</td>`+dias.map(x=>{
-    const ce=celula(c.id,x.d), cls=(x.w===0||x.w===6?'fds ':'')+(x.d===hj?'hj ':'');
-    const tip=`${c.nome}\n${diaLongo(x.d)}${ce?'\n'+ce.txt:''}\n(clica para registar)`;
+    const ce=celula(c.id,x.d), cls=x.cls;
+    const tip=`${c.nome}\n${diaLongo(x.d)}${x.fer?'\n🎉 '+x.fer:''}${ce?'\n'+ce.txt:''}${papel==='consulta'?'':'\n(clica para registar)'}`;
     return `<td class="${cls}" data-tip="${esc(tip)}" onclick="registarEm('${c.id}','${x.d}')">${ce?`<span class="mc ${ce.plan?'plan':''}" style="${ce.cor?'background:'+ce.cor:''}">${ce.sig}</span>`:''}</td>`;
   }).join('')+'</tr>').join('');
   const ativos=ordCol().filter(c=>c.ativo!==false);
   h+='<tr class="disp"><td class="nmc">Disponíveis</td>'+dias.map(x=>{ const k=ativos.filter(c=>!ausente(c.id,x.d)).length;
-    return `<td class="${x.w===0||x.w===6?'fds':''} ${k<ativos.length?'menos':''}" data-tip="${diaLongo(x.d)}\n${k} de ${ativos.length} disponíveis">${k}</td>`; }).join('')+'</tr>';
+    return `<td class="${x.cls} ${k<ativos.length?'menos':''}" data-tip="${diaLongo(x.d)}${x.fer?' · '+x.fer:''}\n${k} de ${ativos.length} disponíveis">${k}</td>`; }).join('')+'</tr>';
   $('mpLegAus').innerHTML = Object.values(AUS).map(m=>`<span style="margin-right:12px"><i style="background:${m.cor}"></i>${m.sig} ${m.curto.toLowerCase()}</span>`).join('');
   $('mpTab').innerHTML = cols.length ? h+'</tbody></table>' : '<div class="vazio">Sem colaboradores.</div>';
   const mt=new Date(v+'-15T12:00').toLocaleDateString('pt-PT',{month:'long',year:'numeric'}); $('mpTit').textContent = mt.charAt(0).toUpperCase()+mt.slice(1);
 }
 function registarEm(colId, d){
+  if(papel==='consulta') return;
   limparForm(); mostrar('reg'); $('rCol').value=colId; $('rData').value=d; rotulosDia();
   $('rTipo').value='aus:Férias'; ajustarForm(); window.scrollTo(0,0);
 }
@@ -1299,12 +1518,14 @@ function render(){
   $('tbCol').innerHTML = colabs.length ? ordCol().map(c=>`<tr>
     <td>${esc(c.num)}</td><td>${esc(c.nome)}</td><td>${esc(c.funcao||'')}</td>
     <td style="white-space:nowrap">${c.tel?`<a href="tel:${esc(c.tel.replace(/\s/g,''))}" style="color:var(--pri)">${esc(c.tel)}</a>`:''}</td>
+    <td style="white-space:nowrap">${feriasHTML(c.id, String(new Date().getFullYear()))}</td>
     <td class="n">${saldoHTML(saldoBanco(c.id))}</td>
     <td>${c.ativo!==false?'Ativo':'<span class="small">Inativo</span>'}</td>
     <td style="white-space:nowrap"><button class="edit" title="Editar" onclick="editarCol('${c.id}')">✏️</button>
       <button class="edit" title="Ativar/Desativar" onclick="toggleCol('${c.id}')">${c.ativo!==false?'⏸️':'▶️'}</button>
       <button class="del" title="Apagar" onclick="apagarCol('${c.id}')">🗑️</button></td></tr>`).join('')
-    : '<tr><td colspan="7" class="vazio">Sem colaboradores.</td></tr>';
+    : '<tr><td colspan="8" class="vazio">Sem colaboradores.</td></tr>';
+  $('thFer').textContent='Férias '+new Date().getFullYear();
 
   const fc=$('hCol').value, ft=$('hTipo').value, fm=$('hMes').value;
   const okT = r => !ft || (ft.startsWith('aus:') ? r.tipo==='ausencia' && motAus(r)===ft.slice(4) : r.tipo===ft);
@@ -1316,7 +1537,7 @@ function render(){
     <td>${tagReg(r)}</td>
     <td style="white-space:nowrap">${r.hIni&&r.hFim?esc(r.hIni)+'–'+esc(r.hFim):''}</td>
     <td class="n">${r.dias?fmt(r.dias):''}</td><td class="n">${r.horas?hm(r.horas):''}</td>
-    <td>${esc(r.obs||'')}</td>
+    <td>${esc(r.obs||'')}${r.alteradoPor||r.criadoPor?`<div class="small" title="Criado por ${esc(r.criadoPor||'?')}${r.criadoEm?' a '+dataPT(r.criadoEm.slice(0,10)):''}">✍️ ${esc(quemCurto(r.alteradoPor||r.criadoPor))}${r.alteradoEm?' · '+dataPT(r.alteradoEm.slice(0,10)):''}</div>`:''}</td>
     <td style="white-space:nowrap"><button class="edit" title="Editar" onclick="editarReg('${r.id}')">✏️</button><button class="del" title="Apagar" onclick="apagarReg('${r.id}')">🗑️</button></td></tr>`}).join('')
     : '<tr><td colspan="9" class="vazio">Sem registos para este filtro.</td></tr>';
 
@@ -1325,6 +1546,8 @@ function render(){
   renderTimers();
   renderPlanos(false);
   renderMapa();
+  if(!db) renderLog();
+  renderAcessos();
   renderResumo();
 }
 function mostrar(t){
@@ -1357,10 +1580,10 @@ function importJSON(inp){
       const d=JSON.parse(rd.result);
       if(!Array.isArray(d.colabs)||!Array.isArray(d.regs)) throw 0;
       if(!await perguntar(`Importar ${d.colabs.length} colaboradores e ${d.regs.length} registos?\nRegistos com o mesmo ID são substituídos; os restantes mantêm-se.`)) return;
-      for(const c of d.colabs) await salvar(COL_COLAB,c);
-      for(const r of d.regs) await salvar(COL_REG,r);
+      for(const c of d.colabs) await salvar(COL_COLAB,c,{semLog:1});
+      for(const r of d.regs) await salvar(COL_REG,r,{semLog:1});
       for(const t of (d.relogios||[])) await salvar(COL_REL,t);
-      for(const t of (d.planos||[])) await salvar(COL_PLAN,t);
+      for(const t of (d.planos||[])) await salvar(COL_PLAN,t,{semLog:1});
       aviso('Importação concluída.');
     }catch(e){ aviso('Ficheiro inválido.'); }
     inp.value='';
