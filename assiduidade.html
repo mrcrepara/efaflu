@@ -190,7 +190,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
   <button class="btn sec hide" id="lkCancel">Cancelar</button>
   <p id="lkErr"></p>
   <a href="#" id="lkEsq" class="small hide" style="color:var(--pri)">Esqueci-me da palavra-passe</a>
-  <div class="small" style="margin-top:14px;opacity:.6">versão 01/11 · login por email</div>
+  <div class="small" style="margin-top:14px;opacity:.6">versão 01/11b · login por email</div>
 </div></div>
 <header>
   <span class="logo"><img src="" data-logo alt="EFAFLU"></span>
@@ -233,7 +233,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
       <div class="kpi k-falta"><div class="l">FALTAS (dias)</div><div class="v" id="kFal">0</div><div class="small" id="kFal2"></div></div>
       <div class="kpi k-extra"><div class="l">HORAS EXTRA</div><div class="v" id="kExt">0</div></div>
       <div class="kpi k-banco"><div class="l">BANCO DE HORAS (saldo)</div><div class="v" id="kBan">0</div><div class="small" id="kBan2"></div></div>
-      <div class="kpi k-aus"><div class="l">AUSÊNCIAS (dias)</div><div class="v" id="kAus">0</div></div>
+      <div class="kpi k-aus"><div class="l">AUSÊNCIAS (dias)</div><div class="v" id="kAus">0</div><div class="small" id="kAus2"></div></div>
       <div class="kpi k-sab"><div class="l">SÁBADOS TRABALHADOS</div><div class="v" id="kSab">0</div><div class="small" id="kSab2"></div></div>
     </div>
     <div class="charts">
@@ -256,7 +256,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
       <h2 id="tituloResumo">Resumo por colaborador</h2>
       <div class="wrap"><table class="tbl">
         <thead><tr><th>Nº</th><th>Nome</th><th>Faltas just.</th><th>Faltas injust.</th><th>Horas extra</th>
-          <th>Banco +</th><th>Banco −</th><th>Saldo banco</th><th>Ausências</th><th>Sábados</th><th>Horas sáb.</th></tr></thead>
+          <th>Banco +</th><th>Banco −</th><th>Saldo banco</th><th id="thAus">Ausências</th><th>Sábados</th><th>Horas sáb.</th></tr></thead>
         <tbody id="tbResumo"></tbody>
       </table></div>
       <p class="small">"Banco +" e "Banco −" são os movimentos do período. "Saldo banco" é o acumulado de sempre até ao fim do período escolhido.</p>
@@ -360,7 +360,13 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
             <option value="falta_j">Falta justificada</option>
             <option value="extra">Horas extra</option>
             <option value="banco">Banco de horas</option>
-            <option value="ausencia">Ausência (férias, baixa, formação…)</option>
+            <optgroup label="Ausências">
+              <option value="aus:Férias">🏖️ Férias</option>
+              <option value="aus:Baixa médica">🏥 Baixa médica</option>
+              <option value="aus:Assistência à família">👨‍👩‍👧 Assistência à família</option>
+              <option value="aus:Formação">🎓 Formação</option>
+              <option value="aus:Licença">📄 Licença</option>
+              <option value="aus:Outro">• Outra ausência</option></optgroup>
             <option value="sabado">Sábado trabalhado</option>
           </select></div>
         <div id="boxMov"><label>Movimento</label>
@@ -398,14 +404,14 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
   <!-- ============ MAPA ============ -->
   <section id="t-mapa" class="hide">
     <div class="card">
-      <div class="row" style="align-items:center">
-        <div style="flex:0;min-width:0"><button class="btn sec" onclick="moverMapa(-1)">◀</button></div>
-        <div style="text-align:center;min-width:0"><h2 id="mpTit" style="margin:0"></h2></div>
-        <div style="flex:0;min-width:0"><button class="btn sec" onclick="moverMapa(1)">▶</button></div>
-        <div style="flex:0;min-width:150px"><input type="month" id="mpMes"></div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <button class="btn sec" onclick="moverMapa(-1)">◀</button>
+        <h2 id="mpTit" style="margin:0;flex:1;text-align:center;min-width:140px"></h2>
+        <button class="btn sec" onclick="moverMapa(1)">▶</button>
+        <input type="month" id="mpMes" style="width:170px">
       </div>
       <div class="lg" style="flex-wrap:wrap;margin:12px 0 0">
-        <span><i style="background:var(--aus)"></i>Ausência (F férias · B baixa · AF assist. família · FM formação · L licença)</span>
+        <span id="mpLegAus"></span>
         <span><i style="background:var(--falta)"></i>Falta injust.</span><span><i style="background:#e48a8a"></i>Falta just.</span>
         <span><i style="background:var(--sab)"></i>S sábado</span><span><i style="background:var(--extra)"></i>HE horas extra</span>
         <span><i style="background:var(--banco)"></i>Banco</span><span><i style="border:2px dashed var(--sab);background:#fff"></i>✓ chamado, disse que vem</span>
@@ -424,7 +430,13 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
           <select id="hTipo"><option value="">Todos</option>
             <option value="falta_i">Falta injustificada</option><option value="falta_j">Falta justificada</option>
             <option value="extra">Horas extra</option><option value="banco">Banco de horas</option>
-            <option value="ausencia">Ausência</option><option value="sabado">Sábado</option>
+            <option value="sabado">Sábado</option><optgroup label="Ausências"><option value="ausencia">Todas as ausências</option>
+              <option value="aus:Férias">🏖️ Férias</option>
+              <option value="aus:Baixa médica">🏥 Baixa médica</option>
+              <option value="aus:Assistência à família">👨‍👩‍👧 Assistência à família</option>
+              <option value="aus:Formação">🎓 Formação</option>
+              <option value="aus:Licença">📄 Licença</option>
+              <option value="aus:Outro">• Outra ausência</option></optgroup>
           </select></div>
         <div><label>Mês</label><input type="month" id="hMes"></div>
       </div>
@@ -518,6 +530,16 @@ const LS_PW     = 'mrc_assiduidade_pw';
 const MIN_BLOQ  = 15;   // minutos sem uso até bloquear
 
 const TIPOS = {falta_i:'Falta injust.',falta_j:'Falta just.',extra:'Horas extra',banco:'Banco horas',ausencia:'Ausência',sabado:'Sábado'};
+const AUS = {'Férias':{k:'fer',curto:'Férias',sig:'F',cor:'#d98a1c',ic:'🏖️'},
+             'Baixa médica':{k:'bai',curto:'Baixa',sig:'B',cor:'#a8551c',ic:'🏥'},
+             'Assistência à família':{k:'asf',curto:'Assist. família',sig:'AF',cor:'#be185d',ic:'👨‍👩‍👧'},
+             'Formação':{k:'frm',curto:'Formação',sig:'FM',cor:'#2563eb',ic:'🎓'},
+             'Licença':{k:'lic',curto:'Licença',sig:'L',cor:'#64748b',ic:'📄'},
+             'Outro':{k:'out',curto:'Outra ausência',sig:'O',cor:'#8a7a2a',ic:'•'}};
+const motAus = r => AUS[r.motivo] ? r.motivo : 'Outro';
+const nomeTipo = r => r.tipo==='ausencia' ? AUS[motAus(r)].curto : TIPOS[r.tipo]+(r.tipo==='banco'?(r.mov==='-'?' −':' +'):'');
+const tagReg = r => r.tipo==='ausencia' ? `<span class="tag" style="background:${AUS[motAus(r)].cor}">${AUS[motAus(r)].curto}</span>` : `<span class="tag t-${r.tipo}">${nomeTipo(r)}</span>`;
+const valTipo = () => { const v=$('rTipo').value; return v.startsWith('aus:') ? 'ausencia' : v; };
 let colabs = [], regs = [], relogios = [], planos = [], db = null, editReg = null, editCol = null;
 const $ = id => document.getElementById(id);
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
@@ -684,13 +706,13 @@ function calcHoras(){
   $('rHoras').value = Math.round(min/60*100)/100;
 }
 function ajustarForm(){
-  const t=$('rTipo').value, temHoras = ['extra','banco','sabado','falta_j','falta_i'].includes(t);
+  const t=valTipo(), temHoras = ['extra','banco','sabado','falta_j','falta_i'].includes(t);
   $('boxFim').classList.toggle('hide', !['ausencia','falta_j','falta_i'].includes(t));
   $('boxDias').classList.toggle('hide', ['extra','sabado','banco'].includes(t));
   $('boxHoras').classList.toggle('hide', !temHoras);
   $('boxIni').classList.toggle('hide', !temHoras);
   $('boxFimH').classList.toggle('hide', !temHoras);
-  $('boxMotivo').classList.toggle('hide', t!=='ausencia');
+  $('boxMotivo').classList.add('hide');
   $('boxMov').classList.toggle('hide', t!=='banco');
   if(['extra','banco','sabado'].includes(t)) $('rDias').value = t==='sabado'?1:0;
   $('dica').textContent = {
@@ -698,7 +720,7 @@ function ajustarForm(){
     falta_j:'Indica o motivo nas observações (ex.: consulta, tribunal…). Falta parcial: Dias = 0 e indica as horas.',
     extra:'Horas para além do horário normal, a pagar. Preenche início e fim (ou carrega em "Agora") e as horas são calculadas sozinhas.',
     banco:'Crédito: horas a mais que ficam no banco. Débito: horas que o colaborador gozou (saiu mais cedo, folga…) e são descontadas do saldo.',
-    ausencia:'Para vários dias seguidos usa "Até": os dias úteis (seg–sex) são contados sozinhos.',
+    ausencia:'Para vários dias seguidos (ex.: férias de 15 dias) preenche "Até": os dias úteis (seg–sex) são contados sozinhos.',
     sabado:'Regista cada sábado trabalhado. As horas são opcionais, mas úteis para pagar.'
   }[t];
 }
@@ -706,7 +728,7 @@ function recalcDias(){ const n=diasUteis($('rData').value,$('rFim').value); if(n
 const visivel = id => !$(id).classList.contains('hide');
 
 async function guardarRegisto(){
-  const colId=$('rCol').value, tipo=$('rTipo').value, data=$('rData').value;
+  const colId=$('rCol').value, tipo=valTipo(), data=$('rData').value;
   if(!colId) return aviso('Escolhe o colaborador (adiciona primeiro em "Colaboradores").');
   if(!data) return aviso('Indica a data.');
   const fim = visivel('boxFim') ? $('rFim').value : '';
@@ -722,7 +744,7 @@ async function guardarRegisto(){
     const s=saldoBanco(colId, r=>r.id!==editReg);
     if(horas>s && !await perguntar(`O saldo atual é ${hm(s)}. Com este débito fica negativo (${hm(s-horas)}). Guardar mesmo assim?`)) return;
   }
-  const obs=$('rObs').value.trim(), motivo = tipo==='ausencia' ? $('rMotivo').value : '';
+  const obs=$('rObs').value.trim(), motivo = tipo==='ausencia' ? $('rTipo').value.slice(4) : '';
   const r = {id: editReg||uid(), colId, tipo, mov: tipo==='banco'?$('rMov').value:'', data, fim, dias, horas, hIni, hFim, motivo, obs,
              criado: new Date().toISOString()};
   await salvar(COL_REG, r);
@@ -740,15 +762,15 @@ function limparForm(){
 function editarReg(id){
   const r=regs.find(x=>x.id===id); editReg=id;
   mostrar('reg');
-  $('rCol').value=r.colId; $('rTipo').value=r.tipo; ajustarForm();
+  $('rCol').value=r.colId; $('rTipo').value = r.tipo==='ausencia' ? 'aus:'+motAus(r) : r.tipo; ajustarForm();
   $('rData').value=r.data; rotulosDia(); $('rFim').value=r.fim||''; $('rDias').value=r.dias||0; $('rHoras').value=r.horas||'';
   $('rHIni').value=(r.hIni||'').slice(0,5); $('rHFim').value=(r.hFim||'').slice(0,5);
   if(r.mov) $('rMov').value=r.mov;
-  if(r.motivo) $('rMotivo').value=r.motivo; $('rObs').value=r.obs||'';
+  $('rObs').value=r.obs||'';
   $('regTitulo').textContent='Editar registo'; $('boxCancel').classList.remove('hide'); $('boxApagar').classList.remove('hide');
 }
 function descReg(r){ const c=nomeCol(r.colId);
-  return `${c.num} – ${c.nome}\n${dataPT(r.data)}${r.fim?' → '+dataPT(r.fim):''} · ${TIPOS[r.tipo]}${r.tipo==='banco'?(r.mov==='-'?' −':' +'):''}${r.horas?' · '+hm(r.horas):''}${r.dias&&!r.horas?' · '+fmt(r.dias)+' d':''}`; }
+  return `${c.num} – ${c.nome}\n${dataPT(r.data)}${r.fim?' → '+dataPT(r.fim):''} · ${nomeTipo(r)}${r.horas?' · '+hm(r.horas):''}${r.dias&&!r.horas?' · '+fmt(r.dias)+' d':''}`; }
 async function apagarReg(id){
   const r=regs.find(x=>x.id===id); if(!r) return;
   if(await perguntar('Apagar este registo?\n\n'+descReg(r),'🗑️ Apagar','Não')) await apagar(COL_REG,id);
@@ -769,7 +791,8 @@ function rotulosDia(){
 
 /* ---------------- FOLHA DO DIA ---------------- */
 const FD_OP = [['','—'],['falta_i','Falta injust. (dia)'],['falta_j','Falta just. (dia)'],['extra','Horas extra'],
-               ['banco+','Banco de horas +'],['banco-','Banco de horas − (gozou)'],['sabado','Sábado trabalhado']];
+               ['banco+','Banco de horas +'],['banco-','Banco de horas − (gozou)'],['sabado','Sábado trabalhado'],
+               ...Object.keys(AUS).map(m=>['aus:'+m, AUS[m].ic+' '+AUS[m].curto+' (dia)'])];
 let fdChave=null;
 function lerFolha(){
   const v={};
@@ -798,7 +821,7 @@ function renderFolha(limpar){
 function renderFolhaJa(){
   const d=$('fdData').value, ja=regs.filter(r=>r.data===d || (r.fim && r.data<=d && r.fim>=d));
   $('fdJa').innerHTML = ja.length ? '<h2 style="margin-top:16px">Já registado neste dia</h2><ul class="small" style="margin:0;padding-left:18px">'+
-    ja.map(r=>{const c=nomeCol(r.colId); return `<li>${esc(c.num)} – ${esc(c.nome)}: <b>${TIPOS[r.tipo]}${r.tipo==='banco'?(r.mov==='-'?' −':' +'):''}</b>${r.horas?' '+hm(r.horas):''}${r.hIni&&r.hFim?' ('+esc(r.hIni)+'–'+esc(r.hFim)+')':''}${r.obs?' · '+esc(r.obs):''}</li>`;}).join('')+'</ul>' : '';
+    ja.map(r=>{const c=nomeCol(r.colId); return `<li>${esc(c.num)} – ${esc(c.nome)}: <b>${nomeTipo(r)}</b>${r.horas?' '+hm(r.horas):''}${r.hIni&&r.hFim?' ('+esc(r.hIni)+'–'+esc(r.hFim)+')':''}${r.obs?' · '+esc(r.obs):''}</li>`;}).join('')+'</ul>' : '';
 }
 function calcLinha(tr){
   const i=tr.querySelector('[data-k="i"]').value, f=tr.querySelector('[data-k="f"]').value; if(!i||!f) return;
@@ -813,11 +836,13 @@ async function guardarFolha(){
     if(!x.t) continue;
     const c=nomeCol(colId), horas=parseFloat(x.h)||0;
     let tipo=x.t, mov='';
+    let motivo='';
     if(tipo.startsWith('banco')){ mov=tipo.slice(5); tipo='banco'; }
+    if(tipo.startsWith('aus:')){ motivo=tipo.slice(4); tipo='ausencia'; }
     if((tipo==='extra'||tipo==='banco') && !horas){ erros.push(c.nome+': faltam as horas'); continue; }
-    const dias = tipo==='sabado' ? 1 : (tipo==='falta_i'||tipo==='falta_j') ? (horas?0:1) : 0;
-    if(regs.some(r=>r.colId===colId && r.data===data && r.tipo===tipo && (r.mov||'')===mov)) dup.push(c.nome);
-    novos.push({id:uid(), colId, tipo, mov, data, fim:'', dias, horas, hIni:x.i, hFim:x.f, motivo:'', obs:x.o.trim(), criado:new Date().toISOString()});
+    const dias = tipo==='sabado'||tipo==='ausencia' ? 1 : (tipo==='falta_i'||tipo==='falta_j') ? (horas?0:1) : 0;
+    if(regs.some(r=>r.colId===colId && cobre(r,data) && r.tipo===tipo && (r.mov||'')===mov)) dup.push(c.nome);
+    novos.push({id:uid(), colId, tipo, mov, data, fim:'', dias, horas:tipo==='ausencia'?0:horas, hIni:tipo==='ausencia'?'':x.i, hFim:tipo==='ausencia'?'':x.f, motivo, obs:x.o.trim(), criado:new Date().toISOString()});
   }
   if(erros.length) return aviso('Corrige primeiro:\n• '+erros.join('\n• '));
   const muitas = novos.filter(r=>r.horas>12).map(r=>nomeCol(r.colId).nome+': '+hm(r.horas));
@@ -847,7 +872,8 @@ function calcResumo(){
     const saldo = saldoBanco(c.id, ateFimPeriodo);
     return {c, fjD:soma('falta_j','dias'), fjH:soma('falta_j','horas'), fiD:soma('falta_i','dias'), fiH:soma('falta_i','horas'),
             ext:soma('extra','horas'), bMais:soma('banco','horas',r=>r.mov!=='-'), bMenos:soma('banco','horas',r=>r.mov==='-'), saldo,
-            aus:soma('ausencia','dias'), sab:soma('sabado','dias'), sabH:soma('sabado','horas'),
+            aus:soma('ausencia','dias'), ausM:Object.fromEntries(Object.keys(AUS).map(k=>[k,soma('ausencia','dias',r=>motAus(r)===k)])),
+            sab:soma('sabado','dias'), sabH:soma('sabado','horas'),
             tem:m.length>0 || saldo!==0};
   }).filter(l=>(l.c.ativo!==false || l.tem) && (!$('fCol').value || l.c.id===$('fCol').value));
 }
@@ -862,6 +888,7 @@ function renderResumo(){
   $('kBan').innerHTML = saldoHTML(tot('saldo'));
   $('kBan2').textContent = 'no período: +'+hm(tot('bMais'))+' / −'+hm(tot('bMenos'));
   $('kAus').textContent = fmt(tot('aus'));
+  $('kAus2').textContent = Object.keys(AUS).map(k=>[k,L.reduce((s,l)=>s+l.ausM[k],0)]).filter(x=>x[1]).map(([k,v])=>AUS[k].curto.toLowerCase()+' '+fmt(v)).join(' · ');
   $('kSab').textContent = fmt(tot('sab'));
   $('kSab2').textContent = tot('sabH') ? hm(tot('sabH'))+' no total' : '';
   const p = $('fPer').value==='ano' ? 'ano '+$('fAno').value
@@ -876,22 +903,26 @@ function renderResumo(){
     $('tbFicha').innerHTML = lst.length ? lst.map(r=>`<tr>
       <td style="white-space:nowrap">${dataPT(r.data)}${r.fim?' → '+dataPT(r.fim):''}</td>
       <td style="text-transform:capitalize">${diaSem(r.data).split('-')[0]}</td>
-      <td><span class="tag t-${r.tipo}">${TIPOS[r.tipo]}${r.tipo==='banco'?(r.mov==='-'?' −':' +'):''}</span>${r.motivo?' <span class="small">'+esc(r.motivo)+'</span>':''}</td>
+      <td>${tagReg(r)}</td>
       <td style="white-space:nowrap">${r.hIni&&r.hFim?esc(r.hIni)+'–'+esc(r.hFim):''}</td>
       <td class="n">${r.dias?fmt(r.dias):''}</td><td class="n">${r.horas?hm(r.horas):''}</td>
       <td>${esc(r.obs||'')}</td>
       <td class="noprint" style="white-space:nowrap"><button class="edit" title="Editar" onclick="editarReg('${r.id}')">✏️</button><button class="del" title="Apagar" onclick="apagarReg('${r.id}')">🗑️</button></td></tr>`).join('')
       : '<tr><td colspan="8" class="vazio">Sem registos neste período.</td></tr>';
   }
+  const motUsados=Object.keys(AUS).filter(k=>L.some(l=>l.ausM[k]));
+  const th=$('thAus'); while(th.nextElementSibling && th.nextElementSibling.classList.contains('thAusX')) th.nextElementSibling.remove();
+  th.textContent = motUsados.length ? AUS[motUsados[0]].curto : 'Ausências';
+  motUsados.slice(1).reverse().forEach(k=>th.insertAdjacentHTML('afterend',`<th class="thAusX">${AUS[k].curto}</th>`));
   $('tbResumo').innerHTML = L.length ? L.map(l=>`<tr style="cursor:pointer" title="Ver detalhe" onclick="verCol('${l.c.id}')">
     <td>${esc(l.c.num)}</td><td><b style="color:var(--pri)">${esc(l.c.nome)}</b></td>
     <td class="n">${diasHoras(l.fjD,l.fjH)}</td><td class="n">${diasHoras(l.fiD,l.fiH)}</td>
     <td class="n">${l.ext?hm(l.ext):'–'}</td>
     <td class="n">${l.bMais?'+'+hm(l.bMais):'–'}</td><td class="n">${l.bMenos?'−'+hm(l.bMenos):'–'}</td>
     <td class="n">${saldoHTML(l.saldo)}</td>
-    <td class="n">${l.aus?fmt(l.aus)+' d':'–'}</td>
+    ${motUsados.length?motUsados.map(k=>`<td class="n">${l.ausM[k]?fmt(l.ausM[k])+' d':'–'}</td>`).join(''):'<td class="n">–</td>'}
     <td class="n">${l.sab?fmt(l.sab):'–'}</td><td class="n">${l.sabH?hm(l.sabH):'–'}</td></tr>`).join('')
-    : '<tr><td colspan="11" class="vazio">Ainda não há colaboradores. Começa pelo separador "Colaboradores".</td></tr>';
+    : '<tr><td colspan="16" class="vazio">Ainda não há colaboradores. Começa pelo separador "Colaboradores".</td></tr>';
 }
 
 function verCol(id){ $('fCol').value=id; renderResumo(); mostrar('dash'); window.scrollTo(0,0); }
@@ -911,7 +942,7 @@ function renderPick(sel){
   const extra = sel ? Object.keys(sel).filter(id=>!ativos.some(c=>c.id===id)).map(nomeCol) : [];
   const d=$('plData').value;
   $("plPick").innerHTML = ativos.length||extra.length ? [...ativos,...extra].map(c=>{ const au=d&&ausente(c.id,d);
-    return `<label><input type="checkbox" value="${c.id}" ${sel&&sel[c.id]?'checked':''}> <span>${esc(c.num)} – ${esc(c.nome)}${au?`<br><span class="small" style="color:var(--aus);font-weight:600">🏖️ ${au.tipo==='ausencia'?esc(au.motivo||'Ausência'):'Falta'} nesse dia</span>`:''}</span></label>`; }).join('')
+    return `<label><input type="checkbox" value="${c.id}" ${sel&&sel[c.id]?'checked':''}> <span>${esc(c.num)} – ${esc(c.nome)}${au?`<br><span class="small" style="color:var(--aus);font-weight:600">${au.tipo==='ausencia'?AUS[motAus(au)].ic+' '+esc(AUS[motAus(au)].curto):'❌ Falta'} nesse dia</span>`:''}</span></label>`; }).join('')
     : '<span class="small">Adiciona primeiro colaboradores.</span>';
 }
 function toggleFormPlano(){ $('plForm').classList.contains('hide') ? abrirFormPlano(null) : fecharFormPlano(); }
@@ -1050,7 +1081,7 @@ function cartaoPlano(p){
     <div class="chips"><span class="chip sim">✅ Vêm: ${n('sim')}</span><span class="chip nao">❌ Não: ${n('nao')}</span><span class="chip pend">⏳ Sem resposta: ${n('pend')}</span></div>
     <div class="wrap"><table class="tbl"><tbody>
     ${ent.map(([id,v])=>{ const c=nomeCol(id), au=ausente(id,p.data); return `<tr class="plrow"><td style="white-space:nowrap">${esc(c.num)} – ${esc(c.nome)}
-        ${au?`<div class="small" style="color:var(--aus);font-weight:600">🏖️ ${au.tipo==='ausencia'?esc(au.motivo||'Ausência'):'Falta registada'} nesse dia</div>`:''}
+        ${au?`<div class="small" style="color:var(--aus);font-weight:600">${au.tipo==='ausencia'?AUS[motAus(au)].ic+' '+esc(AUS[motAus(au)].curto):'❌ Falta registada'} nesse dia</div>`:''}
         ${v.estado==='nao'?`<input class="motivo" placeholder="Motivo (opcional)" value="${esc(v.motivo||'')}" onchange="setMotivo('${p.id}','${id}',this.value)">`:''}</td>
       <td><div class="est" style="justify-content:flex-end">${c.tel?`<button class="wa-mini" title="Enviar mensagem a ${esc(c.nome)}" onclick="waPessoa('${p.id}','${id}')">💬</button>`:''}${['sim','nao','pend'].map(e=>`<button class="${e} ${v.estado===e?'on':''}" onclick="setEstado('${p.id}','${id}','${e}')">${EST[e]}</button>`).join('')}</div></td></tr>`;}).join('')}
     </tbody></table></div>
@@ -1132,7 +1163,7 @@ function textoRelatorio(){
   let t=`*EFAFLU · Parque de Máquinas*\nRelatório de assiduidade – *${p}*\n\n📊 *TOTAIS*\n`+
     `⏱️ Horas extra: ${hm(tot('ext'))}\n📅 Sábados trabalhados: ${fmt(tot('sab'))}${tot('sabH')?' ('+hm(tot('sabH'))+')':''}\n`+
     `❌ Faltas: ${fmtD(tot('fjD')+tot('fiD'))} (just. ${fmt(tot('fjD'))} · injust. ${fmt(tot('fiD'))})\n`+
-    `🏖️ Ausências: ${fmtD(tot('aus'))}\n🏦 Banco de horas (saldo): ${tot('saldo')>0?'+':''}${hm(tot('saldo'))}\n`;
+    Object.keys(AUS).map(k=>[k,L.reduce((s,l)=>s+l.ausM[k],0)]).filter(x=>x[1]).map(([k,v])=>`${AUS[k].ic} ${AUS[k].curto}: ${fmtD(v)}\n`).join('')+`🏦 Banco de horas (saldo): ${tot('saldo')>0?'+':''}${hm(tot('saldo'))}\n`;
   const com=[], sem=[];
   L.forEach(l=>{
     const it=[];
@@ -1140,8 +1171,7 @@ function textoRelatorio(){
     if(l.sab) it.push('📅 Sábados: '+fmt(l.sab)+(l.sabH?' ('+hm(l.sabH)+')':''));
     if(l.fiD||l.fiH) it.push('❌ Faltas injust.: '+diasHoras(l.fiD,l.fiH));
     if(l.fjD||l.fjH) it.push('🟠 Faltas just.: '+diasHoras(l.fjD,l.fjH));
-    if(l.aus){ const mot=[...new Set(sel.filter(r=>r.colId===l.c.id&&r.tipo==='ausencia').map(r=>r.motivo).filter(Boolean))];
-      it.push('🏖️ Ausências: '+fmt(l.aus)+' d'+(mot.length?' ('+mot.join(', ').toLowerCase()+')':'')); }
+    Object.keys(AUS).forEach(k=>{ if(l.ausM[k]) it.push(AUS[k].ic+' '+AUS[k].curto+': '+fmtD(l.ausM[k])); });
     if(l.bMais||l.bMenos||l.saldo) it.push('🏦 Banco: '+(l.saldo>0?'+':'')+hm(l.saldo)+(l.bMais||l.bMenos?` (no período +${hm(l.bMais)} / −${hm(l.bMenos)})`:''));
     it.length ? com.push(`*${l.c.num} – ${l.c.nome}*\n`+it.join('\n')) : sem.push(l.c.nome);
   });
@@ -1158,7 +1188,7 @@ function cobre(r, d){ return r.data<=d && d<=(r.fim||r.data); }
 function ausente(colId, d){ return regs.find(r=>r.colId===colId && cobre(r,d) && (r.tipo==='ausencia' || ((r.tipo==='falta_i'||r.tipo==='falta_j') && r.dias>0))); }
 function celula(colId, d){
   const rs=regs.filter(r=>r.colId===colId && cobre(r,d));
-  const a=rs.find(r=>r.tipo==='ausencia'); if(a) return {sig:MOT_SIG[a.motivo]||'A', cor:'var(--aus)', txt:'Ausência'+(a.motivo?' – '+a.motivo:'')};
+  const a=rs.find(r=>r.tipo==='ausencia'); if(a){ const m=AUS[motAus(a)]; return {sig:m.sig, cor:m.cor, txt:m.curto}; }
   const fi=rs.find(r=>r.tipo==='falta_i'); if(fi) return {sig:fi.dias?'FI':'fi', cor:'var(--falta)', txt:'Falta injustificada'+(fi.horas?' ('+hm(fi.horas)+')':'')};
   const fj=rs.find(r=>r.tipo==='falta_j'); if(fj) return {sig:fj.dias?'FJ':'fj', cor:'#e48a8a', txt:'Falta justificada'+(fj.horas?' ('+hm(fj.horas)+')':'')};
   const sb=rs.find(r=>r.tipo==='sabado'); if(sb) return {sig:'S', cor:'var(--sab)', txt:'Sábado trabalhado'+(sb.horas?' ('+hm(sb.horas)+')':'')};
@@ -1184,12 +1214,13 @@ function renderMapa(){
   const ativos=ordCol().filter(c=>c.ativo!==false);
   h+='<tr class="disp"><td class="nmc">Disponíveis</td>'+dias.map(x=>{ const k=ativos.filter(c=>!ausente(c.id,x.d)).length;
     return `<td class="${x.w===0||x.w===6?'fds':''} ${k<ativos.length?'menos':''}" data-tip="${diaLongo(x.d)}\n${k} de ${ativos.length} disponíveis">${k}</td>`; }).join('')+'</tr>';
+  $('mpLegAus').innerHTML = Object.values(AUS).map(m=>`<span style="margin-right:12px"><i style="background:${m.cor}"></i>${m.sig} ${m.curto.toLowerCase()}</span>`).join('');
   $('mpTab').innerHTML = cols.length ? h+'</tbody></table>' : '<div class="vazio">Sem colaboradores.</div>';
   const mt=new Date(v+'-15T12:00').toLocaleDateString('pt-PT',{month:'long',year:'numeric'}); $('mpTit').textContent = mt.charAt(0).toUpperCase()+mt.slice(1);
 }
 function registarEm(colId, d){
   limparForm(); mostrar('reg'); $('rCol').value=colId; $('rData').value=d; rotulosDia();
-  $('rTipo').value='ausencia'; ajustarForm(); window.scrollTo(0,0);
+  $('rTipo').value='aus:Férias'; ajustarForm(); window.scrollTo(0,0);
 }
 
 /* ---------------- GRÁFICOS ---------------- */
@@ -1276,12 +1307,13 @@ function render(){
     : '<tr><td colspan="7" class="vazio">Sem colaboradores.</td></tr>';
 
   const fc=$('hCol').value, ft=$('hTipo').value, fm=$('hMes').value;
-  const h = regs.filter(r=>(!fc||r.colId===fc)&&(!ft||r.tipo===ft)&&(!fm||r.data.slice(0,7)===fm))
+  const okT = r => !ft || (ft.startsWith('aus:') ? r.tipo==='ausencia' && motAus(r)===ft.slice(4) : r.tipo===ft);
+  const h = regs.filter(r=>(!fc||r.colId===fc)&&okT(r)&&(!fm||r.data.slice(0,7)===fm))
                 .sort((a,b)=>(b.data+(b.hIni||'')).localeCompare(a.data+(a.hIni||'')));
   $('tbHist').innerHTML = h.length ? h.map(r=>{ const c=nomeCol(r.colId); return `<tr>
     <td style="white-space:nowrap">${dataPT(r.data)}${r.fim?' → '+dataPT(r.fim):''}</td>
     <td>${esc(c.num)}</td><td>${esc(c.nome)}</td>
-    <td><span class="tag t-${r.tipo}">${TIPOS[r.tipo]}${r.tipo==='banco'?(r.mov==='-'?' −':' +'):''}</span>${r.motivo?' <span class="small">'+esc(r.motivo)+'</span>':''}</td>
+    <td>${tagReg(r)}</td>
     <td style="white-space:nowrap">${r.hIni&&r.hFim?esc(r.hIni)+'–'+esc(r.hFim):''}</td>
     <td class="n">${r.dias?fmt(r.dias):''}</td><td class="n">${r.horas?hm(r.horas):''}</td>
     <td>${esc(r.obs||'')}</td>
@@ -1306,11 +1338,11 @@ function baixar(nome, conteudo, tipo){
 }
 function exportCSV(){
   const L=calcResumo(), q=s=>'"'+String(s).replace(/"/g,'""')+'"', n=v=>fmt(v);
-  let csv='Nº;Nome;Faltas just. (dias);Faltas just. (horas);Faltas injust. (dias);Faltas injust. (horas);Horas extra;Banco + (horas);Banco − (horas);Saldo banco (horas);Ausências (dias);Sábados;Horas sábado\n';
-  L.forEach(l=>csv+=[q(l.c.num),q(l.c.nome),n(l.fjD),n(l.fjH),n(l.fiD),n(l.fiH),n(l.ext),n(l.bMais),n(l.bMenos),n(l.saldo),n(l.aus),n(l.sab),n(l.sabH)].join(';')+'\n');
+  let csv='Nº;Nome;Faltas just. (dias);Faltas just. (horas);Faltas injust. (dias);Faltas injust. (horas);Horas extra;Banco + (horas);Banco − (horas);Saldo banco (horas);'+Object.keys(AUS).map(k=>AUS[k].curto+' (dias)').join(';')+';Sábados;Horas sábado\n';
+  L.forEach(l=>csv+=[q(l.c.num),q(l.c.nome),n(l.fjD),n(l.fjH),n(l.fiD),n(l.fiH),n(l.ext),n(l.bMais),n(l.bMenos),n(l.saldo),...Object.keys(AUS).map(k=>n(l.ausM[k])),n(l.sab),n(l.sabH)].join(';')+'\n');
   csv+='\nDETALHE\nData;Até;Nº;Nome;Tipo;Movimento;Início;Fim;Motivo;Dias;Horas;Observações\n';
   regs.filter(r=>noPeriodo(r) && (!$('fCol').value || r.colId===$('fCol').value)).sort((a,b)=>a.data.localeCompare(b.data)).forEach(r=>{const c=nomeCol(r.colId);
-    csv+=[dataPT(r.data),dataPT(r.fim),q(c.num),q(c.nome),TIPOS[r.tipo],r.tipo==='banco'?(r.mov==='-'?'Débito':'Crédito'):'',
+    csv+=[dataPT(r.data),dataPT(r.fim),q(c.num),q(c.nome),nomeTipo(r),r.tipo==='banco'?(r.mov==='-'?'Débito':'Crédito'):'',
           r.hIni||'',q(r.hFim||''),q(r.motivo||''),n(r.dias),n(r.horas),q(r.obs||'')].join(';')+'\n';});
   const p = $('fPer').value==='ano' ? $('fAno').value : $('fMes').value;
   const fcN = $('fCol').value ? '_'+String(nomeCol($('fCol').value).num).replace(/[^\w-]/g,'') : '';
