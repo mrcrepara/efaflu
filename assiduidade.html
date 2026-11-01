@@ -103,6 +103,10 @@ body.locked header,body.locked main{display:none}
 .lockbox input{margin-top:10px;text-align:center;font-size:18px}
 .lockbox .btn{width:100%;margin-top:14px;padding:12px}
 #lkErr{color:var(--falta);font-weight:600;min-height:20px;margin:10px 0 0;font-size:14px}
+/* modo colaborador */
+body.colab .tabs{display:none}
+body.colab #t-eu{display:block}
+.mapa .mc.ped{background:#fff;border:2px dashed var(--aus);color:var(--aus)}
 /* modo só consulta */
 body.ro .tabs button[data-t=folha],body.ro .tabs button[data-t=reg],body.ro .tabs button[data-t=rel],
 body.ro .edit,body.ro .del,body.ro .w,body.ro #plToggle,body.ro .wa-mini{display:none!important}
@@ -198,7 +202,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
   <button class="btn sec hide" id="lkCancel">Cancelar</button>
   <p id="lkErr"></p>
   <a href="#" id="lkEsq" class="small hide" style="color:var(--pri)">Esqueci-me da palavra-passe</a>
-  <div class="small" style="margin-top:14px;opacity:.6">versão 02/11b · login por email</div>
+  <div class="small" style="margin-top:14px;opacity:.6">versão 02/11c · login por email</div>
 </div></div>
 <header>
   <span class="logo"><img src="" data-logo alt="EFAFLU"></span>
@@ -210,12 +214,15 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
 
 <main>
   <div class="tabs">
+    <button data-t="eu" class="hide" id="tabEu">🙋 As minhas férias</button>
     <button data-t="dash" class="on">📊 Resumo</button>
     <button data-t="plan">📅 Planeamento<span class="badge hide" id="nPlan"></span></button>
     <button data-t="folha">🗓️ Folha do dia</button>
     <button data-t="reg">➕ Registar</button>
     <button data-t="rel">⏱️ Relógio<span class="badge hide" id="nTimers"></span></button>
     <button data-t="mapa">🏖️ Mapa</button>
+    <button data-t="pes">🦺 Formações e EPIs<span class="badge hide" id="nPes"></span></button>
+    <button data-t="maq">🚜 Máquinas<span class="badge hide" id="nMaq"></span></button>
     <button data-t="hist">📋 Histórico</button>
     <button data-t="col">👥 Colaboradores</button>
   </div>
@@ -232,12 +239,14 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
         <div><label>Mês</label><input type="month" id="fMes"></div>
         <div><label>Ano</label><input type="number" id="fAno" min="2020" max="2100"></div>
         <div style="min-width:220px"><label>Colaborador</label><select id="fCol"></select></div>
+        <div style="flex:0" class="w" id="boxFecho"><button class="btn sec" id="btnFecho" onclick="alternarFecho()">🔒 Fechar mês</button></div>
         <div style="flex:0"><button class="btn wa" onclick="abrirRelatorio()">💬 Relatório</button></div>
         <div style="flex:0"><button class="btn sec" onclick="relatorioPDF()">📄 PDF</button></div>
         <div style="flex:0"><button class="btn sec" onclick="window.print()">🖨️ Imprimir</button></div>
         <div style="flex:0"><button class="btn sec" onclick="exportCSV()">⬇️ Excel (CSV)</button></div>
       </div>
     </div>
+    <div class="card hide" id="fechoInfo" style="border-left:5px solid var(--muted);padding:10px 16px"></div>
     <div class="card hide" id="avisosCard" style="border-left:5px solid var(--aus)"><h2>⚠️ Avisos</h2><ul id="avisosLista" style="margin:0;padding-left:20px;line-height:1.7"></ul></div>
     <div class="kpis">
       <div class="kpi k-falta"><div class="l">FALTAS (dias)</div><div class="v" id="kFal">0</div><div class="small" id="kFal2"></div></div>
@@ -295,7 +304,10 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
         <div style="margin-top:12px">
           <label>Quem vai ser chamado</label>
           <span style="margin-left:8px"><button class="mini" style="padding:3px 8px" onclick="marcarTodos(true)">Todos</button>
-          <button class="mini" style="padding:3px 8px" onclick="marcarTodos(false)">Nenhum</button></span>
+          <button class="mini" style="padding:3px 8px" onclick="marcarTodos(false)">Nenhum</button>
+          <span style="white-space:nowrap;margin-left:6px">· <button class="mini" style="padding:3px 8px" onclick="sugerirSabados()">⭐ Sugerir os</button>
+          <input type="number" id="plSug" min="1" value="5" style="width:56px;padding:3px 6px;font-size:13px;display:inline-block">
+          <span class="small">que fizeram menos sábados</span></span></span>
           <div class="pick" id="plPick"></div>
         </div>
         <div class="row" style="margin-top:12px;justify-content:flex-end">
@@ -411,6 +423,138 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
     </div>
   </section>
 
+  <!-- ============ COLABORADOR: AS MINHAS FÉRIAS ============ -->
+  <section id="t-eu" class="hide">
+    <div class="card"><h2 id="euOla" style="margin-bottom:4px"></h2><p class="small" style="margin:0">Aqui podes pedir férias e acompanhar os teus pedidos. O responsável recebe o pedido e aprova ou recusa.</p></div>
+    <div class="kpis" id="euKpis"></div>
+    <div class="card">
+      <h2>🏖️ Pedir férias</h2>
+      <div class="row">
+        <div style="max-width:180px"><label>De</label><input type="date" id="euDe"></div>
+        <div style="max-width:180px"><label>Até</label><input type="date" id="euAte"></div>
+        <div style="max-width:140px"><label>Dias úteis</label><input id="euDias" readonly style="background:#f3f5f8"></div>
+        <div><label>Observações (opcional)</label><input id="euObs" placeholder="ex.: casamento, viagem…"></div>
+        <div style="flex:0"><button class="btn" onclick="enviarPedido()">📨 Enviar pedido</button></div>
+      </div>
+      <p class="small" id="euInfo" style="margin-bottom:0"></p>
+    </div>
+    <div class="card"><h2>📋 Os meus pedidos</h2><div id="euPedidos"></div></div>
+    <div class="card"><h2 id="euRegTit">🗓️ Férias marcadas</h2><div id="euRegs"></div></div>
+  </section>
+
+  <!-- ============ FORMAÇÕES E EPIs ============ -->
+  <section id="t-pes" class="hide">
+    <div class="card w">
+      <h2 id="foTit">🎓 Registar formação / carta / exame</h2>
+      <div class="row">
+        <div style="min-width:200px"><label>Colaborador</label><select id="foCol"></select></div>
+        <div style="min-width:240px"><label>Formação, carta ou exame</label><input id="foNome" list="foSug" placeholder="ex.: Carta de empilhador"></div>
+        <div style="max-width:170px"><label>Data</label><input type="date" id="foEm"></div>
+        <div style="max-width:170px"><label>Válida até</label><input type="date" id="foVal"></div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div><label>Observações</label><input id="foObs" placeholder="ex.: nº do certificado, entidade formadora…"></div>
+        <div style="flex:0"><button class="btn sec hide" id="foCanc" onclick="limparFo()">Cancelar</button></div>
+        <div style="flex:0"><button class="btn" onclick="guardarFo()">💾 Guardar</button></div>
+      </div>
+      <datalist id="foSug"></datalist>
+    </div>
+    <div class="card">
+      <div class="row" style="align-items:center">
+        <div><h2 style="margin:0">🎓 Formações, cartas e exames</h2></div>
+        <div style="max-width:220px"><select id="foFiltro"></select></div>
+        <div style="flex:0"><label style="display:flex;gap:6px;align-items:center;white-space:nowrap;font-size:13px"><input type="checkbox" id="foSoAlerta" style="width:auto"> Só a caducar / caducadas</label></div>
+      </div>
+      <div class="wrap" style="margin-top:10px"><table class="tbl"><thead><tr><th>Colaborador</th><th>Formação / carta</th><th>Data</th><th>Válida até</th><th>Estado</th><th>Obs.</th><th></th></tr></thead><tbody id="tbFo"></tbody></table></div>
+    </div>
+    <div class="card w">
+      <h2 id="epTit">🦺 Registar entrega de EPI</h2>
+      <div class="row">
+        <div style="min-width:200px"><label>Colaborador</label><select id="epCol"></select></div>
+        <div style="min-width:200px"><label>Equipamento</label><input id="epItem" list="epSug" placeholder="ex.: Botas de segurança"></div>
+        <div style="max-width:110px"><label>Tamanho</label><input id="epTam" placeholder="ex.: 42"></div>
+        <div style="max-width:90px"><label>Qtd.</label><input type="number" id="epQtd" min="1" value="1"></div>
+        <div style="max-width:170px"><label>Entregue em</label><input type="date" id="epData"></div>
+        <div style="max-width:150px"><label>Trocar a cada (meses)</label><input type="number" id="epMeses" min="0" placeholder="opcional"></div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div><label>Observações</label><input id="epObs" placeholder="ex.: troca por desgaste"></div>
+        <div style="flex:0"><button class="btn sec hide" id="epCanc" onclick="limparEp()">Cancelar</button></div>
+        <div style="flex:0"><button class="btn" onclick="guardarEp()">💾 Guardar</button></div>
+      </div>
+      <datalist id="epSug"></datalist>
+    </div>
+    <div class="card">
+      <div class="row" style="align-items:center">
+        <div><h2 style="margin:0">🦺 EPIs entregues</h2></div>
+        <div style="max-width:220px"><select id="epFiltro"></select></div>
+        <div style="flex:0"><button class="btn sec" onclick="fichaEPI()">🖨️ Ficha de entrega</button></div>
+      </div>
+      <div class="wrap" style="margin-top:10px"><table class="tbl"><thead><tr><th>Colaborador</th><th>Equipamento</th><th>Tam.</th><th>Qtd.</th><th>Entregue</th><th>Próxima troca</th><th>Obs.</th><th></th></tr></thead><tbody id="tbEp"></tbody></table></div>
+      <p class="small" style="margin:8px 0 0">A "Ficha de entrega" imprime a lista de EPIs do colaborador escolhido no filtro, com espaço para ele assinar.</p>
+    </div>
+  </section>
+
+  <!-- ============ MÁQUINAS ============ -->
+  <section id="t-maq" class="hide">
+    <div class="card w">
+      <h2>🔧 Registar avaria</h2>
+      <div class="row">
+        <div style="min-width:200px"><label>Máquina</label><select id="avMaq"></select></div>
+        <div style="min-width:200px"><label>Reportada por</label><select id="avCol"></select></div>
+        <div style="max-width:170px"><label>Data</label><input type="date" id="avData"></div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div><label>O que aconteceu</label><input id="avDesc" placeholder="ex.: fuga de óleo hidráulico no braço"></div>
+        <div style="flex:0"><button class="btn" onclick="guardarAv()">💾 Registar avaria</button></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>🔧 Avarias em aberto</h2>
+      <div id="avAbertas"></div>
+      <details style="margin-top:10px"><summary style="cursor:pointer;font-weight:600">Avarias resolvidas</summary><div id="avResolvidas" style="margin-top:8px"></div></details>
+    </div>
+    <div class="card w">
+      <h2>⏱️ Registar utilização</h2>
+      <div class="row">
+        <div style="min-width:200px"><label>Máquina</label><select id="usMaq"></select></div>
+        <div style="min-width:200px"><label>Operador</label><select id="usCol"></select></div>
+        <div style="max-width:170px"><label>Data</label><input type="date" id="usData"></div>
+        <div style="max-width:120px"><label>Início</label><input type="time" id="usIni"></div>
+        <div style="max-width:120px"><label>Fim</label><input type="time" id="usFim"></div>
+        <div style="max-width:100px"><label>Horas</label><input type="number" id="usHoras" step="0.25" min="0"></div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div><label>Observações</label><input id="usObs" placeholder="ex.: obra / tarefa"></div>
+        <div style="flex:0"><button class="btn" onclick="guardarUs()">💾 Guardar</button></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="row" style="align-items:center">
+        <div><h2 style="margin:0" id="usTit">📊 Utilização</h2></div>
+        <div style="max-width:180px"><input type="month" id="usMes"></div>
+      </div>
+      <div class="charts" style="margin-top:12px">
+        <div><h3 style="margin:0 0 6px;font-size:14px">Horas por máquina</h3><div id="usPorMaq"></div></div>
+        <div><h3 style="margin:0 0 6px;font-size:14px">Horas por operador</h3><div id="usPorCol"></div></div>
+      </div>
+      <details style="margin-top:12px"><summary style="cursor:pointer;font-weight:600">Lista de utilizações do mês</summary>
+        <div class="wrap" style="margin-top:8px"><table class="tbl"><thead><tr><th>Data</th><th>Máquina</th><th>Operador</th><th>Horário</th><th>Horas</th><th>Obs.</th><th></th></tr></thead><tbody id="tbUs"></tbody></table></div></details>
+    </div>
+    <div class="card">
+      <h2>🚜 Máquinas</h2>
+      <div class="row w" style="margin-bottom:12px">
+        <div style="max-width:140px"><label>Código</label><input id="mqCod" placeholder="ex.: EMP-01"></div>
+        <div><label>Nome / modelo</label><input id="mqNome" placeholder="ex.: Empilhador Toyota 2.5t"></div>
+        <div style="max-width:220px"><label>Tipo</label><input id="mqTipo" list="mqSug" placeholder="ex.: Empilhador"></div>
+        <div style="flex:0"><button class="btn sec hide" id="mqCanc" onclick="limparMq()">Cancelar</button></div>
+        <div style="flex:0"><button class="btn" onclick="guardarMq()">💾 Guardar</button></div>
+      </div>
+      <datalist id="mqSug"></datalist>
+      <div class="wrap"><table class="tbl"><thead><tr><th>Código</th><th>Máquina</th><th>Tipo</th><th>Horas (mês)</th><th>Avarias</th><th>Estado</th><th></th></tr></thead><tbody id="tbMq"></tbody></table></div>
+    </div>
+  </section>
+
   <!-- ============ MAPA ============ -->
   <section id="t-mapa" class="hide">
     <div class="card">
@@ -423,10 +567,16 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
       <div class="lg" style="flex-wrap:wrap;margin:12px 0 0">
         <span id="mpLegAus"></span>
         <span><i style="background:#ffe9b3"></i>🎉 Feriado</span>
+        <span><i style="border:2px dashed var(--aus);background:#fff"></i>F? pedido de férias por aprovar</span>
         <span><i style="background:var(--falta)"></i>Falta injust.</span><span><i style="background:#e48a8a"></i>Falta just.</span>
         <span><i style="background:var(--sab)"></i>S sábado</span><span><i style="background:var(--extra)"></i>HE horas extra</span>
         <span><i style="background:var(--banco)"></i>Banco</span><span><i style="border:2px dashed var(--sab);background:#fff"></i>✓ chamado, disse que vem</span>
       </div>
+    </div>
+    <div class="card hide" id="pedCard" style="border-left:5px solid var(--aus)">
+      <h2>🙋 Pedidos de férias por aprovar</h2>
+      <div id="pedLista"></div>
+      <details style="margin-top:10px"><summary style="cursor:pointer;font-weight:600">Pedidos já respondidos</summary><div id="pedFeitos" style="margin-top:8px"></div></details>
     </div>
     <div class="card"><div class="wrap" id="mpTab"></div>
       <p class="small" style="margin:10px 0 0">Passa o rato (ou toca) num quadrado para ver o detalhe. Clica para registar uma ausência ou falta nesse dia. A linha "Disponíveis" mostra quantas pessoas não estão de férias nem a faltar.</p></div>
@@ -480,12 +630,14 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
     </table></div></div>
     <div class="card noprint w" id="acessosCard">
       <h2>👥 Acessos à página</h2>
-      <p class="small" style="margin-top:0">Os <b>editores</b> podem registar e alterar tudo. Quem tem <b>só consulta</b> (ex.: a chefia) vê o resumo, o mapa, os gráficos e os relatórios, mas não consegue alterar nada.<br>
+      <p class="small" style="margin-top:0">Os <b>editores</b> podem registar e alterar tudo. Quem tem <b>só consulta</b> (ex.: a chefia) vê o resumo, o mapa, os gráficos e os relatórios, mas não consegue alterar nada.
+      Um <b>colaborador</b> só vê as suas férias e pode fazer pedidos de férias.<br>
       A pessoa precisa também de uma conta no Firebase (Authentication → Usuários → Adicionar usuário).</p>
       <div id="acessosLista"></div>
       <div class="row" style="margin-top:10px">
         <div><label>Email</label><input type="email" id="acEmail" autocomplete="off" placeholder="email@exemplo.pt"></div>
-        <div style="max-width:200px"><label>Acesso</label><select id="acPapel"><option value="consulta">👁️ Só consulta</option><option value="editores">✏️ Editor</option></select></div>
+        <div style="max-width:200px"><label>Acesso</label><select id="acPapel" onchange="$('acColBox').classList.toggle('hide',this.value!=='colaboradores')"><option value="consulta">👁️ Só consulta</option><option value="editores">✏️ Editor</option><option value="colaboradores">🙋 Colaborador (só pede férias)</option></select></div>
+        <div style="min-width:200px" id="acColBox" class="hide"><label>Qual colaborador?</label><select id="acCol"></select></div>
         <div style="flex:0"><button class="btn" onclick="addAcesso()">➕ Adicionar</button></div>
       </div>
     </div>
@@ -564,6 +716,12 @@ const COL_REL   = 'assid_relogio';
 const COL_PLAN  = 'assid_planos';
 const COL_CFG   = 'assid_config';
 const COL_LOG   = 'assid_log';
+const COL_FORM  = 'assid_formacoes';
+const COL_EPI   = 'assid_epis';
+const COL_MAQ   = 'assid_maquinas';
+const COL_USO   = 'assid_maq_uso';
+const COL_AVA   = 'assid_avarias';
+const COL_PED   = 'assid_pedidos_ferias';
 const LS_KEY    = 'mrc_assiduidade_v1';
 const LS_PW     = 'mrc_assiduidade_pw';
 const MIN_BLOQ  = 15;   // minutos sem uso até bloquear
@@ -579,7 +737,7 @@ const motAus = r => AUS[r.motivo] ? r.motivo : 'Outro';
 const nomeTipo = r => r.tipo==='ausencia' ? AUS[motAus(r)].curto : TIPOS[r.tipo]+(r.tipo==='banco'?(r.mov==='-'?' −':' +'):'');
 const tagReg = r => r.tipo==='ausencia' ? `<span class="tag" style="background:${AUS[motAus(r)].cor}">${AUS[motAus(r)].curto}</span>` : `<span class="tag t-${r.tipo}">${nomeTipo(r)}</span>`;
 const valTipo = () => { const v=$('rTipo').value; return v.startsWith('aus:') ? 'ausencia' : v; };
-let colabs = [], regs = [], relogios = [], planos = [], logs = [], cfg = {geral:{}, acessos:null}, papel = 'editor', db = null, editReg = null, editCol = null;
+let colabs = [], regs = [], relogios = [], planos = [], logs = [], formacoes = [], epis = [], maquinas = [], usos = [], avarias = [], pedidos = [], meuColabId = '', cfg = {geral:{}, acessos:null, fechos:{meses:{}}}, papel = 'editor', db = null, editReg = null, editCol = null;
 const $ = id => document.getElementById(id);
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
 const pad = n => String(n).padStart(2,'0');
@@ -595,8 +753,13 @@ const valBanco = r => r.tipo==='banco' ? (r.mov==='-' ? -(r.horas||0) : (r.horas
 
 /* ---------------- ARMAZENAMENTO ---------------- */
 function estado(t){ $('estado').textContent = t; }
-const getArr = col => col===COL_COLAB ? colabs : col===COL_REG ? regs : col===COL_PLAN ? planos : relogios;
-function setArr(col, a){ if(col===COL_COLAB) colabs=a; else if(col===COL_REG) regs=a; else if(col===COL_PLAN) planos=a; else relogios=a; }
+const getArr = col => ({[COL_COLAB]:colabs,[COL_REG]:regs,[COL_PLAN]:planos,[COL_REL]:relogios,[COL_FORM]:formacoes,[COL_EPI]:epis,[COL_MAQ]:maquinas,[COL_USO]:usos,[COL_AVA]:avarias,[COL_PED]:pedidos})[col];
+function setArr(col, a){
+  if(col===COL_COLAB) colabs=a; else if(col===COL_REG) regs=a; else if(col===COL_PLAN) planos=a; else if(col===COL_REL) relogios=a;
+  else if(col===COL_FORM) formacoes=a; else if(col===COL_EPI) epis=a; else if(col===COL_MAQ) maquinas=a; else if(col===COL_USO) usos=a;
+  else if(col===COL_AVA) avarias=a; else if(col===COL_PED) pedidos=a;
+}
+const COLS_EXTRA=['formacoes','epis','maquinas','usos','avarias','pedidos'];
 
 async function iniciar(){
   if (FIREBASE_CONFIG && window.firebase){
@@ -620,55 +783,93 @@ async function iniciar(){
     $('lkBtn').textContent='🔄 Tentar outra vez'; $('lkBtn').onclick=()=>location.reload();
     fbFalhou=true; return;
   }
-  try{ const d = JSON.parse(localStorage.getItem(LS_KEY)||'{}'); colabs=d.colabs||[]; regs=d.regs||[]; relogios=d.relogios||[]; planos=d.planos||[]; logs=d.logs||[]; cfg.geral=d.cfgGeral||{}; }catch(e){}
+  try{ const d = JSON.parse(localStorage.getItem(LS_KEY)||'{}'); colabs=d.colabs||[]; regs=d.regs||[]; relogios=d.relogios||[]; planos=d.planos||[]; logs=d.logs||[]; cfg.geral=d.cfgGeral||{}; cfg.fechos=d.cfgFechos||{meses:{}}; formacoes=d.formacoes||[]; epis=d.epis||[]; maquinas=d.maquinas||[]; usos=d.usos||[]; avarias=d.avarias||[]; pedidos=d.pedidos||[]; }catch(e){}
   estado('💾 Local (este dispositivo)');
   render();
 }
 let fbAuth=null, unsubs=[], fbFalhou=false;
+let unsubDados=[], papelLigado=null;
+const semAcesso = e=>{ console.error(e);
+  if(e.code==='permission-denied'){ aviso('Esta conta não tem acesso aos dados.\nPede ao responsável para te dar acesso.'); fbAuth.signOut(); } };
 function ligarDados(){
   desligarDados();
-  const semAcesso = e=>{ console.error(e);
-    if(e.code==='permission-denied'){ aviso('Esta conta não tem acesso aos dados.\nPede ao responsável para te dar acesso.'); fbAuth.signOut(); } };
-  unsubs=[COL_COLAB,COL_REG,COL_REL,COL_PLAN].map(col=>
-    db.collection(col).onSnapshot(s=>{ setArr(col, s.docs.map(d=>({id:d.id,...d.data()}))); render(); }, semAcesso));
   unsubs.push(db.collection(COL_CFG).doc('acessos').onSnapshot(async d=>{
-    const me=meuEmail();
-    if(!d.exists){ try{ await db.collection(COL_CFG).doc('acessos').set({editores:[me], consulta:[]}); }catch(e){} cfg.acessos=null; definirPapel('editor'); return; }
-    cfg.acessos={editores:[],consulta:[],...d.data()};
-    definirPapel(cfg.acessos.consulta.map(x=>x.toLowerCase()).includes(me) && !cfg.acessos.editores.map(x=>x.toLowerCase()).includes(me) ? 'consulta' : 'editor');
+    const me=meuEmail(); let p='editor';
+    if(!d.exists){ try{ await db.collection(COL_CFG).doc('acessos').set({editores:[me], consulta:[], colaboradores:{}}); }catch(e){} cfg.acessos=null; }
+    else {
+      cfg.acessos={editores:[],consulta:[],colaboradores:{},...d.data()};
+      const low=a=>a.map(x=>String(x).toLowerCase());
+      if(low(cfg.acessos.editores).includes(me)) p='editor';
+      else if(low(cfg.acessos.consulta).includes(me)) p='consulta';
+      else if(cfg.acessos.colaboradores[me]){ p='colaborador'; meuColabId=cfg.acessos.colaboradores[me]; }
+    }
+    definirPapel(p);
+    if(papelLigado!==p) iniciarDados(p);
     renderAcessos();
-  }, e=>console.warn('acessos',e)));
-  unsubs.push(db.collection(COL_CFG).doc('geral').onSnapshot(d=>{ cfg.geral=d.exists?d.data():{}; ferCache={}; render(); }, e=>console.warn('cfg',e)));
-  unsubs.push(db.collection(COL_LOG).orderBy('quando','desc').limit(150).onSnapshot(s=>{ logs=s.docs.map(d=>({id:d.id,...d.data()})); renderLog(); }, e=>console.warn('log',e)));
+  }, e=>{ console.warn('acessos',e); if(papelLigado===null){ definirPapel('editor'); iniciarDados('editor'); } }));
+  unsubs.push(db.collection(COL_CFG).onSnapshot(s=>{ s.docs.forEach(d=>{ if(d.id==='geral') cfg.geral=d.data(); if(d.id==='fechos') cfg.fechos=d.data(); }); ferCache={}; render(); }, e=>console.warn('cfg',e)));
+}
+function iniciarDados(p){
+  unsubDados.forEach(u=>{ try{u();}catch(e){} }); unsubDados=[]; papelLigado=p;
+  const ouvir=(q,col)=>unsubDados.push(q.onSnapshot(s=>{ setArr(col, s.docs.map(d=>({id:d.id,...d.data()}))); render(); }, semAcesso));
+  if(p==='colaborador'){
+    unsubDados.push(db.collection(COL_COLAB).doc(meuColabId).onSnapshot(d=>{ colabs=d.exists?[{id:d.id,...d.data()}]:[]; render(); }, semAcesso));
+    ouvir(db.collection(COL_REG).where('colId','==',meuColabId), COL_REG);
+    ouvir(db.collection(COL_PED).where('colId','==',meuColabId), COL_PED);
+    return;
+  }
+  [COL_COLAB,COL_REG,COL_REL,COL_PLAN,COL_FORM,COL_EPI,COL_MAQ,COL_USO,COL_AVA,COL_PED].forEach(col=>ouvir(db.collection(col),col));
+  unsubDados.push(db.collection(COL_LOG).orderBy('quando','desc').limit(150).onSnapshot(s=>{ logs=s.docs.map(d=>({id:d.id,...d.data()})); renderLog(); }, e=>console.warn('log',e)));
 }
 const meuEmail = () => (fbAuth && fbAuth.currentUser && fbAuth.currentUser.email || 'local').toLowerCase();
 const quemCurto = e => e ? String(e).split('@')[0] : '';
 function definirPapel(p){
-  papel=p; document.body.classList.toggle('ro', p==='consulta');
-  if(fbAuth && fbAuth.currentUser) estado((p==='consulta'?'👁️ ':'☁️ ')+fbAuth.currentUser.email+(p==='consulta'?' (só consulta)':''));
-  const at=document.querySelector('.tabs button.on'); if(p==='consulta' && at && ['folha','reg','rel'].includes(at.dataset.t)) mostrar('dash');
+  papel=p; document.body.classList.toggle('ro', p==='consulta'); document.body.classList.toggle('colab', p==='colaborador');
+  if(fbAuth && fbAuth.currentUser) estado(({consulta:'👁️ ',colaborador:'🙋 '}[p]||'☁️ ')+fbAuth.currentUser.email+(p==='consulta'?' (só consulta)':''));
+  const at=document.querySelector('.tabs button.on');
+  if(p==='colaborador') mostrar('eu');
+  else if(at && at.dataset.t==='eu') mostrar('dash');
+  else if(p==='consulta' && at && ['folha','reg','rel'].includes(at.dataset.t)) mostrar('dash');
 }
 function desligarDados(){
   unsubs.forEach(u=>{ try{u();}catch(e){} }); unsubs=[];
-  colabs=[]; regs=[]; relogios=[]; planos=[]; logs=[]; cfg={geral:{},acessos:null}; definirPapel('editor'); render();
+  unsubDados.forEach(u=>{ try{u();}catch(e){} }); unsubDados=[]; papelLigado=null; meuColabId='';
+  colabs=[]; regs=[]; relogios=[]; planos=[]; logs=[]; formacoes=[]; epis=[]; maquinas=[]; usos=[]; avarias=[]; pedidos=[];
+  cfg={geral:{},acessos:null,fechos:{meses:{}}}; definirPapel('editor'); render();
 }
-function gravarLocal(){ try{ localStorage.setItem(LS_KEY, JSON.stringify({colabs,regs,relogios,planos,logs:logs.slice(0,200),cfgGeral:cfg.geral})); }catch(e){} }
+function gravarLocal(){ try{ localStorage.setItem(LS_KEY, JSON.stringify({colabs,regs,relogios,planos,logs:logs.slice(0,200),cfgGeral:cfg.geral,cfgFechos:cfg.fechos,formacoes,epis,maquinas,usos,avarias,pedidos})); }catch(e){} }
 
-const COL_NOME={[COL_REG]:'registo',[COL_PLAN]:'pedido',[COL_COLAB]:'colaborador'};
+const COL_NOME={[COL_REG]:'registo',[COL_PLAN]:'pedido de trabalho',[COL_COLAB]:'colaborador',[COL_FORM]:'formação',[COL_EPI]:'EPI',[COL_MAQ]:'máquina',[COL_USO]:'utilização de máquina',[COL_AVA]:'avaria',[COL_PED]:'pedido de férias'};
 function descObj(col,o){
   if(col===COL_REG) return descReg(o).replace(/\n/g,' · ');
   if(col===COL_PLAN) return 'Pedido de '+diaLongo(o.data);
   if(col===COL_COLAB) return 'Colaborador '+o.num+' – '+o.nome;
+  if(col===COL_FORM) return nomeCol(o.colId).nome+' – '+o.nome+(o.validade?' (válida até '+dataPT(o.validade)+')':'');
+  if(col===COL_EPI) return nomeCol(o.colId).nome+' – '+(o.qtd>1?o.qtd+'× ':'')+o.item+(o.tamanho?' ('+o.tamanho+')':'');
+  if(col===COL_MAQ) return (o.codigo?o.codigo+' – ':'')+o.nome;
+  if(col===COL_USO) return nomeMaq(o.maqId)+' · '+nomeCol(o.colId).nome+' · '+dataPT(o.data)+' · '+hm(o.horas);
+  if(col===COL_AVA) return nomeMaq(o.maqId)+' · '+dataPT(o.data)+' · '+(o.estado==='resolvida'?'resolvida':'aberta')+' · '+o.descricao;
+  if(col===COL_PED) return nomeCol(o.colId).nome+' · férias '+dataPT(o.data)+' a '+dataPT(o.fim||o.data)+' · '+o.estado;
   return '';
 }
 async function registarLog(acao, col, o){
-  if(!COL_NOME[col]) return;
+  if(!COL_NOME[col] || papel==='colaborador') return;
   const e={id:uid(), quando:new Date().toISOString(), quem:meuEmail(), acao, tipo:COL_NOME[col], txt:descObj(col,o)};
   if(db){ try{ const {id,...d}=e; await db.collection(COL_LOG).doc(id).set(d); }catch(x){ console.warn(x); } }
   else { logs.unshift(e); logs=logs.slice(0,200); }
 }
+const mesesDe = r => r ? [r.data&&r.data.slice(0,7), r.fim&&r.fim.slice(0,7)].filter(Boolean) : [];
+const mesFechado = m => cfg.fechos && cfg.fechos.meses && cfg.fechos.meses[m];
+function bloqueioFecho(col, novo, antigo){
+  if(col!==COL_REG) return '';
+  const m=[...mesesDe(novo),...mesesDe(antigo)].find(mesFechado);
+  return m ? `O mês de ${nomeMes(m)} está fechado 🔒.\nPara alterar, um editor tem de o reabrir no Resumo.` : '';
+}
+const nomeMes = m => new Date(m+'-15T12:00').toLocaleDateString('pt-PT',{month:'long',year:'numeric'});
 async function salvar(col, obj, opt={}){
   if(papel==='consulta'){ aviso('Tens acesso só de consulta – não podes alterar dados.'); throw new Error('ro'); }
+  if(papel==='colaborador' && col!==COL_PED){ aviso('Só podes fazer pedidos de férias.'); throw new Error('ro'); }
+  { const b=bloqueioFecho(col,obj,getArr(col).find(x=>x.id===obj.id)); if(b && !opt.semLog){ aviso(b); throw new Error('fechado'); } }
   const existia = getArr(col).find(x=>x.id===obj.id);
   if(COL_NOME[col] && !opt.semLog){
     const agora=new Date().toISOString(), me=meuEmail();
@@ -684,7 +885,9 @@ async function salvar(col, obj, opt={}){
 }
 async function apagar(col, id){
   if(papel==='consulta'){ aviso('Tens acesso só de consulta – não podes apagar dados.'); throw new Error('ro'); }
-  const o=getArr(col).find(x=>x.id===id); if(o) registarLog('apagou', col, o);
+  const o=getArr(col).find(x=>x.id===id);
+  if(papel==='colaborador' && col!==COL_PED){ aviso('Só podes cancelar pedidos de férias.'); throw new Error('ro'); }
+  { const b=bloqueioFecho(col,null,o); if(b){ aviso(b); throw new Error('fechado'); } } if(o) registarLog('apagou', col, o);
   if(db){ await db.collection(col).doc(id).delete(); }
   else{ setArr(col, getArr(col).filter(x=>x.id!==id)); gravarLocal(); render(); }
 }
@@ -999,6 +1202,7 @@ function renderResumo(){
   $('tituloResumo').textContent = 'Resumo por colaborador – '+p;
   renderGraficos(L, p);
   renderAvisos();
+  renderFecho();
   const fc=$('fCol').value;
   $('fichaCol').classList.toggle('hide',!fc); $('cardResumo').classList.toggle('hide',!!fc);
   if(fc){
@@ -1042,13 +1246,23 @@ const minsEntre = (a,b) => { if(!a||!b) return 0; const [h1,m1]=a.split(':').map
 const hDe = (a,b) => Math.round(minsEntre(a,b)/60*100)/100;
 function proxSabado(){ const d=new Date(); d.setDate(d.getDate()+((6-d.getDay()+7)%7||7)); $('plData').value=dLocal(d); rotuloPl(); }
 function rotuloPl(){ const d=$('plData').value; $('plDiaSem').textContent = d ? '('+diaSem(d)+')' : ''; }
+const sabadosAno = (colId, ano) => regs.filter(r=>r.colId===colId && r.tipo==='sabado' && r.data.slice(0,4)===ano).reduce((s,r)=>s+(r.dias||1),0);
+const ultimoSabado = colId => regs.filter(r=>r.colId===colId && r.tipo==='sabado').map(r=>r.data).sort().pop()||'';
+function sugerirSabados(){
+  const d=$('plData').value||hoje(), n=Math.max(1,parseInt($('plSug').value)||5), ano=d.slice(0,4);
+  const cand=ordCol().filter(c=>c.ativo!==false && !ausente(c.id,d))
+    .sort((a,b)=>sabadosAno(a.id,ano)-sabadosAno(b.id,ano) || ultimoSabado(a.id).localeCompare(ultimoSabado(b.id)));
+  const esc=new Set(cand.slice(0,n).map(c=>c.id));
+  document.querySelectorAll('#plPick input').forEach(i=>i.checked=esc.has(i.value));
+}
 function marcarTodos(v){ document.querySelectorAll('#plPick input').forEach(i=>i.checked=v); }
 function renderPick(sel){
   const ativos=ordCol().filter(c=>c.ativo!==false);
   const extra = sel ? Object.keys(sel).filter(id=>!ativos.some(c=>c.id===id)).map(nomeCol) : [];
   const d=$('plData').value;
   $("plPick").innerHTML = ativos.length||extra.length ? [...ativos,...extra].map(c=>{ const au=d&&ausente(c.id,d);
-    return `<label><input type="checkbox" value="${c.id}" ${sel&&sel[c.id]?'checked':''}> <span>${esc(c.num)} – ${esc(c.nome)}${au?`<br><span class="small" style="color:var(--aus);font-weight:600">${au.tipo==='ausencia'?AUS[motAus(au)].ic+' '+esc(AUS[motAus(au)].curto):'❌ Falta'} nesse dia</span>`:''}</span></label>`; }).join('')
+    const ns=sabadosAno(c.id, (d||hoje()).slice(0,4));
+    return `<label><input type="checkbox" value="${c.id}" ${sel&&sel[c.id]?'checked':''}> <span>${esc(c.num)} – ${esc(c.nome)} <span class="small" title="Sábados trabalhados em ${(d||hoje()).slice(0,4)}">· ${ns} sáb.</span>${au?`<br><span class="small" style="color:var(--aus);font-weight:600">${au.tipo==='ausencia'?AUS[motAus(au)].ic+' '+esc(AUS[motAus(au)].curto):'❌ Falta'} nesse dia</span>`:''}</span></label>`; }).join('')
     : '<span class="small">Adiciona primeiro colaboradores.</span>';
 }
 function toggleFormPlano(){ $('plForm').classList.contains('hide') ? abrirFormPlano(null) : fecharFormPlano(); }
@@ -1261,7 +1475,7 @@ async function setMotivo(pid, cid, txt){
 }
 
 function renderLog(){
-  const ic={criou:'➕',alterou:'✏️',apagou:'🗑️'};
+  const ic={criou:'➕',alterou:'✏️',apagou:'🗑️',fechou:'🔒',reabriu:'🔓',aprovou:'✅',recusou:'❌'};
   $('tbLog').innerHTML = logs.length ? logs.slice(0,150).map(l=>`<tr><td style="white-space:nowrap">${dataPT(l.quando.slice(0,10))} ${l.quando.slice(11,16)}</td>
     <td>${esc(quemCurto(l.quem))}</td><td>${ic[l.acao]||''} ${esc(l.acao)} ${esc(l.tipo)}: <span class="small">${esc(l.txt)}</span></td></tr>`).join('')
     : '<tr><td colspan="3" class="vazio">Ainda sem alterações registadas.</td></tr>';
@@ -1270,11 +1484,12 @@ function renderLog(){
 /* ---------------- ACESSOS / CONFIG ---------------- */
 function renderAcessos(){
   $('acessosCard').classList.toggle('hide', !db);
-  const a=cfg.acessos||{editores:[meuEmail()],consulta:[]}, me=meuEmail();
+  const a={editores:[meuEmail()],consulta:[],colaboradores:{},...(cfg.acessos||{})}, me=meuEmail();
+  { const v=$('acCol').value; $('acCol').innerHTML=opcoesCol(ordCol().filter(c=>c.ativo!==false)); if(v) $('acCol').value=v; }
   const linha=(e,pap)=>`<div class="lemb"><div class="nm">${esc(e)}${e.toLowerCase()===me?' <span class="small">(tu)</span>':''}</div>
-    <span class="chip ${pap==='editores'?'sim':''}">${pap==='editores'?'✏️ Editor':'👁️ Só consulta'}</span>
+    <span class="chip ${pap==='editores'?'sim':pap==='colaboradores'?'pend':''}">${pap==='editores'?'✏️ Editor':pap==='colaboradores'?'🙋 '+esc(nomeCol(a.colaboradores[e]).nome):'👁️ Só consulta'}</span>
     ${e.toLowerCase()===me?'':`<button class="del" title="Retirar acesso" onclick="remAcesso('${esc(e)}','${pap}')">✖</button>`}</div>`;
-  $('acessosLista').innerHTML = a.editores.map(e=>linha(e,'editores')).join('')+a.consulta.map(e=>linha(e,'consulta')).join('');
+  $('acessosLista').innerHTML = a.editores.map(e=>linha(e,'editores')).join('')+a.consulta.map(e=>linha(e,'consulta')).join('')+Object.keys(a.colaboradores||{}).map(e=>linha(e,'colaboradores')).join('');
   const g=cfg.geral||{};
   if(document.activeElement!==$('fmData') && document.activeElement!==$('fmNome')){
     $('fmData').value = g.municipal ? new Date().getFullYear()+'-'+g.municipal : ''; $('fmNome').value=g.municipalNome||''; $('fmCarn').checked=!!g.carnaval; }
@@ -1288,13 +1503,17 @@ async function gravarAcessos(a){
 async function addAcesso(){
   const e=$('acEmail').value.trim().toLowerCase(), p=$('acPapel').value;
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) return aviso('Escreve um email válido.');
-  const a=cfg.acessos||{editores:[meuEmail()],consulta:[]};
-  const n={editores:a.editores.filter(x=>x!==e), consulta:a.consulta.filter(x=>x!==e)}; n[p].push(e);
+  const a={editores:[meuEmail()],consulta:[],colaboradores:{},...(cfg.acessos||{})};
+  const n={editores:a.editores.filter(x=>x!==e), consulta:a.consulta.filter(x=>x!==e), colaboradores:{...(a.colaboradores||{})}};
+  delete n.colaboradores[e];
+  if(p==='colaboradores'){ const c=$('acCol').value; if(!c) return aviso('Escolhe o colaborador.'); n.colaboradores[e]=c; } else n[p].push(e);
   await gravarAcessos(n); $('acEmail').value='';
 }
 async function remAcesso(e,p){
   if(!await perguntar('Retirar o acesso a '+e+'?','Retirar','Não')) return;
-  const a=cfg.acessos; await gravarAcessos({...a,[p]:a[p].filter(x=>x!==e)});
+  const a={colaboradores:{},...cfg.acessos};
+  if(p==='colaboradores'){ const c={...a.colaboradores}; delete c[e]; await gravarAcessos({...a,colaboradores:c}); }
+  else await gravarAcessos({...a,[p]:a[p].filter(x=>x!==e)});
 }
 async function guardarFeriados(){
   const d=$('fmData').value;
@@ -1302,6 +1521,250 @@ async function guardarFeriados(){
   if(db){ try{ await db.collection(COL_CFG).doc('geral').set(g); }catch(e){ return aviso('Não foi possível guardar.\n'+(e.code||e.message)); } }
   else { cfg.geral=g; gravarLocal(); }
   ferCache={}; render(); aviso('✅ Feriados guardados.');
+}
+
+/* ---------------- FORMAÇÕES ---------------- */
+const FORM_SUG=['Carta de empilhador','Formação em Segurança e Saúde no Trabalho','Primeiros socorros','Medicina do trabalho (ficha de aptidão)','Trabalhos em altura','Plataformas elevatórias (PEMP)','Ponte rolante','Combate a incêndios','Movimentação manual de cargas','Condução de máquinas'];
+const EPI_SUG=['Botas de segurança','Luvas de proteção','Colete refletor','Óculos de proteção','Capacete','Protetores auriculares','Fato de trabalho','Casaco de inverno','Máscara de proteção','Arnês de segurança'];
+const MAQ_SUG=['Empilhador','Retroescavadora','Escavadora','Pá carregadora','Dumper','Plataforma elevatória','Compressor','Gerador','Camião','Outro'];
+const diasAte = d => Math.round((new Date(d+'T12:00')-new Date(hoje()+'T12:00'))/864e5);
+function estadoVal(v){
+  if(!v) return {cls:'',t:'Sem validade',ord:9e9};
+  const n=diasAte(v);
+  if(n<0) return {cls:'nao',t:'❌ Caducada há '+fmtD(-n),ord:n,alerta:1};
+  if(n<=30) return {cls:'pend',t:'⚠️ Caduca em '+fmtD(n),ord:n,alerta:1};
+  return {cls:'sim',t:'✅ Válida',ord:n};
+}
+let editFo=null, editEp=null, editMq=null;
+function limparFo(){ editFo=null; ['foNome','foEm','foVal','foObs'].forEach(i=>$(i).value=''); $('foCanc').classList.add('hide'); $('foTit').textContent='🎓 Registar formação / carta / exame'; }
+async function guardarFo(){
+  const colId=$('foCol').value, nome=$('foNome').value.trim();
+  if(!colId||!nome) return aviso('Escolhe o colaborador e escreve a formação.');
+  const ant=editFo?formacoes.find(x=>x.id===editFo):{id:uid()};
+  await salvar(COL_FORM,{...ant,colId,nome,emitida:$('foEm').value,validade:$('foVal').value,obs:$('foObs').value.trim()}); limparFo();
+}
+function editarFo(id){ const f=formacoes.find(x=>x.id===id); editFo=id; $('foCol').value=f.colId; $('foNome').value=f.nome; $('foEm').value=f.emitida||''; $('foVal').value=f.validade||''; $('foObs').value=f.obs||'';
+  $('foCanc').classList.remove('hide'); $('foTit').textContent='🎓 Editar formação'; window.scrollTo(0,0); }
+async function apagarFo(id){ const f=formacoes.find(x=>x.id===id); if(await perguntar('Apagar "'+f.nome+'" de '+nomeCol(f.colId).nome+'?','🗑️ Apagar','Não')) await apagar(COL_FORM,id); }
+/* ---------------- EPIs ---------------- */
+function maisMeses(d,m){ const x=new Date(d+'T12:00'); x.setMonth(x.getMonth()+(+m)); return dLocal(x); }
+const proxTroca = e => e.meses>0 && e.data ? maisMeses(e.data,e.meses) : '';
+function limparEp(){ editEp=null; ['epItem','epTam','epMeses','epObs'].forEach(i=>$(i).value=''); $('epQtd').value=1; $('epData').value=hoje(); $('epCanc').classList.add('hide'); $('epTit').textContent='🦺 Registar entrega de EPI'; }
+async function guardarEp(){
+  const colId=$('epCol').value, item=$('epItem').value.trim();
+  if(!colId||!item) return aviso('Escolhe o colaborador e o equipamento.');
+  const ant=editEp?epis.find(x=>x.id===editEp):{id:uid()};
+  await salvar(COL_EPI,{...ant,colId,item,tamanho:$('epTam').value.trim(),qtd:parseInt($('epQtd').value)||1,data:$('epData').value||hoje(),meses:parseInt($('epMeses').value)||0,obs:$('epObs').value.trim()}); limparEp();
+}
+function editarEp(id){ const e=epis.find(x=>x.id===id); editEp=id; $('epCol').value=e.colId; $('epItem').value=e.item; $('epTam').value=e.tamanho||''; $('epQtd').value=e.qtd||1; $('epData').value=e.data||''; $('epMeses').value=e.meses||''; $('epObs').value=e.obs||'';
+  $('epCanc').classList.remove('hide'); $('epTit').textContent='🦺 Editar entrega de EPI'; window.scrollTo(0,0); }
+async function apagarEp(id){ const e=epis.find(x=>x.id===id); if(await perguntar('Apagar a entrega de "'+e.item+'" a '+nomeCol(e.colId).nome+'?','🗑️ Apagar','Não')) await apagar(COL_EPI,id); }
+function fichaEPI(){
+  const colId=$('epFiltro').value; if(!colId) return aviso('Escolhe primeiro o colaborador no filtro ao lado.');
+  const c=nomeCol(colId), l=epis.filter(e=>e.colId===colId).sort((a,b)=>(a.data||'').localeCompare(b.data||''));
+  if(!l.length) return aviso('Este colaborador ainda não tem EPIs registados.');
+  const html=`<!doctype html><html lang="pt-PT"><head><meta charset="utf-8"><title>Ficha EPI – ${esc(c.nome)}</title><style>
+   @page{size:A4;margin:16mm}body{font-family:system-ui,Segoe UI,Roboto,sans-serif;color:#1d2433;font-size:12px}
+   header{display:flex;align-items:center;gap:16px;border-bottom:3px solid #b82d36;padding-bottom:10px;margin-bottom:16px}header img{height:46px}h1{font-size:17px;margin:0}
+   table{width:100%;border-collapse:collapse;margin:12px 0}th,td{border:1px solid #ccc;padding:6px 8px;text-align:left}th{background:#f3f3f3;font-size:11px}
+   .ass{display:flex;gap:40px;margin-top:50px}.ass div{flex:1;border-top:1px solid #777;padding-top:4px;font-size:11px;color:#555}p{line-height:1.5}</style></head><body>
+   <header><img src="${LOGO}"><div><h1>Ficha de entrega de Equipamentos de Proteção Individual</h1><div style="color:#6b7385">Parque de Máquinas</div></div></header>
+   <p><b>Colaborador:</b> ${esc(c.num)} – ${esc(c.nome)}${c.funcao?' &nbsp; · &nbsp; <b>Função:</b> '+esc(c.funcao):''}</p>
+   <table><thead><tr><th>Data de entrega</th><th>Equipamento</th><th>Tamanho</th><th>Qtd.</th><th>Próxima troca</th><th>Observações</th></tr></thead><tbody>
+   ${l.map(e=>`<tr><td>${dataPT(e.data)}</td><td>${esc(e.item)}</td><td>${esc(e.tamanho||'')}</td><td>${e.qtd||1}</td><td>${proxTroca(e)?dataPT(proxTroca(e)):''}</td><td>${esc(e.obs||'')}</td></tr>`).join('')}
+   </tbody></table>
+   <p>Declaro que recebi os equipamentos de proteção individual acima indicados, em bom estado, que fui informado(a) sobre a sua correta utilização e conservação, e que me comprometo a utilizá-los sempre que necessário e a comunicar qualquer dano ou desgaste.</p>
+   <div class="ass"><div>Assinatura do colaborador</div><div>Assinatura do responsável</div><div>Data</div></div>
+   <script>setTimeout(()=>print(),400)<\/script></body></html>`;
+  const w=window.open('','_blank'); if(!w) return aviso('O browser bloqueou a janela.\nPermite janelas pop-up para esta página.');
+  w.document.open(); w.document.write(html); w.document.close();
+}
+function renderPes(){
+  const fF=$('foFiltro').value, soA=$('foSoAlerta').checked;
+  const lf=formacoes.filter(f=>(!fF||f.colId===fF)).map(f=>({f,e:estadoVal(f.validade)})).filter(x=>!soA||x.e.alerta).sort((a,b)=>a.e.ord-b.e.ord);
+  $('tbFo').innerHTML = lf.length ? lf.map(({f,e})=>`<tr><td style="white-space:nowrap">${esc(nomeCol(f.colId).nome)}</td><td>${esc(f.nome)}</td>
+    <td style="white-space:nowrap">${dataPT(f.emitida)}</td><td style="white-space:nowrap">${dataPT(f.validade)}</td><td><span class="chip ${e.cls}">${e.t}</span></td><td>${esc(f.obs||'')}</td>
+    <td style="white-space:nowrap"><button class="edit" onclick="editarFo('${f.id}')">✏️</button><button class="del" onclick="apagarFo('${f.id}')">🗑️</button></td></tr>`).join('')
+    : '<tr><td colspan="7" class="vazio">Sem formações registadas.</td></tr>';
+  const eF=$('epFiltro').value;
+  const le=epis.filter(e=>!eF||e.colId===eF).sort((a,b)=>(b.data||'').localeCompare(a.data||''));
+  $('tbEp').innerHTML = le.length ? le.map(e=>{ const pt=proxTroca(e), es=pt?estadoVal(pt):null;
+    return `<tr><td style="white-space:nowrap">${esc(nomeCol(e.colId).nome)}</td><td>${esc(e.item)}</td><td>${esc(e.tamanho||'')}</td><td>${e.qtd||1}</td>
+    <td style="white-space:nowrap">${dataPT(e.data)}</td><td style="white-space:nowrap">${pt?`${dataPT(pt)} ${es.alerta?`<span class="chip ${es.cls}">${diasAte(pt)<0?'em atraso':'em breve'}</span>`:''}`:'–'}</td><td>${esc(e.obs||'')}</td>
+    <td style="white-space:nowrap"><button class="edit" onclick="editarEp('${e.id}')">✏️</button><button class="del" onclick="apagarEp('${e.id}')">🗑️</button></td></tr>`; }).join('')
+    : '<tr><td colspan="8" class="vazio">Sem EPIs registados.</td></tr>';
+  const n=formacoes.filter(f=>estadoVal(f.validade).alerta).length + epis.filter(e=>proxTroca(e)&&diasAte(proxTroca(e))<0).length;
+  $('nPes').textContent=n; $('nPes').classList.toggle('hide',!n);
+}
+/* ---------------- MÁQUINAS ---------------- */
+const nomeMaq = id => { const m=maquinas.find(x=>x.id===id); return m ? (m.codigo?m.codigo+' – ':'')+m.nome : '(máquina removida)'; };
+const ordMaq = () => [...maquinas].sort((a,b)=>String(a.codigo||a.nome).localeCompare(String(b.codigo||b.nome),'pt',{numeric:true}));
+function limparMq(){ editMq=null; ['mqCod','mqNome','mqTipo'].forEach(i=>$(i).value=''); $('mqCanc').classList.add('hide'); }
+async function guardarMq(){
+  const nome=$('mqNome').value.trim(); if(!nome) return aviso('Escreve o nome da máquina.');
+  const ant=editMq?maquinas.find(x=>x.id===editMq):{id:uid(),ativa:true};
+  await salvar(COL_MAQ,{...ant,codigo:$('mqCod').value.trim(),nome,tipo:$('mqTipo').value.trim()}); limparMq();
+}
+function editarMq(id){ const m=maquinas.find(x=>x.id===id); editMq=id; $('mqCod').value=m.codigo||''; $('mqNome').value=m.nome; $('mqTipo').value=m.tipo||''; $('mqCanc').classList.remove('hide'); $('mqNome').focus(); }
+async function toggleMq(id){ const m=maquinas.find(x=>x.id===id); await salvar(COL_MAQ,{...m,ativa:m.ativa===false}); }
+async function apagarMq(id){
+  const n=usos.filter(u=>u.maqId===id).length+avarias.filter(a=>a.maqId===id).length;
+  if(n) return aviso('Esta máquina tem '+n+' registos de utilização/avarias. Em vez de apagar, marca-a como inativa (⏸️).');
+  if(await perguntar('Apagar a máquina '+nomeMaq(id)+'?','🗑️ Apagar','Não')) await apagar(COL_MAQ,id);
+}
+async function guardarUs(){
+  const maqId=$('usMaq').value, colId=$('usCol').value, data=$('usData').value, horas=parseFloat($('usHoras').value)||0;
+  if(!maqId||!colId||!data) return aviso('Escolhe a máquina, o operador e a data.');
+  if(!horas) return aviso('Indica as horas (ou o início e o fim).');
+  await salvar(COL_USO,{id:uid(),maqId,colId,data,hIni:$('usIni').value,hFim:$('usFim').value,horas,obs:$('usObs').value.trim()});
+  ['usIni','usFim','usHoras','usObs'].forEach(i=>$(i).value='');
+}
+async function apagarUs(id){ if(await perguntar('Apagar este registo de utilização?','🗑️ Apagar','Não')) await apagar(COL_USO,id); }
+async function guardarAv(){
+  const maqId=$('avMaq').value, desc=$('avDesc').value.trim();
+  if(!maqId||!desc) return aviso('Escolhe a máquina e descreve a avaria.');
+  await salvar(COL_AVA,{id:uid(),maqId,colId:$('avCol').value,data:$('avData').value||hoje(),descricao:desc,estado:'aberta'});
+  $('avDesc').value='';
+}
+function resolverAv(id){
+  const a=avarias.find(x=>x.id===id);
+  abrirPainel('✔️ Resolver avaria',`<p style="margin-top:0"><b>${esc(nomeMaq(a.maqId))}</b><br><span class="small">${dataPT(a.data)} · ${esc(a.descricao)}</span></p>
+    <label>O que foi feito</label><input id="avSol" placeholder="ex.: substituído tubo hidráulico">
+    <div class="row" style="margin-top:10px"><div style="max-width:180px"><label>Data</label><input type="date" id="avSolData" value="${hoje()}"></div></div>
+    <div class="acoes" style="justify-content:flex-end"><button class="btn" onclick="confirmarResolver('${id}')">✔️ Marcar como resolvida</button></div>`);
+}
+async function confirmarResolver(id){
+  const a=avarias.find(x=>x.id===id);
+  await salvar(COL_AVA,{...a,estado:'resolvida',solucao:$('avSol').value.trim(),resolvidaEm:$('avSolData').value||hoje()}); fecharPainel();
+}
+async function apagarAv(id){ if(await perguntar('Apagar este registo de avaria?','🗑️ Apagar','Não')) await apagar(COL_AVA,id); }
+function cartaoAv(a){
+  const dd=a.estado==='resolvida'?0:-diasAte(a.data);
+  return `<div class="lemb"><div class="nm"><b>${esc(nomeMaq(a.maqId))}</b> · <span class="small">${dataPT(a.data)}${a.colId?' · reportada por '+esc(nomeCol(a.colId).nome):''}</span><br>${esc(a.descricao)}
+    ${a.estado==='resolvida'?`<div class="small" style="color:var(--extra)">✔️ Resolvida a ${dataPT(a.resolvidaEm)}${a.solucao?': '+esc(a.solucao):''}</div>`:`<div class="small" style="color:var(--falta)">Em aberto há ${fmtD(dd)}</div>`}</div>
+    ${a.estado!=='resolvida'?`<button class="btn w" onclick="resolverAv('${a.id}')">✔️ Resolver</button>`:''}<button class="del" onclick="apagarAv('${a.id}')">🗑️</button></div>`;
+}
+function renderMaq(){
+  const m=$('usMes').value, uM=usos.filter(u=>u.data.slice(0,7)===m);
+  $('usTit').textContent='📊 Utilização – '+(m?nomeMes(m):'');
+  const soma=(arr,key)=>{ const o={}; arr.forEach(u=>o[u[key]]=(o[u[key]]||0)+(u.horas||0)); return Object.entries(o).sort((a,b)=>b[1]-a[1]); };
+  hBars('usPorMaq', soma(uM,'maqId').map(([id,v])=>({id:'',n:nomeMaq(id),num:'',v})), 'var(--sab)', 'Sem utilizações neste mês.');
+  hBars('usPorCol', soma(uM,'colId').map(([id,v])=>({id,n:nomeCol(id).nome,num:nomeCol(id).num,v})), 'var(--extra)', 'Sem utilizações neste mês.');
+  $('tbUs').innerHTML = uM.length ? uM.sort((a,b)=>b.data.localeCompare(a.data)).map(u=>`<tr><td style="white-space:nowrap">${dataPT(u.data)}</td><td>${esc(nomeMaq(u.maqId))}</td><td>${esc(nomeCol(u.colId).nome)}</td>
+    <td style="white-space:nowrap">${u.hIni&&u.hFim?esc(u.hIni)+'–'+esc(u.hFim):''}</td><td class="n">${hm(u.horas)}</td><td>${esc(u.obs||'')}</td><td><button class="del" onclick="apagarUs('${u.id}')">🗑️</button></td></tr>`).join('')
+    : '<tr><td colspan="7" class="vazio">Sem utilizações neste mês.</td></tr>';
+  const ab=avarias.filter(a=>a.estado!=='resolvida').sort((a,b)=>a.data.localeCompare(b.data)), rs=avarias.filter(a=>a.estado==='resolvida').sort((a,b)=>(b.resolvidaEm||'').localeCompare(a.resolvidaEm||''));
+  $('avAbertas').innerHTML = ab.length ? ab.map(cartaoAv).join('') : '<div class="vazio">Sem avarias em aberto. 👍</div>';
+  $('avResolvidas').innerHTML = rs.length ? rs.slice(0,30).map(cartaoAv).join('') : '<div class="small">Nenhuma.</div>';
+  $('tbMq').innerHTML = maquinas.length ? ordMaq().map(q=>{ const h=uM.filter(u=>u.maqId===q.id).reduce((s,u)=>s+(u.horas||0),0), na=ab.filter(a=>a.maqId===q.id).length;
+    return `<tr><td>${esc(q.codigo||'')}</td><td>${esc(q.nome)}</td><td>${esc(q.tipo||'')}</td><td class="n">${h?hm(h):'–'}</td><td>${na?`<span class="chip nao">🔧 ${na} em aberto</span>`:'<span class="small">–</span>'}</td>
+    <td>${q.ativa!==false?'Ativa':'<span class="small">Inativa</span>'}</td>
+    <td style="white-space:nowrap"><button class="edit" onclick="editarMq('${q.id}')">✏️</button><button class="edit" onclick="toggleMq('${q.id}')">${q.ativa!==false?'⏸️':'▶️'}</button><button class="del" onclick="apagarMq('${q.id}')">🗑️</button></td></tr>`; }).join('')
+    : '<tr><td colspan="7" class="vazio">Ainda não há máquinas. Acrescenta-as em cima.</td></tr>';
+  $('nMaq').textContent=ab.length; $('nMaq').classList.toggle('hide',!ab.length);
+}
+
+/* ---------------- PEDIDOS DE FÉRIAS ---------------- */
+const EST_PED={pendente:['pend','⏳ À espera de resposta'],aprovado:['sim','✅ Aprovado'],recusado:['nao','❌ Recusado']};
+const pedDias = x => x.dias!=null ? x.dias : (diasUteis(x.data,x.fim||x.data)||0);
+function sobreposicoes(x){
+  const out=new Set(), d=new Date(x.data+'T12:00'), f=new Date((x.fim||x.data)+'T12:00');
+  while(d<=f){ const ds=dLocal(d);
+    ordCol().forEach(c=>{ if(c.id!==x.colId && c.ativo!==false && (ausente(c.id,ds) || pedidos.some(p=>p.id!==x.id&&p.colId===c.id&&p.estado==='pendente'&&p.data<=ds&&ds<=(p.fim||p.data)))) out.add(c.nome); });
+    d.setDate(d.getDate()+1); }
+  return [...out];
+}
+function cartaoPedido(x, comBotoes){
+  const c=nomeCol(x.colId), ano=x.data.slice(0,4), dir=direitoFerias(x.colId), goz=feriasGozadas(x.colId,ano), n=pedDias(x), sob=sobreposicoes(x), e=EST_PED[x.estado]||['',''];
+  return `<div class="lemb" style="align-items:flex-start"><div class="nm"><b>${esc(c.num)} – ${esc(c.nome)}</b> · ${dataPT(x.data)}${x.fim&&x.fim!==x.data?' a '+dataPT(x.fim):''} · <b>${fmtD(n)} úteis</b>
+    ${x.obs?`<div class="small">💬 ${esc(x.obs)}</div>`:''}
+    ${x.estado==='pendente'?`<div class="small">Férias ${ano}: já tem ${fmt(goz)} de ${fmt(dir)} · com este pedido fica com <b class="${goz+n>dir?'neg':''}">${fmt(dir-goz-n)} por gozar</b></div>
+      ${sob.length?`<div class="small" style="color:var(--aus);font-weight:600">⚠️ Nesses dias também estão fora: ${esc(sob.join(', '))}</div>`:'<div class="small" style="color:var(--extra)">Ninguém mais fora nesses dias.</div>'}`
+    :`<div class="small"><span class="chip ${e[0]}">${e[1]}</span> ${x.decididoPor?'por '+esc(quemCurto(x.decididoPor))+' a '+dataPT((x.decididoEm||'').slice(0,10)):''}${x.motivoRecusa?' · '+esc(x.motivoRecusa):''}</div>`}</div>
+    ${comBotoes?`<div style="display:flex;gap:6px;flex-wrap:wrap" class="w"><button class="btn" style="background:var(--extra)" onclick="aprovarPedido('${x.id}')">✅ Aprovar</button><button class="btn sec" onclick="recusarPedido('${x.id}')">❌ Recusar</button></div>`:''}</div>`;
+}
+function renderPedidosEditor(){
+  const pend=pedidos.filter(x=>x.estado==='pendente').sort((a,b)=>a.data.localeCompare(b.data));
+  const feitos=pedidos.filter(x=>x.estado!=='pendente').sort((a,b)=>(b.decididoEm||'').localeCompare(a.decididoEm||''));
+  $('pedCard').classList.toggle('hide', !pedidos.length || papel==='colaborador');
+  $('pedLista').innerHTML = pend.length ? pend.map(x=>cartaoPedido(x,true)).join('') : '<div class="small">Não há pedidos à espera. 👍</div>';
+  $('pedFeitos').innerHTML = feitos.length ? feitos.slice(0,20).map(x=>cartaoPedido(x,false)).join('') : '<div class="small">Nenhum.</div>';
+}
+async function aprovarPedido(id){
+  const x=pedidos.find(p=>p.id===id); if(!x) return;
+  const n=pedDias(x), c=nomeCol(x.colId);
+  if(!await perguntar(`Aprovar as férias de ${c.nome}?\n${dataPT(x.data)}${x.fim&&x.fim!==x.data?' a '+dataPT(x.fim):''} · ${fmtD(n)} úteis\n\nAs férias ficam registadas no mapa.`,'✅ Aprovar','Não')) return;
+  const r={id:uid(), colId:x.colId, tipo:'ausencia', motivo:'Férias', data:x.data, fim:x.fim&&x.fim!==x.data?x.fim:'', dias:n, horas:0, mov:'', hIni:'', hFim:'', obs:'🙋 Pedido de férias'+(x.obs?' – '+x.obs:''), pedido:x.id, criado:new Date().toISOString()};
+  try{ await salvar(COL_REG,r); }catch(e){ return; }
+  await salvar(COL_PED,{...x, estado:'aprovado', dias:n, regId:r.id, decididoPor:meuEmail(), decididoEm:new Date().toISOString()});
+}
+function recusarPedido(id){
+  const x=pedidos.find(p=>p.id===id), c=nomeCol(x.colId);
+  abrirPainel('❌ Recusar pedido',`<p style="margin-top:0"><b>${esc(c.nome)}</b> · ${dataPT(x.data)}${x.fim&&x.fim!==x.data?' a '+dataPT(x.fim):''}</p>
+    <label>Motivo (o colaborador vai ver)</label><input id="recMot" placeholder="ex.: nessa semana já há 3 pessoas de férias">
+    <div class="acoes" style="justify-content:flex-end"><button class="btn" onclick="confirmarRecusa('${id}')">❌ Recusar pedido</button></div>`);
+}
+async function confirmarRecusa(id){
+  const x=pedidos.find(p=>p.id===id);
+  await salvar(COL_PED,{...x, estado:'recusado', motivoRecusa:$('recMot').value.trim(), decididoPor:meuEmail(), decididoEm:new Date().toISOString()}); fecharPainel();
+}
+/* --- vista do colaborador --- */
+function calcEuDias(){ const n=diasUteis($('euDe').value,$('euAte').value||$('euDe').value); $('euDias').value = n==null?'':n; }
+async function enviarPedido(){
+  const de=$('euDe').value, ate=$('euAte').value||de, colId=papel==='colaborador'?meuColabId:(colabs[0]||{}).id;
+  if(!de) return aviso('Escolhe a data de início.');
+  if(ate<de) return aviso('A data "Até" é anterior à data "De".');
+  const n=diasUteis(de,ate); if(!n) return aviso('Esse período não tem dias úteis (fim de semana ou feriado).');
+  const choca=pedidos.find(p=>p.colId===colId&&p.estado!=='recusado'&&p.data<=ate&&de<=(p.fim||p.data)) || regs.find(r=>r.colId===colId&&r.tipo==='ausencia'&&r.data<=ate&&de<=(r.fim||r.data));
+  if(choca) return aviso('Já tens férias ou um pedido nesses dias.');
+  const ano=de.slice(0,4), disp=direitoFerias(colId)-feriasGozadas(colId,ano)-pedidos.filter(p=>p.colId===colId&&p.estado==='pendente'&&p.data.slice(0,4)===ano).reduce((s,p)=>s+pedDias(p),0);
+  if(n>disp && !await perguntar(`Estás a pedir ${fmtD(n)}, mas só tens ${fmtD(Math.max(0,disp))} disponíveis em ${ano}.\nEnviar mesmo assim?`,'Enviar','Não')) return;
+  if(!await perguntar(`Enviar pedido de férias?\n${dataPT(de)}${ate!==de?' a '+dataPT(ate):''} · ${fmtD(n)} úteis`,'📨 Enviar','Não')) return;
+  try{ await salvar(COL_PED,{id:uid(), colId, data:de, fim:ate!==de?ate:'', dias:n, obs:$('euObs').value.trim(), estado:'pendente', pedidoPor:meuEmail(), pedidoEm:new Date().toISOString()}); }
+  catch(e){ return; }
+  ['euDe','euAte','euDias','euObs'].forEach(i=>$(i).value=''); aviso('📨 Pedido enviado. Vais ver aqui a resposta.');
+}
+async function cancelarPedido(id){ if(await perguntar('Cancelar este pedido de férias?','Cancelar pedido','Não')) await apagar(COL_PED,id); }
+function renderEu(){
+  if(papel!=='colaborador') return;
+  const c=colabs.find(x=>x.id===meuColabId)||{nome:'',num:''}, ano=String(new Date().getFullYear());
+  $('euOla').textContent='Olá '+primeiroNome(c.nome)+'! 👋';
+  const dir=direitoFerias(meuColabId), goz=feriasGozadas(meuColabId,ano), pend=pedidos.filter(p=>p.estado==='pendente'&&p.data.slice(0,4)===ano).reduce((s,p)=>s+pedDias(p),0);
+  const k=(cls,l,v)=>`<div class="kpi ${cls}"><div class="l">${l}</div><div class="v">${v}</div></div>`;
+  $('euKpis').innerHTML=k('k-sab','DIREITO EM '+ano,fmt(dir))+k('k-aus','JÁ MARCADAS',fmt(goz))+k('k-banco','PEDIDAS (à espera)',fmt(pend))+k('k-extra','DISPONÍVEIS',fmt(dir-goz-pend));
+  const lp=[...pedidos].sort((a,b)=>b.data.localeCompare(a.data));
+  $('euPedidos').innerHTML = lp.length ? lp.map(x=>{ const e=EST_PED[x.estado]||['',''];
+    return `<div class="lemb"><div class="nm">${dataPT(x.data)}${x.fim?' a '+dataPT(x.fim):''} · ${fmtD(pedDias(x))} úteis${x.obs?'<div class="small">'+esc(x.obs)+'</div>':''}
+      ${x.motivoRecusa?`<div class="small" style="color:var(--falta)">Motivo: ${esc(x.motivoRecusa)}</div>`:''}</div>
+      <span class="chip ${e[0]}">${e[1]}</span>${x.estado==='pendente'?`<button class="del" title="Cancelar pedido" onclick="cancelarPedido('${x.id}')">✖</button>`:''}</div>`; }).join('')
+    : '<div class="small">Ainda não fizeste pedidos.</div>';
+  const lr=regs.filter(r=>r.tipo==='ausencia'&&motAus(r)==='Férias'&&r.data.slice(0,4)===ano).sort((a,b)=>a.data.localeCompare(b.data));
+  $('euRegTit').textContent='🗓️ Férias marcadas em '+ano;
+  $('euRegs').innerHTML = lr.length ? lr.map(r=>`<div class="lemb"><div class="nm">${dataPT(r.data)}${r.fim?' a '+dataPT(r.fim):''}</div><b>${fmtD(r.dias||0)}</b></div>`).join('') : '<div class="small">Ainda sem férias marcadas este ano.</div>';
+  const F=feriados(+ano); $('euInfo').textContent='Os fins de semana e feriados não contam. Feriados '+ano+': '+Object.keys(F).sort().map(d=>dataPT(d).slice(0,5)).join(', ')+'.';
+}
+
+/* ---------------- FECHO DO MÊS ---------------- */
+function renderFecho(){
+  const m=$('fMes').value, eMes=$('fPer').value==='mes', f=eMes && mesFechado(m);
+  $('boxFecho').classList.toggle('hide', !eMes || !m);
+  $('btnFecho').textContent = f ? '🔓 Reabrir mês' : '🔒 Fechar mês';
+  $('fechoInfo').classList.toggle('hide', !f);
+  if(f) $('fechoInfo').innerHTML = `🔒 <b>${nomeMes(m).replace(/^./,c=>c.toUpperCase())} está fechado</b> <span class="small">– por ${esc(quemCurto(f.por))} a ${dataPT(f.em.slice(0,10))}. Os registos deste mês não podem ser alterados.</span>`;
+}
+async function alternarFecho(){
+  const m=$('fMes').value; if(!m) return;
+  const meses={...((cfg.fechos&&cfg.fechos.meses)||{})}, f=meses[m];
+  if(f){ if(!await perguntar(`Reabrir ${nomeMes(m)}?\nOs registos voltam a poder ser alterados. Fica registado que foste tu a reabrir.`,'🔓 Reabrir','Não')) return; delete meses[m]; }
+  else { if(!await perguntar(`Fechar ${nomeMes(m)}?\nDepois de fechado, ninguém consegue alterar, acrescentar ou apagar registos deste mês (até um editor o reabrir).\n\nFaz isto depois de enviares o relatório à chefia.`,'🔒 Fechar mês','Não')) return;
+         meses[m]={por:meuEmail(), em:new Date().toISOString()}; }
+  const novo={meses};
+  if(db){ try{ await db.collection(COL_CFG).doc('fechos').set(novo); }catch(e){ return aviso('Não foi possível guardar.\n'+(e.code||e.message)); } }
+  else { cfg.fechos=novo; gravarLocal(); }
+  cfg.fechos=novo;
+  const e={id:uid(), quando:new Date().toISOString(), quem:meuEmail(), acao:f?'reabriu':'fechou', tipo:'mês', txt:nomeMes(m)};
+  if(db){ try{ const {id,...d}=e; await db.collection(COL_LOG).doc(id).set(d); }catch(x){} } else { logs.unshift(e); }
+  render();
 }
 
 /* ---------------- AVISOS ---------------- */
@@ -1324,13 +1787,19 @@ function calcAvisos(){
     if(p.data<hj) A.push({ic:'📅', t:`Pedido de ${diaLongo(p.data)} já passou – falta confirmar quem veio`, plan:1});
     else if(pend && dd<=3) A.push({ic:'⏳', t:`Pedido de ${diaLongo(p.data)}: ${pend} pessoa(s) ainda sem resposta`, plan:1});
   });
+  formacoes.forEach(f=>{ const e=estadoVal(f.validade); if(e.alerta && (!$('fCol').value||f.colId===$('fCol').value)) A.push({ic:'🎓', t:`${nomeCol(f.colId).nome}: ${f.nome} – ${e.t.replace(/^\S+ /,'').toLowerCase()}`, tab:'pes'}); });
+  { const atr=epis.filter(e=>proxTroca(e)&&diasAte(proxTroca(e))<0&&(!$('fCol').value||e.colId===$('fCol').value)); if(atr.length) A.push({ic:'🦺', t:`${atr.length} EPI(s) com a troca em atraso: `+atr.slice(0,4).map(e=>primeiroNome(nomeCol(e.colId).nome)+' ('+e.item.toLowerCase()+')').join(', ')+(atr.length>4?'…':''), tab:'pes'}); }
+  { const ab=avarias.filter(a=>a.estado!=='resolvida'); if(ab.length) A.push({ic:'🔧', t:`${ab.length} avaria(s) em aberto: `+ab.slice(0,3).map(a=>nomeMaq(a.maqId)).join(', ')+(ab.length>3?'…':''), tab:'maq'}); }
+  { const pp=pedidos.filter(x=>x.estado==='pendente'); if(pp.length) A.push({ic:'🙋', t:`${pp.length} pedido(s) de férias à espera de resposta`, tab:'mapa'}); }
+  { const d=new Date(); d.setDate(1); d.setMonth(d.getMonth()-1); const ma=dLocal(d).slice(0,7);
+    if(new Date().getDate()>=5 && !mesFechado(ma) && regs.some(r=>r.data.slice(0,7)===ma)) A.push({ic:'🔒', t:`O mês de ${nomeMes(ma)} ainda não foi fechado`}); }
   relogios.forEach(t=>{ const h=(Date.now()-new Date(t.inicio))/36e5; if(h>12) A.push({ic:'⏱️', t:`O relógio de ${nomeCol(t.colId).nome} está a contar há ${Math.floor(h)} horas – pode ter ficado esquecido`}); });
   return A;
 }
 function renderAvisos(){
   const A=calcAvisos();
   $('avisosCard').classList.toggle('hide',!A.length);
-  $('avisosLista').innerHTML=A.map(a=>`<li style="cursor:${a.col||a.plan?'pointer':'default'}" onclick="${a.col?`verCol('${a.col}')`:a.plan?`mostrar('plan')`:''}">${a.ic} ${esc(a.t)}</li>`).join('');
+  $('avisosLista').innerHTML=A.map(a=>`<li style="cursor:${a.col||a.plan||a.tab?'pointer':'default'}" onclick="${a.col?`verCol('${a.col}')`:a.plan?`mostrar('plan')`:a.tab?`mostrar('${a.tab}')`:''}">${a.ic} ${esc(a.t)}</li>`).join('');
 }
 
 /* ---------------- RELATÓRIO DO PERÍODO ---------------- */
@@ -1411,6 +1880,8 @@ function celula(colId, d){
   const sb=rs.find(r=>r.tipo==='sabado'); if(sb) return {sig:'S', cor:'var(--sab)', txt:'Sábado trabalhado'+(sb.horas?' ('+hm(sb.horas)+')':''), id:sb.id};
   const ex=rs.filter(r=>r.tipo==='extra'); if(ex.length) return {sig:'HE', cor:'var(--extra)', txt:'Horas extra: '+hm(ex.reduce((s,r)=>s+(r.horas||0),0)), id:ex[0].id};
   const bk=rs.find(r=>r.tipo==='banco'); if(bk) return {sig:bk.mov==='-'?'B−':'B+', cor:'var(--banco)', txt:'Banco de horas '+(bk.mov==='-'?'−':'+')+hm(bk.horas), id:bk.id};
+  const pf=pedidos.find(x=>x.colId===colId && x.estado==='pendente' && x.data<=d && d<=(x.fim||x.data));
+  if(pf) return {sig:'F?', cor:'', txt:'Pedido de férias por aprovar ('+dataPT(pf.data)+' a '+dataPT(pf.fim||pf.data)+')', ped:true};
   const pl=planos.find(p=>!p.fechado && p.data===d && p.pessoas[colId] && p.pessoas[colId].estado==='sim');
   if(pl) return {sig:'✓', cor:'', txt:'Chamado – disse que vem ('+(pl.hIni||'')+'–'+(pl.hFim||'')+')', plan:true};
   return null;
@@ -1427,7 +1898,7 @@ function renderMapa(){
   h+=cols.map(c=>`<tr><td class="nmc" title="${esc(c.nome)}">${esc(c.num)} ${esc(primeiroNome(c.nome))}</td>`+dias.map(x=>{
     const ce=celula(c.id,x.d), cls=x.cls;
     const tip=`${c.nome}\n${diaLongo(x.d)}${x.fer?'\n🎉 '+x.fer:''}${ce?'\n'+ce.txt:''}${papel==='consulta'?'':ce&&ce.id?'\n(clica para corrigir ou apagar)':'\n(clica para registar)'}`;
-    return `<td class="${cls}" data-tip="${esc(tip)}" onclick="${ce&&ce.id?`abrirDoMapa('${ce.id}')`:`registarEm('${c.id}','${x.d}')`}">${ce?`<span class="mc ${ce.plan?'plan':''}" style="${ce.cor?'background:'+ce.cor:''}">${ce.sig}</span>`:''}</td>`;
+    return `<td class="${cls}" data-tip="${esc(tip)}" onclick="${ce&&ce.id?`abrirDoMapa('${ce.id}')`:ce&&ce.ped?`document.getElementById('pedCard').scrollIntoView({behavior:'smooth'})`:`registarEm('${c.id}','${x.d}')`}">${ce?`<span class="mc ${ce.plan?'plan':''} ${ce.ped?'ped':''}" style="${ce.cor?'background:'+ce.cor:''}">${ce.sig}</span>`:''}</td>`;
   }).join('')+'</tr>').join('');
   const ativos=ordCol().filter(c=>c.ativo!==false);
   h+='<tr class="disp"><td class="nmc">Disponíveis</td>'+dias.map(x=>{ const k=ativos.filter(c=>!ausente(c.id,x.d)).length;
@@ -1452,7 +1923,7 @@ function hBars(el, itens, cor, vazio){
   const max=Math.max(...itens.map(i=>i.v));
   $(el).innerHTML='<div class="hb">'+itens.map(i=>`
     <div class="nm" title="${esc(i.n)}">${esc(i.n)}</div>
-    <div class="tr" data-tip="${esc(i.num+' – '+i.n)}\n${hm(i.v)}" onclick="verCol('${i.id}')" style="cursor:pointer">
+    <div class="tr" data-tip="${esc((i.num?i.num+' – ':'')+i.n)}\n${hm(i.v)}" ${i.id?`onclick="verCol('${i.id}')" style="cursor:pointer"`:''}>
       <div class="b" style="left:0;width:${i.v/max*100}%;background:${cor}"></div></div>
     <div class="v">${hm(i.v)}</div>`).join('')+'</div>';
 }
@@ -1548,6 +2019,17 @@ function render(){
   renderTimers();
   renderPlanos(false);
   renderMapa();
+  { const at=ordCol().filter(c=>c.ativo!==false), mq=ordMaq().filter(m=>m.ativa!==false);
+    const setSel=(id,html,keep=true)=>{ const v=$(id).value; $(id).innerHTML=html; if(keep&&v&&[...$(id).options].some(o=>o.value===v)) $(id).value=v; };
+    ['foCol','epCol','usCol'].forEach(id=>setSel(id,opcoesCol(at)));
+    setSel('avCol','<option value="">—</option>'+opcoesCol(at));
+    ['foFiltro','epFiltro'].forEach(id=>setSel(id,'<option value="">Todos os colaboradores</option>'+opcoesCol(ordCol())));
+    const om=mq.length?mq.map(m=>`<option value="${m.id}">${esc((m.codigo?m.codigo+' – ':'')+m.nome)}</option>`).join(''):'<option value="">(acrescenta máquinas em baixo)</option>';
+    setSel('usMaq',om); setSel('avMaq',om); }
+  renderPes();
+  renderMaq();
+  renderPedidosEditor();
+  renderEu();
   if(!db) renderLog();
   renderAcessos();
   renderResumo();
@@ -1573,7 +2055,7 @@ function exportCSV(){
   const fcN = $('fCol').value ? '_'+String(nomeCol($('fCol').value).num).replace(/[^\w-]/g,'') : '';
   baixar('assiduidade_'+p+fcN+'.csv','﻿'+csv,'text/csv;charset=utf-8');
 }
-function exportJSON(){ baixar('assiduidade_backup_'+hoje()+'.json', JSON.stringify({colabs,regs,relogios,planos},null,1),'application/json'); }
+function exportJSON(){ baixar('assiduidade_backup_'+hoje()+'.json', JSON.stringify({colabs,regs,relogios,planos,formacoes,epis,maquinas,usos,avarias,pedidos},null,1),'application/json'); }
 function importJSON(inp){
   const f=inp.files[0]; if(!f) return;
   const rd=new FileReader();
@@ -1586,6 +2068,7 @@ function importJSON(inp){
       for(const r of d.regs) await salvar(COL_REG,r,{semLog:1});
       for(const t of (d.relogios||[])) await salvar(COL_REL,t);
       for(const t of (d.planos||[])) await salvar(COL_PLAN,t,{semLog:1});
+      for(const [k,c] of [['formacoes',COL_FORM],['epis',COL_EPI],['maquinas',COL_MAQ],['usos',COL_USO],['avarias',COL_AVA],['pedidos',COL_PED]]) for(const t of (d[k]||[])) await salvar(c,t,{semLog:1});
       aviso('Importação concluída.');
     }catch(e){ aviso('Ficheiro inválido.'); }
     inp.value='';
@@ -1607,6 +2090,14 @@ $('fdData').addEventListener('change',()=>{ rotulosDia(); renderFolhaJa(); $('fd
 $('tbFolha').addEventListener('change',e=>{ if(e.target.type==='time') calcLinha(e.target.closest('tr')); });
 $('fdData').value=hoje();
 $('mpMes').value=hoje().slice(0,7);
+$('usMes').value=hoje().slice(0,7); $('usData').value=hoje(); $('avData').value=hoje(); $('epData').value=hoje();
+$('usMes').addEventListener('change',renderMaq);
+['euDe','euAte'].forEach(id=>$(id).addEventListener('change',calcEuDias));
+['foFiltro','foSoAlerta','epFiltro'].forEach(id=>$(id).addEventListener('change',renderPes));
+['usIni','usFim'].forEach(id=>$(id).addEventListener('change',()=>{ const a=$('usIni').value,b=$('usFim').value; if(a&&b) $('usHoras').value=hDe(a,b); }));
+$('foSug').innerHTML=FORM_SUG.map(x=>`<option value="${x}">`).join('');
+$('epSug').innerHTML=EPI_SUG.map(x=>`<option value="${x}">`).join('');
+$('mqSug').innerHTML=MAQ_SUG.map(x=>`<option value="${x}">`).join('');
 $('mpMes').addEventListener('change',renderMapa);
 $('plData').addEventListener('change',()=>{ rotuloPl();
   const sel=Object.fromEntries([...document.querySelectorAll('#plPick input:checked')].map(i=>[i.value,1]));
