@@ -202,7 +202,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
   <button class="btn sec hide" id="lkCancel">Cancelar</button>
   <p id="lkErr"></p>
   <a href="#" id="lkEsq" class="small hide" style="color:var(--pri)">Esqueci-me da palavra-passe</a>
-  <div class="small" style="margin-top:14px;opacity:.6">versão 02/11f · login por email</div>
+  <div class="small" style="margin-top:14px;opacity:.6">versão 02/11g · login por email</div>
 </div></div>
 <header>
   <span class="logo"><img src="" data-logo alt="EFAFLU"></span>
@@ -1326,18 +1326,13 @@ function textoPlano(p){
   t+=`🕗 Horário${p.fechado?' previsto':''}: ${p.hIni||'?'} às ${p.hFim||'?'}${prev?' ('+hm(prev)+')':''}\n📝 Registo: ${TIPO_PL[p.tipo]}\n`;
   if(!p.fechado){
     const g=e=>todos.filter(x=>x.v.estado===e), sim=g('sim'), nao=g('nao').map(x=>({...x,extra:x.v.motivo?' – '+x.v.motivo:''})), pend=g('pend');
-    t+=`\n📊 *Resumo:* ${todos.length} chamados\n✅ Vêm: ${sim.length}  ·  ❌ Não vêm: ${nao.length}  ·  ⏳ Sem resposta: ${pend.length}\n`;
     if(sim.length)  t+=`\n✅ *VÊM (${sim.length})*\n${lista(sim)}\n`;
-    if(nao.length)  t+=`\n❌ *NÃO VÊM (${nao.length})*\n${lista(nao)}\n`;
-    if(pend.length) t+=`\n⏳ *SEM RESPOSTA (${pend.length})*\n${lista(pend)}\n`;
     if(sim.length && prev) t+=`\n⏱️ Horas previstas: ${sim.length} × ${hm(prev)} = *${hm(sim.length*prev)}*\n`;
   } else {
-    const vieram=todos.filter(x=>x.v.veio).map(x=>({...x,extra:(x.v.hIni&&x.v.hFim?` – ${x.v.hIni} às ${x.v.hFim}`:'')+(x.v.horas?` (${hm(x.v.horas)})`:'')+(x.v.estado!=='sim'?' _(não tinha confirmado)_':'')}));
+    const vieram=todos.filter(x=>x.v.veio).map(x=>({...x,extra:(x.v.hIni&&x.v.hFim?` – ${x.v.hIni} às ${x.v.hFim}`:'')+(x.v.horas?` (${hm(x.v.horas)})`:'')}));
     const nao=todos.filter(x=>!x.v.veio).map(x=>({...x,extra:(x.v.motivo?' – '+x.v.motivo:'')+(x.v.estado==='sim'?' _(tinha dito que vinha)_':'')}));
     const tot=vieram.reduce((s,x)=>s+(x.v.horas||0),0);
-    t+=`\n📊 *Resumo:* ${todos.length} chamados  ·  ✅ Vieram: ${vieram.length}  ·  ❌ Faltaram: ${nao.length}\n`;
     if(vieram.length) t+=`\n✅ *VIERAM (${vieram.length})*\n${lista(vieram)}\n`;
-    if(nao.length)    t+=`\n❌ *NÃO VIERAM (${nao.length})*\n${lista(nao)}\n`;
     if(tot) t+=`\n⏱️ Total de horas: *${hm(tot)}*\n`;
   }
   return t+`\n_Atualizado a ${quando}_`;
