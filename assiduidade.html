@@ -202,7 +202,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
   <button class="btn sec hide" id="lkCancel">Cancelar</button>
   <p id="lkErr"></p>
   <a href="#" id="lkEsq" class="small hide" style="color:var(--pri)">Esqueci-me da palavra-passe</a>
-  <div class="small" style="margin-top:14px;opacity:.6">versão 02/11d · login por email</div>
+  <div class="small" style="margin-top:14px;opacity:.6">versão 02/11f · login por email</div>
 </div></div>
 <header>
   <span class="logo"><img src="" data-logo alt="EFAFLU"></span>
@@ -630,13 +630,13 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
     </table></div></div>
     <div class="card noprint w" id="acessosCard">
       <h2>👥 Acessos à página</h2>
-      <p class="small" style="margin-top:0">Os <b>editores</b> podem registar e alterar tudo. Quem tem <b>só consulta</b> (ex.: a chefia) vê o resumo, o mapa, os gráficos e os relatórios, mas não consegue alterar nada.
+      <p class="small" style="margin-top:0">Só tu (<b>👑 dono</b>) podes registar e alterar dados. Quem tem <b>só consulta</b> (ex.: a chefia) vê o resumo, o mapa, os gráficos e os relatórios, mas não consegue alterar nada.
       Um <b>colaborador</b> só vê as suas férias e pode fazer pedidos de férias.<br>
       A pessoa precisa também de uma conta no Firebase (Authentication → Usuários → Adicionar usuário).</p>
       <div id="acessosLista"></div>
       <div class="row" style="margin-top:10px">
         <div><label>Email</label><input type="email" id="acEmail" autocomplete="off" placeholder="email@exemplo.pt"></div>
-        <div style="max-width:200px"><label>Acesso</label><select id="acPapel" onchange="$('acColBox').classList.toggle('hide',this.value!=='colaboradores')"><option value="consulta">👁️ Só consulta</option><option value="editores">✏️ Editor</option><option value="colaboradores">🙋 Colaborador (só pede férias)</option></select></div>
+        <div style="max-width:200px"><label>Acesso</label><select id="acPapel" onchange="$('acColBox').classList.toggle('hide',this.value!=='colaboradores')"><option value="consulta">👁️ Só consulta</option><option value="colaboradores">🙋 Colaborador (só pede férias)</option></select></div>
         <div style="min-width:200px" id="acColBox" class="hide"><label>Qual colaborador?</label><select id="acCol"></select></div>
         <div style="flex:0"><button class="btn" onclick="addAcesso()">➕ Adicionar</button></div>
       </div>
@@ -795,13 +795,18 @@ function ligarDados(){
   desligarDados();
   unsubs.push(db.collection(COL_CFG).doc('acessos').onSnapshot(async d=>{
     const me=meuEmail(); let p='editor';
-    if(!d.exists){ try{ await db.collection(COL_CFG).doc('acessos').set({editores:[me], consulta:[], colaboradores:{}}); }catch(e){} cfg.acessos=null; }
+    if(!d.exists){ try{ await db.collection(COL_CFG).doc('acessos').set({dono:me, editores:[me], consulta:[], colaboradores:{}}); }catch(e){} cfg.acessos=null; }
     else {
       cfg.acessos={editores:[],consulta:[],colaboradores:{},...d.data()};
       const low=a=>a.map(x=>String(x).toLowerCase());
-      if(low(cfg.acessos.editores).includes(me)) p='editor';
-      else if(low(cfg.acessos.consulta).includes(me)) p='consulta';
+      const dono=(cfg.acessos.dono||'').toLowerCase();
+      if(dono ? me===dono : low(cfg.acessos.editores).includes(me)) p='editor';
       else if(cfg.acessos.colaboradores[me]){ p='colaborador'; meuColabId=cfg.acessos.colaboradores[me]; }
+      else if(dono || low(cfg.acessos.consulta).includes(me)) p='consulta';
+      // grava quem é o dono (só o verdadeiro dono consegue – as regras recusam aos outros)
+      if((!dono || me===dono) && p!=='colaborador' && (!dono || !low(cfg.acessos.editores).includes(me) || cfg.acessos.editores.length!==1)){
+        try{ await db.collection(COL_CFG).doc('acessos').set({...cfg.acessos, dono:me, editores:[me], consulta:[...new Set([...cfg.acessos.consulta, ...cfg.acessos.editores.filter(x=>x.toLowerCase()!==me)])]}); p='editor'; }catch(e){}
+      }
     }
     definirPapel(p);
     if(papelLigado!==p) iniciarDados(p);
@@ -829,7 +834,7 @@ function rotulo(e){
   if((a.editores||[]).map(x=>x.toLowerCase()).includes(e)) return 'Team Leader';
   if((a.consulta||[]).map(x=>x.toLowerCase()).includes(e)) return 'Chefia';
   if(a.colaboradores && a.colaboradores[e]) return nomeCol(a.colaboradores[e]).nome;
-  if(!cfg.acessos && fbAuth && fbAuth.currentUser && e===meuEmail()) return 'Team Leader';
+  if(e===meuEmail()) return papel==='consulta' ? 'Chefia' : papel==='colaborador' ? nomeCol(meuColabId).nome : 'Team Leader';
   return e.split('@')[0];
 }
 const quemCurto = e => rotulo(e);
@@ -1501,7 +1506,7 @@ function renderAcessos(){
   { const v=$('acCol').value; $('acCol').innerHTML=opcoesCol(ordCol().filter(c=>c.ativo!==false)); if(v) $('acCol').value=v; }
   const linha=(e,pap)=>`<div class="lemb"><div class="nm"><b>${esc(rotulo(e))}</b>${e.toLowerCase()===me?' <span class="small">(tu)</span>':''}
       <button class="edit" title="Mudar o nome que aparece" onclick="mudarRotulo('${esc(e)}')">✏️</button><div class="small">${esc(e)}</div></div>
-    <span class="chip ${pap==='editores'?'sim':pap==='colaboradores'?'pend':''}">${pap==='editores'?'✏️ Editor':pap==='colaboradores'?'🙋 '+esc(nomeCol(a.colaboradores[e]).nome):'👁️ Só consulta'}</span>
+    <span class="chip ${pap==='editores'?'sim':pap==='colaboradores'?'pend':''}">${pap==='editores'?'👑 Dono – pode alterar tudo':pap==='colaboradores'?'🙋 '+esc(nomeCol(a.colaboradores[e]).nome):'👁️ Só consulta'}</span>
     ${e.toLowerCase()===me?'':`<button class="del" title="Retirar acesso" onclick="remAcesso('${esc(e)}','${pap}')">✖</button>`}</div>`;
   $('acessosLista').innerHTML = a.editores.map(e=>linha(e,'editores')).join('')+a.consulta.map(e=>linha(e,'consulta')).join('')+Object.keys(a.colaboradores||{}).map(e=>linha(e,'colaboradores')).join('');
   const g=cfg.geral||{};
