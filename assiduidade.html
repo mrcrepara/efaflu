@@ -202,7 +202,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
   <button class="btn sec hide" id="lkCancel">Cancelar</button>
   <p id="lkErr"></p>
   <a href="#" id="lkEsq" class="small hide" style="color:var(--pri)">Esqueci-me da palavra-passe</a>
-  <div class="small" style="margin-top:14px;opacity:.6">versão 02/11c · login por email</div>
+  <div class="small" style="margin-top:14px;opacity:.6">versão 02/11d · login por email</div>
 </div></div>
 <header>
   <span class="logo"><img src="" data-logo alt="EFAFLU"></span>
@@ -822,10 +822,23 @@ function iniciarDados(p){
   unsubDados.push(db.collection(COL_LOG).orderBy('quando','desc').limit(150).onSnapshot(s=>{ logs=s.docs.map(d=>({id:d.id,...d.data()})); renderLog(); }, e=>console.warn('log',e)));
 }
 const meuEmail = () => (fbAuth && fbAuth.currentUser && fbAuth.currentUser.email || 'local').toLowerCase();
-const quemCurto = e => e ? String(e).split('@')[0] : '';
+function rotulo(e){
+  if(!e) return ''; e=String(e).toLowerCase(); if(e==='local') return 'Team Leader';
+  const a=cfg.acessos||{};
+  if(a.rotulos && a.rotulos[e]) return a.rotulos[e];
+  if((a.editores||[]).map(x=>x.toLowerCase()).includes(e)) return 'Team Leader';
+  if((a.consulta||[]).map(x=>x.toLowerCase()).includes(e)) return 'Chefia';
+  if(a.colaboradores && a.colaboradores[e]) return nomeCol(a.colaboradores[e]).nome;
+  if(!cfg.acessos && fbAuth && fbAuth.currentUser && e===meuEmail()) return 'Team Leader';
+  return e.split('@')[0];
+}
+const quemCurto = e => rotulo(e);
+function atualizarEstado(){
+  if(fbAuth && fbAuth.currentUser) estado(({consulta:'👁️ ',colaborador:'🙋 '}[papel]||'☁️ ')+rotulo(meuEmail())+(papel==='consulta'?' (só consulta)':''));
+}
 function definirPapel(p){
   papel=p; document.body.classList.toggle('ro', p==='consulta'); document.body.classList.toggle('colab', p==='colaborador');
-  if(fbAuth && fbAuth.currentUser) estado(({consulta:'👁️ ',colaborador:'🙋 '}[p]||'☁️ ')+fbAuth.currentUser.email+(p==='consulta'?' (só consulta)':''));
+  atualizarEstado();
   const at=document.querySelector('.tabs button.on');
   if(p==='colaborador') mostrar('eu');
   else if(at && at.dataset.t==='eu') mostrar('dash');
@@ -1486,7 +1499,8 @@ function renderAcessos(){
   $('acessosCard').classList.toggle('hide', !db);
   const a={editores:[meuEmail()],consulta:[],colaboradores:{},...(cfg.acessos||{})}, me=meuEmail();
   { const v=$('acCol').value; $('acCol').innerHTML=opcoesCol(ordCol().filter(c=>c.ativo!==false)); if(v) $('acCol').value=v; }
-  const linha=(e,pap)=>`<div class="lemb"><div class="nm">${esc(e)}${e.toLowerCase()===me?' <span class="small">(tu)</span>':''}</div>
+  const linha=(e,pap)=>`<div class="lemb"><div class="nm"><b>${esc(rotulo(e))}</b>${e.toLowerCase()===me?' <span class="small">(tu)</span>':''}
+      <button class="edit" title="Mudar o nome que aparece" onclick="mudarRotulo('${esc(e)}')">✏️</button><div class="small">${esc(e)}</div></div>
     <span class="chip ${pap==='editores'?'sim':pap==='colaboradores'?'pend':''}">${pap==='editores'?'✏️ Editor':pap==='colaboradores'?'🙋 '+esc(nomeCol(a.colaboradores[e]).nome):'👁️ Só consulta'}</span>
     ${e.toLowerCase()===me?'':`<button class="del" title="Retirar acesso" onclick="remAcesso('${esc(e)}','${pap}')">✖</button>`}</div>`;
   $('acessosLista').innerHTML = a.editores.map(e=>linha(e,'editores')).join('')+a.consulta.map(e=>linha(e,'consulta')).join('')+Object.keys(a.colaboradores||{}).map(e=>linha(e,'colaboradores')).join('');
@@ -1495,6 +1509,16 @@ function renderAcessos(){
     $('fmData').value = g.municipal ? new Date().getFullYear()+'-'+g.municipal : ''; $('fmNome').value=g.municipalNome||''; $('fmCarn').checked=!!g.carnaval; }
   const y=new Date().getFullYear(), F=feriados(y);
   $('fmLista').innerHTML = '<b>Feriados '+y+':</b> '+Object.keys(F).sort().map(d=>dataPT(d).slice(0,5)+' '+esc(F[d])).join(' · ');
+}
+function mudarRotulo(e){
+  abrirPainel('✏️ Nome que aparece',`<p class="small" style="margin-top:0">${esc(e)}</p>
+    <label>Nome a mostrar no topo da página e no registo de alterações</label><input id="rotIn" value="${esc(rotulo(e))}" placeholder="ex.: Team Leader">
+    <div class="acoes" style="justify-content:flex-end"><button class="btn sec" onclick="guardarRotulo('${esc(e)}','')">Repor o padrão</button><button class="btn" onclick="guardarRotulo('${esc(e)}',$('rotIn').value)">💾 Guardar</button></div>`);
+}
+async function guardarRotulo(e,v){
+  const a={editores:[meuEmail()],consulta:[],colaboradores:{},...(cfg.acessos||{})}, r={...(a.rotulos||{})};
+  v=String(v||'').trim(); if(v) r[e.toLowerCase()]=v; else delete r[e.toLowerCase()];
+  await gravarAcessos({...a,rotulos:r}); fecharPainel();
 }
 async function gravarAcessos(a){
   if(papel==='consulta') return aviso('Só os editores podem mudar acessos.');
@@ -1860,7 +1884,7 @@ function relatorioPDF(){
   </tbody></table>
   ${det?'<h2>Detalhe dos registos</h2>'+det:''}
   <div class="ass"><div>Responsável</div><div>Visto da chefia</div><div>Data</div></div>
-  <footer>Gerado a ${dataPT(dLocal(agora))} às ${horaLocal(agora)}${fbAuth&&fbAuth.currentUser?' por '+esc(fbAuth.currentUser.email):''} · Assiduidade EFAFLU</footer>
+  <footer>Gerado a ${dataPT(dLocal(agora))} às ${horaLocal(agora)}${fbAuth&&fbAuth.currentUser?' por '+esc(rotulo(meuEmail())):''} · Assiduidade EFAFLU</footer>
   <script>setTimeout(()=>print(),400)<\/script></body></html>`;
   const w=window.open('','_blank');
   if(!w) return aviso('O browser bloqueou a janela do relatório.\nPermite janelas pop-up para esta página e tenta outra vez.');
@@ -2030,6 +2054,7 @@ function render(){
   renderMaq();
   renderPedidosEditor();
   renderEu();
+  atualizarEstado();
   if(!db) renderLog();
   renderAcessos();
   renderResumo();
