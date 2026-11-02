@@ -202,7 +202,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
   <button class="btn sec hide" id="lkCancel">Cancelar</button>
   <p id="lkErr"></p>
   <a href="#" id="lkEsq" class="small hide" style="color:var(--pri)">Esqueci-me da palavra-passe</a>
-  <div class="small" style="margin-top:14px;opacity:.6">versão 02/11g · login por email</div>
+  <div class="small" style="margin-top:14px;opacity:.6">versão 02/11h · login por email</div>
 </div></div>
 <header>
   <span class="logo"><img src="" data-logo alt="EFAFLU"></span>
@@ -639,6 +639,14 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
         <div style="max-width:200px"><label>Acesso</label><select id="acPapel" onchange="$('acColBox').classList.toggle('hide',this.value!=='colaboradores')"><option value="consulta">👁️ Só consulta</option><option value="colaboradores">🙋 Colaborador (só pede férias)</option></select></div>
         <div style="min-width:200px" id="acColBox" class="hide"><label>Qual colaborador?</label><select id="acCol"></select></div>
         <div style="flex:0"><button class="btn" onclick="addAcesso()">➕ Adicionar</button></div>
+      </div>
+    </div>
+    <div class="card noprint w">
+      <h2>✍️ Assinatura das mensagens</h2>
+      <p class="small" style="margin-top:0">Aparece no fim das mensagens de WhatsApp (pedidos de sábado, presenças, convites e relatório).</p>
+      <div class="row">
+        <div><label>Assinatura</label><input id="asTxt" placeholder="ex.: Rui, Team Leader"></div>
+        <div style="flex:0"><button class="btn" onclick="guardarAssinatura()">💾 Guardar</button></div>
       </div>
     </div>
     <div class="card noprint w">
@@ -1323,7 +1331,7 @@ function textoPlano(p){
   const agora=new Date(), quando=`${dataPT(dLocal(agora))} às ${horaLocal(agora)}`;
   let t=`*EFAFLU · Parque de Máquinas*\n${p.fechado?'Presenças':'Pedido de trabalho'}\n\n📅 *${diaLongo(p.data)}*\n`;
   if(p.titulo) t+=`🔧 ${p.titulo}\n`;
-  t+=`🕗 Horário${p.fechado?' previsto':''}: ${p.hIni||'?'} às ${p.hFim||'?'}${prev?' ('+hm(prev)+')':''}\n📝 Registo: ${TIPO_PL[p.tipo]}\n`;
+  t+=`🕗 Horário${p.fechado?' previsto':''}: ${p.hIni||'?'} às ${p.hFim||'?'}${prev?' ('+hm(prev)+')':''}\n`;
   if(!p.fechado){
     const g=e=>todos.filter(x=>x.v.estado===e), sim=g('sim'), nao=g('nao').map(x=>({...x,extra:x.v.motivo?' – '+x.v.motivo:''})), pend=g('pend');
     if(sim.length)  t+=`\n✅ *VÊM (${sim.length})*\n${lista(sim)}\n`;
@@ -1335,7 +1343,7 @@ function textoPlano(p){
     if(vieram.length) t+=`\n✅ *VIERAM (${vieram.length})*\n${lista(vieram)}\n`;
     if(tot) t+=`\n⏱️ Total de horas: *${hm(tot)}*\n`;
   }
-  return t+`\n_Atualizado a ${quando}_`;
+  return t+`\n${assinatura()}\n_Atualizado a ${quando}_`;
 }
 async function copiarPlano(pid){
   const t=textoPlano(planos.find(x=>x.id===pid));
@@ -1465,8 +1473,9 @@ function painelTexto(tit, texto, tel){
       <button class="btn wa" onclick="abrirWa($('pnTxt').value, ${tel?`'${esc(tel)}'`:"''"})">💬 Enviar por WhatsApp</button></div>`);
 }
 const primeiroNome = n => String(n||'').trim().split(/\s+/)[0];
+const assinatura = () => '— '+((cfg.geral&&cfg.geral.assinatura)||'Rui, Team Leader');
 function msgConvite(p, c){
-  return `Olá ${primeiroNome(c.nome)}! 👋\nPrecisamos de ti no *Parque de Máquinas* da EFAFLU:\n\n📅 *${diaLongo(p.data)}*\n🕗 ${p.hIni||'?'} às ${p.hFim||'?'}${p.titulo?'\n🔧 '+p.titulo:''}\n\nPodes vir? Responde só *SIM* ou *NÃO*. Obrigado!`;
+  return `Olá ${primeiroNome(c.nome)}! 👋\nPrecisamos de ti no *Parque de Máquinas* da EFAFLU:\n\n📅 *${diaLongo(p.data)}*\n🕗 ${p.hIni||'?'} às ${p.hFim||'?'}${p.titulo?'\n🔧 '+p.titulo:''}\n\nPodes vir? Responde só *SIM* ou *NÃO*. Obrigado!\n${assinatura()}`;
 }
 function waPessoa(pid, cid){
   const p=planos.find(x=>x.id===pid), c=nomeCol(cid);
@@ -1506,6 +1515,7 @@ function renderAcessos(){
   $('acessosLista').innerHTML = a.editores.map(e=>linha(e,'editores')).join('')+a.consulta.map(e=>linha(e,'consulta')).join('')+Object.keys(a.colaboradores||{}).map(e=>linha(e,'colaboradores')).join('');
   const g=cfg.geral||{};
   if(document.activeElement!==$('fmData') && document.activeElement!==$('fmNome')){
+    if(document.activeElement!==$('asTxt')) $('asTxt').value = g.assinatura || 'Rui, Team Leader';
     $('fmData').value = g.municipal ? new Date().getFullYear()+'-'+g.municipal : ''; $('fmNome').value=g.municipalNome||''; $('fmCarn').checked=!!g.carnaval; }
   const y=new Date().getFullYear(), F=feriados(y);
   $('fmLista').innerHTML = '<b>Feriados '+y+':</b> '+Object.keys(F).sort().map(d=>dataPT(d).slice(0,5)+' '+esc(F[d])).join(' · ');
@@ -1539,9 +1549,15 @@ async function remAcesso(e,p){
   if(p==='colaboradores'){ const c={...a.colaboradores}; delete c[e]; await gravarAcessos({...a,colaboradores:c}); }
   else await gravarAcessos({...a,[p]:a[p].filter(x=>x!==e)});
 }
+async function guardarAssinatura(){
+  const g={...(cfg.geral||{}), assinatura:$('asTxt').value.trim()};
+  if(db){ try{ await db.collection(COL_CFG).doc('geral').set(g); }catch(e){ return aviso('Não foi possível guardar.\n'+(e.code||e.message)); } }
+  else { cfg.geral=g; gravarLocal(); }
+  cfg.geral=g; aviso('✅ Assinatura guardada.\n'+assinatura());
+}
 async function guardarFeriados(){
   const d=$('fmData').value;
-  const g={municipal:d?d.slice(5):'', municipalNome:$('fmNome').value.trim(), carnaval:$('fmCarn').checked};
+  const g={...(cfg.geral||{}), municipal:d?d.slice(5):'', municipalNome:$('fmNome').value.trim(), carnaval:$('fmCarn').checked};
   if(db){ try{ await db.collection(COL_CFG).doc('geral').set(g); }catch(e){ return aviso('Não foi possível guardar.\n'+(e.code||e.message)); } }
   else { cfg.geral=g; gravarLocal(); }
   ferCache={}; render(); aviso('✅ Feriados guardados.');
@@ -1854,7 +1870,7 @@ function textoRelatorio(){
   if(fer.length) t+=`\n🏖️ *SALDO DE FÉRIAS ${anoF}*\n`+fer.join('\n')+'\n';
   const av=calcAvisos(); if(av.length) t+=`\n⚠️ *AVISOS*\n`+av.map(a=>a.ic+' '+a.t).join('\n')+'\n';
   const agora=new Date();
-  return t+`\n_Gerado a ${dataPT(dLocal(agora))} às ${horaLocal(agora)}_`;
+  return t+`\n${assinatura()}\n_Gerado a ${dataPT(dLocal(agora))} às ${horaLocal(agora)}_`;
 }
 function relatorioPDF(){
   const L=calcResumo(), sel=regs.filter(noPeriodo).filter(r=>!$('fCol').value||r.colId===$('fCol').value);
