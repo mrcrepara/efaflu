@@ -1,0 +1,652 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stock Ferramentas · EFAFLU</title>
+<link rel="icon" href="icon-192.png">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #f3f5f6; --panel: #ffffff; --line: #d5dce0; --fg: #172026; --muted: #5b6a73;
+    --accent: #0f5f7a; --accent-ink: #ffffff;
+    --in: #1d7a46; --in-soft: #e3f3ea; --out: #b4361f; --out-soft: #fbe7e2;
+    --warn: #9a6200; --warn-soft: #fbf0d9; --hover: #eaeff1;
+    --font-ui: "Archivo", "Segoe UI", system-ui, sans-serif;
+    --font-code: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+    --r: 8px;
+    --brand: #b82d36; --brand-ink: #ffffff; --brand-sub: #f3c9cc;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #11171b; --panel: #182127; --line: #2b3840; --fg: #e4eaed; --muted: #95a5ae;
+      --accent: #5bb6d4; --accent-ink: #0b1418; --in: #5fcf8d; --in-soft: #183626; --out: #f08a73; --out-soft: #3d1f19;
+      --warn: #e7b44f; --warn-soft: #3a2e14; --hover: #1f2a31; --brand: #7e1f26; --brand-sub: #e7a9ae; color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-ui); font-size: 15px; line-height: 1.45; }
+  [hidden] { display: none !important; }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 20px 16px 40px; display: grid; gap: 20px; }
+  h1, h2 { margin: 0; }
+  h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; }
+  h2 { font-size: 1rem; font-weight: 600; }
+  .muted { color: var(--muted); }
+
+  .top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 12px; }
+  .top p { margin: 4px 0 0; color: var(--muted); max-width: 60ch; }
+  .userbar { display: flex; gap: 8px; align-items: center; font-size: .85rem; color: var(--muted); flex-wrap: wrap; }
+  .stats { display: flex; flex-wrap: wrap; gap: 8px; }
+  .stat { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 6px 12px; display: grid; min-width: 6.5rem; }
+  .stat b { font-size: 1.35rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stat span { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .stat.bad b { color: var(--out); }
+  .stat.warn b { color: var(--warn); }
+
+  .main { display: grid; gap: 20px; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); align-items: start; }
+  @media (max-width: 860px) { .main { grid-template-columns: minmax(0, 1fr); } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; display: grid; gap: 14px; min-width: 0; }
+  .eyebrow { font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+
+  .login { max-width: 380px; margin: 8vh auto 0; }
+  .login form { display: grid; gap: 10px; }
+  .field { display: grid; gap: 4px; font-size: .85rem; color: var(--muted); }
+  .field input { font: inherit; font-size: 1rem; padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); }
+
+  .modes { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+  .mode { appearance: none; border: 0; font: inherit; font-weight: 600; padding: 12px; cursor: pointer; background: var(--panel); color: var(--muted); display: flex; justify-content: center; align-items: center; gap: 8px; }
+  .mode kbd { font-family: var(--font-code); font-size: .72rem; border: 1px solid currentColor; border-radius: 4px; padding: 0 4px; opacity: .7; }
+  .mode[aria-pressed="true"][data-mode="entrada"] { background: var(--in); color: #fff; }
+  .mode[aria-pressed="true"][data-mode="saida"] { background: var(--out); color: #fff; }
+
+  .scan { display: grid; gap: 6px; }
+  .scan label { font-size: .8rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .scan-box { position: relative; }
+  #scan { width: 100%; font-family: var(--font-code); font-size: 1.5rem; padding: 14px 16px 14px 52px; border: 2px solid var(--line); border-radius: var(--r); background: var(--bg); color: var(--fg); }
+  #scan:focus { outline: none; border-color: var(--accent); background: var(--panel); }
+  .scan-ico { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 26px; height: 22px; display: flex; gap: 2px; }
+  .scan-ico i { background: var(--muted); display: block; }
+  .scan-hint { font-size: .8rem; color: var(--muted); }
+  .scan-hint.live { color: var(--in); }
+  .opts { display: flex; flex-wrap: wrap; gap: 16px; font-size: .85rem; color: var(--muted); }
+  .opts label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+
+  .result { border-radius: var(--r); border: 1px solid var(--line); padding: 16px; display: grid; gap: 12px; }
+  .result.in { border-color: var(--in); background: var(--in-soft); }
+  .result.out { border-color: var(--out); background: var(--out-soft); }
+  .result.unknown { border-color: var(--warn); background: var(--warn-soft); }
+  .result.idle { border-style: dashed; color: var(--muted); }
+  .r-head { display: flex; justify-content: space-between; gap: 12px; align-items: start; flex-wrap: wrap; }
+  .r-title { font-size: 1.1rem; font-weight: 600; overflow-wrap: anywhere; }
+  .r-meta { font-size: .82rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 12px; }
+  .r-flow { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .r-flow .box { display: grid; }
+  .r-flow .box span, .qty span { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .r-flow .box b { font-size: 1.8rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .r-flow .arrow { font-size: 1.4rem; color: var(--muted); }
+  .qty { display: grid; gap: 4px; }
+  .qty input { width: 7rem; font: inherit; font-size: 1.4rem; font-weight: 700; padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--fg); }
+  .r-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .btn { appearance: none; font: inherit; font-weight: 600; padding: 9px 16px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); cursor: pointer; }
+  .btn:hover { background: var(--hover); }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .btn.danger { color: var(--out); border-color: var(--out); }
+  .btn.small { padding: 4px 10px; font-size: .8rem; font-weight: 500; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn:focus-visible, .mode:focus-visible, .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .key { font-family: var(--font-code); font-size: .75rem; color: var(--muted); }
+  .warnline { color: var(--warn); font-size: .85rem; font-weight: 500; }
+
+  .pick-search { font: inherit; width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--fg); }
+  .pick-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; max-height: 280px; overflow: auto; }
+  .pick-list button { appearance: none; width: 100%; text-align: left; font: inherit; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; cursor: pointer; color: var(--fg); display: grid; gap: 2px; }
+  .pick-list button:hover { border-color: var(--accent); }
+  .pick-list small { color: var(--muted); }
+
+  .status { min-height: 1.4em; font-weight: 500; font-size: .9rem; }
+  .status.ok { color: var(--in); }
+  .status.err { color: var(--out); }
+
+  .log { list-style: none; margin: 0; padding: 0; display: grid; max-height: 560px; overflow: auto; }
+  .log li { display: grid; grid-template-columns: 4.2rem minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .log li:last-child { border-bottom: 0; }
+  .log .q { font-family: var(--font-code); font-weight: 600; text-align: right; }
+  .log .q.in { color: var(--in); }
+  .log .q.out { color: var(--out); }
+  .log .d { min-width: 0; }
+  .log .d div { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .log .d small { color: var(--muted); font-size: .78rem; }
+  .log li.void .q, .log li.void .d div { text-decoration: line-through; opacity: .55; }
+  .empty { color: var(--muted); font-size: .9rem; padding: 12px 0; }
+
+  .tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .tools .pick-search { flex: 1 1 18rem; width: auto; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { appearance: none; font: inherit; font-size: .8rem; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); cursor: pointer; }
+  .chip[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  .tbox { max-height: 65vh; overflow: auto; border: 1px solid var(--line); border-radius: var(--r); }
+  table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+  th { position: sticky; top: 0; background: var(--panel); text-align: left; font-weight: 600; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; z-index: 1; }
+  td { padding: 6px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tbody tr:hover td { background: var(--hover); }
+  td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; }
+  td.ref { font-family: var(--font-code); font-size: .8rem; color: var(--muted); white-space: nowrap; }
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: .75rem; font-weight: 600; white-space: nowrap; }
+  .pill.Rutura { color: var(--out); background: var(--out-soft); }
+  .pill.Abaixo { color: var(--warn); background: var(--warn-soft); }
+  .pill.OK { color: var(--in); background: var(--in-soft); }
+  .pill.Outro { color: var(--muted); background: var(--hover); }
+  .codes { font-family: var(--font-code); font-size: .75rem; color: var(--muted); }
+  .admin { border-style: dashed; }
+  .band { background: var(--brand); color: var(--brand-ink); }
+  .band-in { max-width: 1280px; margin: 0 auto; padding: 12px 16px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .band-in img { width: 34px; height: 34px; border-radius: 6px; }
+  .band-in strong { font-size: 1.05rem; font-weight: 700; }
+  .band-in .sp { flex: 1; }
+  .band-in a { color: var(--brand-sub); text-decoration: none; font-size: .9rem; }
+  .band-in a:hover { color: var(--brand-ink); }
+  .band-in .btn { background: transparent; color: var(--brand-ink); border-color: var(--brand-sub); }
+  .linkbtn { background: none; border: 0; color: var(--accent); font: inherit; font-size: .85rem; cursor: pointer; padding: 0; text-align: left; }
+  @media (max-width: 720px) { .hide-sm { display: none; } #scan { font-size: 1.15rem; } }
+</style>
+</head>
+<body>
+
+<div class="wrap" id="view-loading"><p class="muted">A ligar ao Firebase… Se esta mensagem não desaparecer, verifique a ligação à internet e a configuração no início do ficheiro.</p></div>
+
+<!-- ===== Login ===== -->
+<div class="wrap" id="view-login" hidden>
+  <section class="card login">
+    <div class="eyebrow">EFAFLU · Parque Máquinas</div>
+    <h1>Stock de ferramentas</h1>
+    <p class="muted" style="margin:0">Entra com a mesma conta da assiduidade.</p>
+    <form id="login-form">
+      <label class="field">Email<input id="login-email" type="email" autocomplete="username" required></label>
+      <label class="field">Palavra-passe<input id="login-pass" type="password" autocomplete="current-password" required></label>
+      <button class="btn primary" type="submit">Entrar</button>
+      <div class="status err" id="login-msg"></div>
+      <button class="linkbtn" type="button" id="login-forgot">Esqueci-me da palavra-passe</button>
+    </form>
+  </section>
+</div>
+
+<!-- ===== App ===== -->
+<div id="view-app" hidden>
+<div class="band"><div class="band-in">
+  <img src="icon-192.png" alt="EFAFLU">
+  <strong>Stock de ferramentas</strong>
+  <span class="sp"></span>
+  <a href="assiduidade.html">← Assiduidade</a>
+  <span id="user-email" style="font-size:.85rem;color:var(--brand-sub)"></span>
+  <button class="btn small" id="btn-logout">Sair</button>
+</div></div>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Leitura de stock</h1>
+      <p>Leia o código de barras do fabricante para dar entrada ou saída de material. Códigos novos associam-se ao artigo na primeira leitura.</p>
+    </div>
+    <div class="stats" aria-live="polite">
+      <div class="stat"><b id="st-total">—</b><span>Artigos</span></div>
+      <div class="stat bad"><b id="st-rut">—</b><span>Em rutura</span></div>
+      <div class="stat warn"><b id="st-abx">—</b><span>Abaixo mín.</span></div>
+      <div class="stat"><b id="st-cod">—</b><span>Códigos</span></div>
+    </div>
+  </header>
+
+  <div class="main">
+    <section class="card">
+      <div class="eyebrow">Posto de leitura</div>
+      <div class="modes" role="group" aria-label="Tipo de movimento">
+        <button class="mode" data-mode="entrada" aria-pressed="true">Entrada <kbd>F2</kbd></button>
+        <button class="mode" data-mode="saida" aria-pressed="false">Saída <kbd>F4</kbd></button>
+      </div>
+      <div class="scan">
+        <label for="scan">Código de barras</label>
+        <div class="scan-box">
+          <span class="scan-ico" aria-hidden="true"><i style="width:3px"></i><i style="width:1px"></i><i style="width:2px"></i><i style="width:1px"></i><i style="width:3px"></i><i style="width:1px"></i><i style="width:2px"></i></span>
+          <input id="scan" type="text" autocomplete="off" spellcheck="false" placeholder="Aponte a pistola e leia…">
+        </div>
+        <div class="scan-hint" id="scan-hint">A carregar artigos…</div>
+      </div>
+      <div class="opts">
+        <label><input type="checkbox" id="opt-auto"> Registar logo ao ler</label>
+        <label><input type="checkbox" id="opt-sound" checked> Som</label>
+      </div>
+      <div id="result" class="result idle"></div>
+      <div id="status" class="status" role="status" aria-live="polite"></div>
+    </section>
+
+    <section class="card">
+      <div class="r-head"><h2>Últimos movimentos</h2><span class="muted" style="font-size:.8rem">os 60 mais recentes</span></div>
+      <ul class="log" id="log"><li class="empty">Ainda não há movimentos registados.</li></ul>
+    </section>
+  </div>
+
+  <section class="card">
+    <div class="r-head">
+      <h2>Stock atual</h2>
+      <button class="btn small" id="btn-csv">Exportar CSV</button>
+    </div>
+    <div class="tools">
+      <input class="pick-search" id="tbl-q" type="search" placeholder="Pesquisar referência, descrição, marca, código…" aria-label="Pesquisar no stock" autocomplete="off">
+      <div class="chips" role="group" aria-label="Situação">
+        <button class="chip" data-sit="" aria-pressed="true">Todas</button>
+        <button class="chip" data-sit="Rutura" aria-pressed="false">Rutura</button>
+        <button class="chip" data-sit="Abaixo do mínimo" aria-pressed="false">Abaixo do mínimo</button>
+        <button class="chip" data-sit="OK" aria-pressed="false">OK</button>
+        <button class="chip" data-sit="sem-codigo" aria-pressed="false">Sem código associado</button>
+      </div>
+    </div>
+    <div class="tbox">
+      <table>
+        <thead><tr>
+          <th>Ref. interna</th><th>Descrição</th><th class="hide-sm">Máquina</th><th class="hide-sm">Marca</th>
+          <th class="r">Stock</th><th class="r">Mín.</th><th>Situação</th><th class="hide-sm">Códigos de barras</th>
+        </tr></thead>
+        <tbody id="tbl"></tbody>
+      </table>
+    </div>
+    <div class="muted" style="font-size:.8rem" id="tbl-count"></div>
+  </section>
+
+  <section class="card admin" id="admin" hidden>
+    <h2>Administração</h2>
+    <p class="muted" style="margin:0">Só visível para o administrador. Importa a lista de artigos (ficheiro <span class="codes">artigos-efaflu.json</span>). Atenção: importar de novo repõe o stock de todos os artigos com o valor do ficheiro.</p>
+    <div class="r-actions">
+      <input type="file" id="imp-file" accept=".json,application/json">
+      <button class="btn danger" id="imp-btn" disabled>Importar artigos</button>
+    </div>
+    <div class="status" id="imp-msg"></div>
+  </section>
+</div>
+</div>
+
+<script>
+(() => {
+  // =====================================================================
+  // CONFIGURAÇÃO — projeto Firebase da EFAFLU (o mesmo da assiduidade)
+  // =====================================================================
+  const firebaseConfig = {
+    apiKey: "AIzaSyAMzVccxOAb03gJ9LV7C1F03TWLKZtWaP8",
+    authDomain: "efaflu-assiduidade.firebaseapp.com",
+    projectId: "efaflu-assiduidade",
+    storageBucket: "efaflu-assiduidade.firebasestorage.app",
+    messagingSenderId: "282508571679",
+    appId: "1:282508571679:web:e72894bc6a45216400912a",
+  };
+  // Email da conta de administrador. Só esta conta vê a importação.
+  const ADMIN_EMAIL = "ratonline1976@gmail.com";
+  // =====================================================================
+
+  const C_ART = "stock_artigos", C_MOV = "stock_movimentos", C_COD = "stock_codigos";
+  if (!window.firebase) { document.getElementById("view-loading").innerHTML = '<p class="muted">Sem ligação ao Firebase. Verifique a internet e recarregue a página.</p>'; return; }
+  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+  // Pequenos atalhos para a versão "compat" do Firebase (a mesma da assiduidade).
+  const collection = (_db, name) => db.collection(name);
+  const doc = (a, b, c) => (c !== undefined ? db.collection(b).doc(c) : a.doc());
+  const onSnapshot = (ref, next, err) => ref.onSnapshot(next, err);
+  const orderBy = (f, d) => (q) => q.orderBy(f, d);
+  const limit = (n) => (q) => q.limit(n);
+  const query = (c, ...mods) => mods.reduce((q, m) => m(q), c);
+  const writeBatch = () => db.batch();
+  const increment = (n) => firebase.firestore.FieldValue.increment(n);
+  const setDoc = (ref, data) => ref.set(data);
+
+  const $ = (id) => document.getElementById(id);
+  const fmt = new Intl.NumberFormat("pt-PT");
+  const norm = (s) => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const codeId = (c) => "c-" + Array.from(c).map((ch) => (/[A-Za-z0-9_\-.:@+]/.test(ch) ? ch : "~" + ch.codePointAt(0).toString(16).padStart(4, "0"))).join("");
+  const when = (iso) => { const d = new Date(iso); return d.toLocaleDateString("pt-PT", { day: "2-digit", month: "2-digit" }) + " " + d.toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" }); };
+  const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
+
+  const S = { email: null, artigos: new Map(), codigos: new Map(), movs: [], mode: "entrada", pending: null, tq: "", tsit: "", unsubs: [] };
+
+  // ---------- som ----------
+  let actx = null;
+  const beep = (ok) => {
+    if (!$("opt-sound").checked) return;
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type = ok ? "sine" : "square"; o.frequency.value = ok ? 1320 : 220;
+      g.gain.setValueAtTime(0.08, actx.currentTime); g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + (ok ? 0.12 : 0.3));
+      o.connect(g).connect(actx.destination); o.start(); o.stop(actx.currentTime + (ok ? 0.13 : 0.32));
+    } catch (e) {}
+  };
+  const status = (msg, kind) => { const s = $("status"); s.textContent = msg; s.className = "status" + (kind ? " " + kind : ""); };
+
+  // ---------- regras de negócio ----------
+  const stockOf = (a) => (a.stock == null ? null : Number(a.stock));
+  const situacao = (a) => {
+    if (a.nao_encomendar) return "Não encomendar";
+    const st = stockOf(a), mn = a.minimo;
+    if (mn == null || st == null) return "Sem regra";
+    if (st <= 0 && mn > 0) return "Rutura";
+    if (st < mn) return "Abaixo do mínimo";
+    return "OK";
+  };
+  const pillCls = (s) => (s === "Rutura" ? "Rutura" : s === "Abaixo do mínimo" ? "Abaixo" : s === "OK" ? "OK" : "Outro");
+  const codesOf = (linha) => { const out = []; S.codigos.forEach((l, c) => { if (l === linha) out.push(c); }); return out; };
+  const stepFor = (a) => (S.mode === "entrada" ? (a.un_caixa > 1 ? a.un_caixa : 1) : 1);
+
+  // ---------- desenho ----------
+  const renderStats = () => {
+    let rut = 0, abx = 0;
+    S.artigos.forEach((a) => { const s = situacao(a); if (s === "Rutura") rut++; else if (s === "Abaixo do mínimo") abx++; });
+    $("st-total").textContent = fmt.format(S.artigos.size);
+    $("st-rut").textContent = fmt.format(rut);
+    $("st-abx").textContent = fmt.format(abx);
+    $("st-cod").textContent = fmt.format(S.codigos.size);
+  };
+
+  const renderLog = () => {
+    const ul = $("log"); ul.replaceChildren();
+    if (!S.movs.length) { ul.append(el("li", "empty", "Ainda não há movimentos registados.")); return; }
+    S.movs.forEach((m) => {
+      const li = el("li", m.anulado ? "void" : "");
+      const q = el("span", "q " + (m.qtd >= 0 ? "in" : "out"), (m.qtd > 0 ? "+" : "") + fmt.format(m.qtd));
+      const d = el("div", "d");
+      d.append(el("div", null, m.descricao || m.ref || "Linha " + m.linha),
+        el("small", null, [when(m.at), m.tipo === "entrada" ? "Entrada" : "Saída", m.ref, m.por, m.anulado ? "anulado" : ""].filter(Boolean).join(" · ")));
+      const act = el("div");
+      if (!m.anulado) { const b = el("button", "btn small", "Anular"); b.addEventListener("click", () => anular(m)); act.append(b); }
+      li.append(q, d, act); ul.append(li);
+    });
+  };
+
+  const renderTable = () => {
+    const words = norm(S.tq).split(/\s+/).filter(Boolean);
+    const rows = [];
+    S.artigos.forEach((a) => {
+      const sit = situacao(a), codes = codesOf(a.linha);
+      if (S.tsit === "sem-codigo" ? codes.length : (S.tsit && sit !== S.tsit)) return;
+      if (words.length) {
+        const hay = norm([a.ref, a.descricao, a.ferramenta, a.marca, a.maquina, a.tipo, a.fornecedor, codes.join(" ")].join(" "));
+        if (!words.every((w) => hay.includes(w))) return;
+      }
+      rows.push({ a, sit, codes });
+    });
+    const order = { "Rutura": 0, "Abaixo do mínimo": 1, "Sem regra": 2, "Não encomendar": 3, "OK": 4 };
+    rows.sort((x, y) => (order[x.sit] - order[y.sit]) || String(x.a.descricao).localeCompare(String(y.a.descricao), "pt"));
+    const tb = $("tbl"); tb.replaceChildren();
+    rows.forEach(({ a, sit, codes }) => {
+      const tr = tb.insertRow();
+      const td = (t, c) => { const x = tr.insertCell(); x.textContent = t; if (c) x.className = c; };
+      td(a.ref, "ref"); td(a.descricao); td(a.maquina, "hide-sm"); td(a.marca, "hide-sm");
+      const st = stockOf(a); td(st == null ? "" : fmt.format(st), "r"); td(a.minimo == null ? "" : fmt.format(a.minimo), "r");
+      const c = tr.insertCell(); c.append(el("span", "pill " + pillCls(sit), sit));
+      td(codes.join(", "), "codes hide-sm");
+    });
+    $("tbl-count").textContent = fmt.format(rows.length) + " de " + fmt.format(S.artigos.size) + " artigos";
+  };
+
+  const renderResult = () => {
+    const box = $("result"); box.replaceChildren();
+    const p = S.pending;
+    if (!p) { box.className = "result idle"; box.textContent = "Nenhum código lido. Também pode escrever a referência interna (FE623…) e carregar em Enter."; return; }
+    if (p.kind === "unknown") {
+      box.className = "result unknown";
+      const h = el("div", "r-head"), t = el("div");
+      t.append(el("div", "r-title", "Código novo"), el("div", "r-meta", p.codigo));
+      h.append(t, el("span", "key", "Esc para cancelar"));
+      const info = el("div", null, "Este código ainda não está associado a nenhum artigo. Procure o artigo e clique nele para associar. Da próxima vez é reconhecido logo.");
+      const search = el("input", "pick-search"); search.type = "search"; search.id = "pick-q"; search.placeholder = "Procurar artigo: referência, medida, marca…"; search.autocomplete = "off"; search.value = p.q || "";
+      const ul = el("ul", "pick-list");
+      const fill = () => {
+        p.q = search.value;
+        const words = norm(search.value).split(/\s+/).filter(Boolean);
+        ul.replaceChildren();
+        if (!words.length) { ul.append(el("li", "empty", "Escreva parte da descrição ou referência.")); return; }
+        const hits = [];
+        S.artigos.forEach((a) => { const hay = norm([a.ref, a.descricao, a.ferramenta, a.marca, a.maquina, a.tipo].join(" ")); if (words.every((w) => hay.includes(w))) hits.push(a); });
+        hits.slice(0, 12).forEach((a) => {
+          const li = el("li"), b = el("button");
+          b.append(el("span", null, a.descricao), el("small", null, [a.ref, a.marca, a.maquina, "stock " + (stockOf(a) ?? "—")].filter(Boolean).join(" · ")));
+          b.addEventListener("click", () => associar(p.codigo, a));
+          li.append(b); ul.append(li);
+        });
+        if (!hits.length) ul.append(el("li", "empty", "Nenhum artigo encontrado."));
+      };
+      search.addEventListener("input", fill);
+      search.addEventListener("keydown", (e) => { if (e.key === "Escape") cancel(); });
+      const acts = el("div", "r-actions"), bc = el("button", "btn", "Cancelar"); bc.addEventListener("click", cancel); acts.append(bc);
+      box.append(h, info, search, ul, acts);
+      fill();
+      return;
+    }
+    const a = p.artigo, atual = stockOf(a), sign = S.mode === "entrada" ? 1 : -1;
+    box.className = "result " + (S.mode === "entrada" ? "in" : "out");
+    const h = el("div", "r-head"), t = el("div");
+    t.append(el("div", "r-title", a.descricao));
+    const meta = el("div", "r-meta");
+    [a.ref, a.marca, a.maquina, a.tipo, p.codigo && p.codigo !== a.ref ? "código " + p.codigo : ""].filter(Boolean).forEach((m) => meta.append(el("span", null, m)));
+    t.append(meta); h.append(t, el("span", "key", "Enter confirma · Esc cancela"));
+    const flow = el("div", "r-flow");
+    const b1 = el("div", "box"); b1.append(el("span", null, "Stock atual"), el("b", null, atual == null ? "—" : fmt.format(atual)));
+    const q = el("div", "qty"); const qi = el("input");
+    qi.type = "number"; qi.min = "1"; qi.step = "1"; qi.id = "qty"; qi.value = String(p.qtd); qi.setAttribute("aria-label", "Quantidade em unidades");
+    q.append(el("span", null, S.mode === "entrada" ? "Entrada (unidades)" : "Saída (unidades)"), qi);
+    const b2 = el("div", "box"), nb = el("b", null, fmt.format((atual ?? 0) + sign * p.qtd)); b2.append(el("span", null, "Fica com"), nb);
+    flow.append(b1, q, el("span", "arrow", "→"), b2);
+    const hint = el("div", "muted"); hint.style.fontSize = ".82rem";
+    hint.textContent = a.un_caixa > 1 ? "1 caixa = " + fmt.format(a.un_caixa) + " unidades. Ler a mesma caixa outra vez soma mais " + (S.mode === "entrada" ? "uma caixa." : "uma unidade.") : "Ler o mesmo código outra vez soma mais uma unidade.";
+    const w = el("div", "warnline");
+    const warn = () => {
+      const msgs = [];
+      if (a.nao_encomendar) msgs.push('Artigo marcado como "não encomendar / não aprovado".');
+      if (S.mode === "saida" && atual != null && p.qtd > atual) msgs.push("A saída é maior do que o stock registado.");
+      w.textContent = msgs.join(" ");
+    };
+    qi.addEventListener("input", () => { p.qtd = Math.max(0, Math.round(Number(qi.value) || 0)); nb.textContent = fmt.format((atual ?? 0) + sign * p.qtd); warn(); });
+    qi.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); confirmar(); } if (e.key === "Escape") cancel(); });
+    warn();
+    const acts = el("div", "r-actions");
+    const bok = el("button", "btn primary", S.mode === "entrada" ? "Confirmar entrada" : "Confirmar saída"); bok.addEventListener("click", confirmar);
+    const bc = el("button", "btn", "Cancelar"); bc.addEventListener("click", cancel);
+    acts.append(bok, bc);
+    box.append(h, flow, hint, w, acts);
+  };
+
+  const renderAll = () => { renderStats(); renderLog(); renderTable(); if (S.pending && S.pending.kind === "found") { S.pending.artigo = S.artigos.get(S.pending.artigo.linha) || S.pending.artigo; renderResult(); } };
+
+  // ---------- ações ----------
+  const findByCode = (code) => {
+    if (S.codigos.has(code)) return S.artigos.get(S.codigos.get(code)) || null;
+    const n = code.toUpperCase(); let hit = null;
+    S.artigos.forEach((a) => { if (!hit && a.ref && a.ref.toUpperCase() === n) hit = a; });
+    if (!hit) S.artigos.forEach((a) => { if (!hit && a.ferramenta && String(a.ferramenta).toUpperCase() === n) hit = a; });
+    return hit;
+  };
+
+  const onScan = (raw) => {
+    const code = raw.trim();
+    if (!code) { if (S.pending && S.pending.kind === "found") confirmar(); return; }
+    if (!S.artigos.size) { status("Os artigos ainda estão a carregar.", "err"); return; }
+    const a = findByCode(code);
+    if (!a) {
+      beep(false);
+      S.pending = { kind: "unknown", codigo: code, q: "" };
+      renderResult(); status("Código não reconhecido: associe-o a um artigo.", "err");
+      setTimeout(() => { const s = $("pick-q"); if (s) s.focus(); }, 0);
+      return;
+    }
+    beep(true);
+    if (S.pending && S.pending.kind === "found" && S.pending.artigo.linha === a.linha) {
+      S.pending.qtd += stepFor(a);
+      status("Mais " + (S.mode === "entrada" && a.un_caixa > 1 ? "uma caixa" : "uma unidade") + ": " + fmt.format(S.pending.qtd) + " unidades.", "");
+    } else {
+      if (S.pending && S.pending.kind === "found") status("A leitura anterior não foi registada (foi substituída).", "err"); else status("", "");
+      S.pending = { kind: "found", artigo: a, codigo: code, qtd: stepFor(a) };
+    }
+    renderResult();
+    if ($("opt-auto").checked) confirmar();
+  };
+
+  const associar = async (codigo, a) => {
+    try {
+      await setDoc(doc(db, C_COD, codeId(codigo)), { codigo, linha: a.linha, ref: a.ref || "", at: new Date().toISOString(), por: S.email });
+      S.codigos.set(codigo, a.linha);
+      beep(true); status("Código " + codigo + " associado a " + (a.ref || a.descricao) + ".", "ok");
+      S.pending = { kind: "found", artigo: a, codigo, qtd: stepFor(a) };
+      renderResult(); renderStats(); renderTable(); focusScan();
+    } catch (e) { status("Não foi possível guardar a associação (" + (e.code || e.message) + ").", "err"); }
+  };
+
+  let saving = false;
+  const confirmar = async () => {
+    const p = S.pending;
+    if (!p || p.kind !== "found" || saving) return;
+    if (!(p.qtd > 0)) { status("Indique uma quantidade maior que zero.", "err"); return; }
+    const a = p.artigo, sign = S.mode === "entrada" ? 1 : -1, qtd = sign * p.qtd, now = new Date().toISOString();
+    saving = true;
+    try {
+      const b = writeBatch(db);
+      b.set(doc(collection(db, C_MOV)), { at: now, linha: a.linha, ref: a.ref || "", descricao: a.descricao || "", tipo: S.mode, qtd, codigo: p.codigo || "", por: S.email, anulado: false });
+      b.update(doc(db, C_ART, "L" + a.linha), { stock: increment(qtd), atualizado_em: now });
+      await b.commit();
+      beep(true);
+      status((sign > 0 ? "Entrada" : "Saída") + " registada: " + (sign > 0 ? "+" : "−") + fmt.format(p.qtd) + " · " + (a.ref || a.descricao), "ok");
+      S.pending = null; renderResult();
+    } catch (e) { beep(false); status("Não foi possível registar (" + (e.code || e.message) + "). Tente outra vez.", "err"); }
+    finally { saving = false; focusScan(); }
+  };
+
+  const anular = async (m) => {
+    const now = new Date().toISOString();
+    try {
+      const b = writeBatch(db);
+      b.update(doc(db, C_MOV, m.id), { anulado: true, anulado_em: now, anulado_por: S.email });
+      b.update(doc(db, C_ART, "L" + m.linha), { stock: increment(-m.qtd), atualizado_em: now });
+      await b.commit();
+      status("Movimento anulado e stock corrigido.", "ok");
+    } catch (e) { status("Não foi possível anular (" + (e.code || e.message) + ").", "err"); }
+    focusScan();
+  };
+
+  const cancel = () => { S.pending = null; renderResult(); status("", ""); focusScan(); };
+  const setMode = (m) => {
+    S.mode = m;
+    document.querySelectorAll(".mode").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.mode === m)));
+    if (S.pending && S.pending.kind === "found") S.pending.qtd = stepFor(S.pending.artigo);
+    renderResult(); focusScan();
+  };
+  const focusScan = () => { const s = $("scan"); if (s && !$("view-app").hidden && document.activeElement !== s) s.focus({ preventScroll: true }); };
+
+  // ---------- ligações ----------
+  $("scan").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); const v = e.target.value; e.target.value = ""; onScan(v); }
+    else if (e.key === "Escape") cancel();
+  });
+  document.querySelectorAll(".mode").forEach((b) => b.addEventListener("click", () => setMode(b.dataset.mode)));
+  document.addEventListener("keydown", (e) => {
+    if ($("view-app").hidden) return;
+    if (e.key === "F2") { e.preventDefault(); setMode("entrada"); }
+    if (e.key === "F4") { e.preventDefault(); setMode("saida"); }
+  });
+  document.addEventListener("click", (e) => { if (!e.target.closest("input, button, select, textarea, a, label, table, .log")) focusScan(); });
+  $("tbl-q").addEventListener("input", (e) => { S.tq = e.target.value; renderTable(); });
+  document.querySelectorAll(".chip").forEach((c) => c.addEventListener("click", () => {
+    S.tsit = c.dataset.sit;
+    document.querySelectorAll(".chip").forEach((o) => o.setAttribute("aria-pressed", String(o === c)));
+    renderTable();
+  }));
+  $("btn-csv").addEventListener("click", () => {
+    const esc = (v) => { const s = String(v ?? ""); return /[;"\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    const lines = [["Ref. interna", "Descrição", "Máquina", "Tipo", "Marca", "Fornecedor", "Stock", "Mínimo", "Situação", "Códigos de barras", "Atualizado em"].join(";")];
+    Array.from(S.artigos.values()).sort((x, y) => x.linha - y.linha).forEach((a) => {
+      lines.push([a.ref, a.descricao, a.maquina, a.tipo, a.marca, a.fornecedor, stockOf(a), a.minimo, situacao(a), codesOf(a.linha).join(" "), a.atualizado_em ? when(a.atualizado_em) : ""].map(esc).join(";"));
+    });
+    const blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob); link.download = "stock-efaflu-" + new Date().toISOString().slice(0, 10) + ".csv";
+    document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(link.href), 2000);
+  });
+
+  // ---------- importação (admin) ----------
+  let impRows = null, impArmed = false;
+  $("imp-file").addEventListener("change", async (e) => {
+    impRows = null; impArmed = false; $("imp-btn").textContent = "Importar artigos";
+    const f = e.target.files[0]; if (!f) { $("imp-btn").disabled = true; return; }
+    try {
+      const rows = JSON.parse(await f.text());
+      if (!Array.isArray(rows) || !rows.every((r) => Number.isInteger(r.linha))) throw new Error("formato");
+      impRows = rows; $("imp-btn").disabled = false;
+      $("imp-msg").textContent = fmt.format(rows.length) + " artigos prontos a importar."; $("imp-msg").className = "status";
+    } catch (err) { $("imp-btn").disabled = true; $("imp-msg").textContent = "Ficheiro inválido: escolha o artigos-efaflu.json."; $("imp-msg").className = "status err"; }
+  });
+  $("imp-btn").addEventListener("click", async () => {
+    if (!impRows) return;
+    if (!impArmed) { impArmed = true; $("imp-btn").textContent = "Clique outra vez para confirmar"; return; }
+    $("imp-btn").disabled = true; const now = new Date().toISOString();
+    try {
+      for (let i = 0; i < impRows.length; i += 400) {
+        const b = writeBatch(db);
+        impRows.slice(i, i + 400).forEach((r) => {
+          const { stock_inicial, ...rest } = r;
+          b.set(doc(db, C_ART, "L" + r.linha), { ...rest, stock: stock_inicial ?? null, stock_inicial: stock_inicial ?? null, importado_em: now, atualizado_em: now });
+        });
+        await b.commit();
+      }
+      $("imp-msg").textContent = "Importados " + fmt.format(impRows.length) + " artigos."; $("imp-msg").className = "status ok";
+    } catch (err) { $("imp-msg").textContent = "Falhou a importação (" + (err.code || err.message) + ")."; $("imp-msg").className = "status err"; }
+    impArmed = false; $("imp-btn").textContent = "Importar artigos"; $("imp-btn").disabled = false;
+  });
+
+  // ---------- sessão ----------
+  try { const m = localStorage.getItem("efaflu_email"); if (m) $("login-email").value = m; } catch (e) {}
+  $("login-form").addEventListener("submit", async (e) => {
+    e.preventDefault(); $("login-msg").textContent = "";
+    const em = $("login-email").value.trim().toLowerCase();
+    try { await auth.signInWithEmailAndPassword(em, $("login-pass").value); $("login-pass").value = ""; try { localStorage.setItem("efaflu_email", em); } catch (x) {} }
+    catch (err) {
+      const c = (err && err.code) || "";
+      $("login-msg").textContent = /wrong-password|invalid-credential|user-not-found|invalid-login/.test(c) ? "Email ou palavra-passe errados." : c.includes("too-many") ? "Demasiadas tentativas. Espera uns minutos." : c.includes("network") ? "Sem internet. Verifica a ligação." : "Não foi possível entrar (" + c + ").";
+    }
+  });
+  $("login-forgot").addEventListener("click", async () => {
+    const em = $("login-email").value.trim();
+    if (!em) { $("login-msg").textContent = "Escreve primeiro o teu email."; return; }
+    try { await auth.sendPasswordResetEmail(em); $("login-msg").textContent = "Enviámos um email para criares nova palavra-passe."; }
+    catch (err) { $("login-msg").textContent = "Não foi possível enviar o email."; }
+  });
+  $("btn-logout").addEventListener("click", () => auth.signOut());
+
+  const subscribe = () => {
+    S.unsubs.push(onSnapshot(collection(db, C_ART), (snap) => {
+      S.artigos = new Map(snap.docs.map((d) => { const v = d.data(); return [v.linha, v]; }));
+      $("scan-hint").textContent = S.artigos.size ? "Pronto a ler. " + fmt.format(S.artigos.size) + " artigos carregados." : "Ainda não há artigos. O administrador tem de importar a lista.";
+      $("scan-hint").className = "scan-hint" + (S.artigos.size ? " live" : "");
+      renderAll();
+    }, (err) => { $("scan-hint").textContent = "Sem acesso aos artigos (" + err.code + "). Verifique as regras do Firestore."; }));
+    S.unsubs.push(onSnapshot(collection(db, C_COD), (snap) => {
+      S.codigos = new Map(snap.docs.map((d) => { const v = d.data(); return [v.codigo, v.linha]; }));
+      renderStats(); renderTable();
+    }, () => {}));
+    S.unsubs.push(onSnapshot(query(collection(db, C_MOV), orderBy("at", "desc"), limit(60)), (snap) => {
+      S.movs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      renderLog();
+    }, (err) => status("Sem acesso aos movimentos (" + err.code + ").", "err")));
+  };
+
+  auth.onAuthStateChanged((user) => {
+    S.unsubs.forEach((u) => u()); S.unsubs = [];
+    $("view-loading").hidden = true;
+    if (!user) { $("view-app").hidden = true; $("view-login").hidden = false; return; }
+    S.email = (user.email || user.uid).toLowerCase();
+    $("user-email").textContent = S.email;
+    $("admin").hidden = (user.email || "").toLowerCase() !== ADMIN_EMAIL.toLowerCase();
+    $("view-login").hidden = true; $("view-app").hidden = false;
+    renderResult(); subscribe(); focusScan();
+  });
+})();
+</script>
+</body>
+</html>
