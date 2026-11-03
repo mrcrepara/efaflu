@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>CNC Tempos e Custos</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
@@ -153,6 +156,17 @@ tr.total td{font-weight:600;border-bottom:0}
 .empty{padding:22px 8px;color:var(--muted);font-size:14px;border-top:1px solid var(--line)}
 .confirm{display:flex;gap:8px;align-items:center;font-size:13px}
 
+.top a{color:var(--brand-sub);text-decoration:none;font-size:13px}
+.top a:hover{color:var(--brand-ink)}
+.who{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.who button{font:600 12px var(--f-body);background:transparent;color:var(--brand-ink);border:1px solid var(--brand-sub);border-radius:6px;padding:5px 10px;cursor:pointer}
+.login{position:fixed;inset:0;z-index:30;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px))}
+.login form{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:24px;width:100%;max-width:380px;display:flex;flex-direction:column;gap:12px}
+.login h2{font-size:22px}
+.login p{margin:0;color:var(--muted);font-size:14px}
+.login .err{color:var(--bad);font-size:13.5px;min-height:1em}
+.login .link{background:none;border:0;color:var(--accent);font:500 13px var(--f-body);cursor:pointer;padding:0;text-align:left}
+.ro{margin-top:10px;padding:10px 14px;border-radius:8px;background:var(--soft);color:var(--accent);font-size:14px}
 .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20;max-width:calc(100% - 32px)}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
@@ -190,7 +204,11 @@ tr.total td{font-weight:600;border-bottom:0}
       <h1>CNC · Tempos e custos</h1>
       <p>Medir. Comparar. Melhorar.</p>
     </div>
-    <div class="sync"><span class="dot" id="syncDot"></span><span id="syncTxt">A ligar ao histórico…</span></div>
+    <div class="who">
+      <a href="index.html">← Parque Máquinas EFAFLU</a>
+      <div class="sync"><span class="dot" id="syncDot"></span><span id="syncTxt">A ligar ao histórico…</span></div>
+      <button type="button" id="bSair" hidden>Sair</button>
+    </div>
   </div>
 </header>
 
@@ -203,6 +221,7 @@ tr.total td{font-weight:600;border-bottom:0}
     <span class="spacer"></span>
     <span class="editing" id="editing"></span>
   </div>
+  <div class="ro" id="roBanner" hidden>A tua conta é só de consulta. Podes ver e simular, mas não guardar nem apagar registos.</div>
   <div class="banner" id="exBanner" hidden>Valores de exemplo, para veres como funciona. <button type="button" id="bClearEx">Limpar e começar</button></div>
 
   <div class="main">
@@ -210,11 +229,11 @@ tr.total td{font-weight:600;border-bottom:0}
       <section class="panel" aria-labelledby="s1">
         <h2 id="s1"><span class="n">01</span>Identificação</h2>
         <div class="grid2">
-          <label class="f">Referência da peça<input id="ref" autocomplete="off"></label>
+          <label class="f">Referência da peça<input id="ref" list="dl_ref" autocomplete="off"></label>
           <label class="f">Data<input id="data" type="date"></label>
-          <label class="f">Máquina<input id="maquina" autocomplete="off"></label>
-          <label class="f">Operação / fase<input id="operacao" autocomplete="off"></label>
-          <label class="f">Responsável<input id="responsavel" autocomplete="off"></label>
+          <label class="f">Máquina<input id="maquina" list="dl_maquina" autocomplete="off"></label>
+          <label class="f">Operação / fase<input id="operacao" list="dl_operacao" autocomplete="off"></label>
+          <label class="f">Responsável<input id="responsavel" list="dl_responsavel" autocomplete="off"></label>
           <label class="f">Quantidade do lote (peças boas)<input id="lote" class="num-in" inputmode="numeric"></label>
           <label class="f full">Quantidade anual prevista (peças) <input id="anual" class="num-in" inputmode="numeric" placeholder="Opcional, para a poupança por ano"></label>
         </div>
@@ -240,9 +259,9 @@ tr.total td{font-weight:600;border-bottom:0}
           <span class="h l"></span><span class="h">Antes</span><span class="h d">Depois</span>
 
           <span class="lab">Programa / revisão</span>
-          <input id="a_prog" autocomplete="off" aria-label="Programa antes"><input id="d_prog" autocomplete="off" aria-label="Programa depois">
+          <input id="a_prog" list="dl_prog" autocomplete="off" aria-label="Programa antes"><input id="d_prog" list="dl_prog" autocomplete="off" aria-label="Programa depois">
           <span class="lab">Ferramenta</span>
-          <input id="a_ferr" autocomplete="off" aria-label="Ferramenta antes"><input id="d_ferr" autocomplete="off" aria-label="Ferramenta depois">
+          <input id="a_ferr" list="dl_ferr" autocomplete="off" aria-label="Ferramenta antes"><input id="d_ferr" list="dl_ferr" autocomplete="off" aria-label="Ferramenta depois">
 
           <span class="sep"></span>
           <span class="lab">Tempo de ciclo<small>por peça, mm:ss ou segundos</small></span>
@@ -330,6 +349,19 @@ tr.total td{font-weight:600;border-bottom:0}
     <div class="hist-list" id="histList"></div>
   </section>
 </div>
+<div class="login" id="login" hidden>
+  <form id="fLogin" autocomplete="on">
+    <div class="eyebrow" style="color:var(--accent)">EFAFLU · Parque de Máquinas</div>
+    <h2>CNC · Tempos e custos</h2>
+    <p>Entra com a mesma conta da assiduidade.</p>
+    <label class="f">Email<input id="lEmail" type="email" autocomplete="username" required></label>
+    <label class="f">Palavra-passe<input id="lPass" type="password" autocomplete="current-password" required></label>
+    <div class="err" id="lErr" role="alert"></div>
+    <button class="btn primary" type="submit" id="lBtn">Entrar</button>
+    <button class="link" type="button" id="lForgot">Esqueci-me da palavra-passe</button>
+  </form>
+</div>
+<datalist id="dl_ref"></datalist><datalist id="dl_maquina"></datalist><datalist id="dl_operacao"></datalist><datalist id="dl_responsavel"></datalist><datalist id="dl_prog"></datalist><datalist id="dl_ferr"></datalist>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
@@ -469,7 +501,7 @@ const DKEY="cnc_tc_rascunho_v2";
 function saveDraft(){try{localStorage.setItem(DKEY,JSON.stringify({f:read(),currentId,isExample}))}catch(e){}}
 function loadDraft(){try{return JSON.parse(localStorage.getItem(DKEY)||"null")}catch(e){return null}}
 let dT;function onInput(){render();clearTimeout(dT);dT=setTimeout(saveDraft,400)}
-document.querySelectorAll("input:not(#q):not(#fImport),select:not(#fEstado),textarea").forEach(el=>{el.addEventListener("input",onInput);el.addEventListener("change",onInput)});
+document.querySelectorAll(".main input,.main select,.main textarea").forEach(el=>{el.addEventListener("input",onInput);el.addEventListener("change",onInput)});
 
 function setExample(on){isExample=on;$("exBanner").hidden=!on}
 function setEditing(){const r=records.find(x=>x.id===currentId);$("editing").innerHTML=r?`A editar <b>${esc(r.f.ref||"registo sem referência")}</b>`:"Registo novo";renderHist()}
@@ -487,12 +519,17 @@ function localPut(arr){try{localStorage.setItem(LKEY,JSON.stringify(arr));return
 
 function summary(R){return {poupPeca:R.ready?R.poupPeca:null,poupAno:R.ready?R.poupAno:null,redCiclo:R.ready?R.redCiclo:null,poupLote:R.ready?R.poupLote:null}}
 
+let readOnly=false,userEmail="";
+function setReadOnly(on){readOnly=on;$("roBanner").hidden=!on;$("bSave").disabled=on;$("fImport").disabled=on;
+  document.querySelector('label[for="fImport"]').hidden=on;$("bSave").style.opacity=on?.5:1;renderHist()}
 async function save(){
+  if(readOnly){toast("A tua conta é só de consulta.");return}
+  if(window.firebase&&!store){toast("Entra com a tua conta para guardar.");$("login").hidden=false;return}
   const f=read(), R=calc();
   if(!f.ref.trim()&&!f.maquina.trim()){toast("Indica pelo menos a referência ou a máquina.");$("ref").focus();return}
   const now=new Date().toISOString();
   const prev=records.find(x=>x.id===currentId);
-  const rec={f,res:summary(R),criadoEm:prev?prev.criadoEm:now,atualizadoEm:now};
+  const rec={f,res:summary(R),criadoEm:prev?prev.criadoEm:now,atualizadoEm:now,autor:userEmail||""};
   try{
     if(store){const ref=currentId?store.doc(currentId):store.doc();await ref.set(rec);currentId=ref.id}
     else{const arr=localAll();const id=currentId||("r"+Date.now().toString(36));const i=arr.findIndex(x=>x.id===id);
@@ -500,7 +537,7 @@ async function save(){
     setExample(false);saveDraft();setEditing();toast(prev?"Registo atualizado":"Registo guardado");
   }catch(e){
     if(e&&e.code==="quota_exceeded")toast("O histórico está cheio. Apaga registos antigos.");
-    else if(e&&e.code==="invalid_argument")toast("Não tens permissão para guardar neste histórico.");
+    else if(e&&(e.code==="invalid_argument"||e.code==="permission-denied")){setReadOnly(true);toast("A tua conta não pode guardar. É só de consulta.")}
     else toast("Não foi possível guardar. Tenta outra vez.");
   }
 }
@@ -513,7 +550,14 @@ function matches(r,q,est){
   return q.toLowerCase().split(/\s+/).every(w=>hay.includes(w))}
 function fdate(s){if(!s)return "";const [y,m,d]=s.split("-");return d&&m?`${d}/${m}/${y}`:s}
 
+function fillLists(){
+  const sets={dl_ref:["ref"],dl_maquina:["maquina"],dl_operacao:["operacao"],dl_responsavel:["responsavel"],dl_prog:["a_prog","d_prog"],dl_ferr:["a_ferr","d_ferr"]};
+  for(const [dl,keys] of Object.entries(sets)){
+    const vals=new Set();records.forEach(r=>keys.forEach(k=>{const v=(r.f&&r.f[k]||"").trim();if(v)vals.add(v)}));
+    $(dl).innerHTML=[...vals].sort((a,b)=>a.localeCompare(b,"pt")).map(v=>`<option value="${esc(v)}"></option>`).join("")}
+}
 function renderHist(){
+  fillLists();
   const q=$("q").value.trim(),est=$("fEstado").value;
   const list=records.filter(r=>matches(r,q,est));
   const tot=list.filter(r=>(r.f.estado||"")!=="Rejeitada").reduce((a,r)=>a+(r.res&&r.res.poupAno>0?r.res.poupAno:0),0);
@@ -525,7 +569,7 @@ function renderHist(){
     const f=r.f,s=r.res||{},st=f.estado||"Por validar";
     const pp=s.poupPeca,pa=s.poupAno;
     const c=v=>v==null?"":v>0?"delta-pos":v<0?"delta-neg":"";
-    const del=pendingDelete===r.id?`<span class="confirm" data-stop>Apagar? <button class="btn danger" data-del="${r.id}" type="button">Sim, apagar</button><button class="btn" data-cancel type="button">Não</button></span>`
+    const del=readOnly?"":pendingDelete===r.id?`<span class="confirm" data-stop>Apagar? <button class="btn danger" data-del="${r.id}" type="button">Sim, apagar</button><button class="btn" data-cancel type="button">Não</button></span>`
       :`<button class="btn ghost danger" data-ask="${r.id}" type="button" aria-label="Apagar registo">Apagar</button>`;
     return `<div class="hist-item ${r.id===currentId?"on":""}" tabindex="0" data-id="${r.id}">
       <div><div class="r1">${esc(f.ref||"Sem referência")}</div><div class="r2">${esc([fdate(f.data),f.operacao,(f.a_prog||f.d_prog)?(f.a_prog||"?")+" → "+(f.d_prog||"?"):""].filter(Boolean).join(" · "))}</div></div>
@@ -542,7 +586,7 @@ $("histList").addEventListener("click",async e=>{
     if(b.hasAttribute("data-cancel")){pendingDelete=null;renderHist();return}
     if(b.dataset.del){const id=b.dataset.del;pendingDelete=null;
       try{if(store)await store.doc(id).delete();else{records=localAll().filter(x=>x.id!==id);localPut(records)}
-        if(currentId===id){currentId=null;setEditing()}renderHist();toast("Registo apagado")}catch(err){toast("Não foi possível apagar.")}
+        if(currentId===id){currentId=null;setEditing()}renderHist();toast("Registo apagado")}catch(err){if(err&&err.code==="permission-denied"){setReadOnly(true);toast("A tua conta não pode apagar registos.")}else toast("Não foi possível apagar.")}
       return}}
   if(e.target.closest("[data-stop]"))return;
   const it=e.target.closest(".hist-item");if(it)openRec(it.dataset.id)});
@@ -589,24 +633,51 @@ function setSync(kind,txt){$("syncDot").className="dot "+kind;$("syncTxt").textC
 const d=loadDraft();
 if(d&&d.f){fill(d.f);currentId=d.currentId||null;setExample(!!d.isExample)}
 else{fill(Object.assign({},EXEMPLO,{data:today()}));setExample(true)}
-records=localAll();render();setEditing();
+records=window.firebase?[]:localAll();render();setEditing();
 setSync("","A ligar ao histórico…");
 
-(async()=>{
-  if(!window.claude||!window.claude.use){setSync("local","Guardado neste computador · faz cópias com \"Exportar cópia\"");return}
-  try{downloads=await window.claude.use("downloads")}catch(e){}
-  if(!downloads){$("bJson").hidden=true;$("bCsv").hidden=true}
-  let db=null;try{db=await window.claude.use("db")}catch(e){}
-  if(!db){setSync("local","Histórico guardado só neste navegador");return}
-  store=db.collection("registos");mode="db";
-  let timer=setTimeout(()=>setSync("local","Histórico ainda não respondeu. A tentar…"),10000);
-  store.orderBy("atualizadoEm","desc").onSnapshot(snap=>{
-    records=snap.docs.map(x=>Object.assign({id:x.id},x.data()));
-    if(!snap.metadata.fromCache){clearTimeout(timer);setSync("ok","Histórico guardado na conta · "+records.length+" registo"+(records.length===1?"":"s"))}
-    if(pendingDelete&&!records.some(r=>r.id===pendingDelete))pendingDelete=null;
-    setEditing();
-  },err=>{clearTimeout(timer);store=null;records=localAll();renderHist();setSync("local","Sem ligação ao histórico. A guardar só neste navegador.")});
-})();
+const FIREBASE_CONFIG={
+  apiKey:"AIzaSyAMzVccxOAb03gJ9LV7C1F03TWLKZtWaP8",
+  authDomain:"efaflu-assiduidade.firebaseapp.com",
+  projectId:"efaflu-assiduidade",
+  storageBucket:"efaflu-assiduidade.firebasestorage.app",
+  messagingSenderId:"282508571679",
+  appId:"1:282508571679:web:e72894bc6a45216400912a"
+};
+const COLECAO="cnc_registos";
+let unsub=null;
+function startFirebase(){
+  if(!window.firebase){setSync("local","Sem ligação ao Firebase. A guardar só neste computador.");return}
+  if(!firebase.apps.length)firebase.initializeApp(FIREBASE_CONFIG);
+  const auth=firebase.auth(),fs=firebase.firestore();
+  try{const m=localStorage.getItem("efaflu_email");if(m)$("lEmail").value=m}catch(e){}
+  $("fLogin").addEventListener("submit",async e=>{
+    e.preventDefault();$("lErr").textContent="";$("lBtn").disabled=true;
+    const em=$("lEmail").value.trim().toLowerCase();
+    try{await auth.signInWithEmailAndPassword(em,$("lPass").value);try{localStorage.setItem("efaflu_email",em)}catch(e){}$("lPass").value=""}
+    catch(err){const c=err&&err.code||"";
+      $("lErr").textContent=(c.includes("wrong-password")||c.includes("invalid-credential")||c.includes("user-not-found")||c.includes("invalid-login"))?"Email ou palavra-passe errados.":c.includes("too-many")?"Demasiadas tentativas. Espera uns minutos.":c.includes("network")?"Sem internet. Verifica a ligação.":"Não foi possível entrar ("+c+")."}
+    $("lBtn").disabled=false});
+  $("lForgot").onclick=async()=>{const em=$("lEmail").value.trim();if(!em){$("lErr").textContent="Escreve primeiro o teu email.";return}
+    try{await auth.sendPasswordResetEmail(em);$("lErr").textContent="";toast("Enviámos um email para criares nova palavra-passe.")}catch(err){$("lErr").textContent="Não foi possível enviar o email."}};
+  $("bSair").onclick=()=>auth.signOut();
+  auth.onAuthStateChanged(user=>{
+    if(unsub){unsub();unsub=null}
+    if(!user){store=null;records=[];renderHist();userEmail="";$("login").hidden=false;$("bSair").hidden=true;setSync("","Sessão terminada");return}
+    userEmail=(user.email||"").toLowerCase();$("login").hidden=true;$("bSair").hidden=false;
+    store=fs.collection(COLECAO);setSync("","A carregar histórico…");
+    let timer=setTimeout(()=>setSync("local","O Firebase ainda não respondeu. A tentar…"),10000);
+    unsub=store.orderBy("atualizadoEm","desc").onSnapshot({includeMetadataChanges:false},snap=>{
+      records=snap.docs.map(x=>Object.assign({id:x.id},x.data()));clearTimeout(timer);
+      setSync("ok",userEmail+" · "+records.length+" registo"+(records.length===1?"":"s"));
+      if(pendingDelete&&!records.some(r=>r.id===pendingDelete))pendingDelete=null;
+      setEditing();
+    },err=>{clearTimeout(timer);store=null;records=[];renderHist();
+      setSync("local",err&&err.code==="permission-denied"?"Esta conta não tem acesso aos dados":"Erro ao ligar ao Firebase");
+      if(err&&err.code==="permission-denied")toast("Esta conta não tem acesso. Confirma o email nas regras do Firebase.")});
+  });
+}
+startFirebase();
 })();
 </script>
 
