@@ -208,9 +208,6 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
   <span class="logo"><img src="" data-logo alt="EFAFLU"></span>
   <h1>Assiduidade dos Colaboradores</h1>
   <span id="estado">A carregar…</span>
-  <a href="cnc-custos.html">⚙️ CNC · Tempos e custos</a>
-  <a href="stock.html">📦 Stock ferramentas</a>
-  <a href="index.html">← Parque Máquinas EFAFLU</a>
   <button class="btn sec" style="padding:6px 12px" onclick="bloquear()">🔒 Sair</button>
 </header>
 
@@ -858,6 +855,7 @@ function definirPapel(p){
   if(p==='colaborador') mostrar('eu');
   else if(at && at.dataset.t==='eu') mostrar('dash');
   else if(p==='consulta' && at && ['folha','reg','rel'].includes(at.dataset.t)) mostrar('dash');
+  setTimeout(irHash,0);
 }
 function desligarDados(){
   unsubs.forEach(u=>{ try{u();}catch(e){} }); unsubs=[];
@@ -2080,7 +2078,18 @@ function render(){
 function mostrar(t){
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
   document.querySelectorAll('main>section').forEach(s=>s.classList.toggle('hide',s.id!=='t-'+t));
+  if(location.hash.slice(1)!==t){ try{ history.replaceState(null,'','#'+t); }catch(e){} }
+  window.dispatchEvent(new Event('efa:nav'));
 }
+/* abrir o separador indicado no endereço (#maq, #mapa…) – usado pelo menu lateral */
+function irHash(){
+  const t=location.hash.slice(1), b=t && document.querySelector('.tabs button[data-t="'+t+'"]');
+  if(!b) return;
+  if(document.body.classList.contains('colab') && t!=='eu') return;
+  if(b.classList.contains('hide') || getComputedStyle(b).display==='none') return;
+  mostrar(t);
+}
+window.addEventListener('hashchange', irHash);
 
 /* ---------------- EXPORTAR ---------------- */
 function baixar(nome, conteudo, tipo){
@@ -2259,5 +2268,6 @@ iniciar().then(async()=>{
   if(pwHash && ok===pwHash) desbloquear(); else abrirLock(pwHash?'entrar':'criar');
 });
 </script>
+<script src="menu.js"></script>
 </body>
 </html>

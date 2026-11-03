@@ -238,7 +238,6 @@
   <img src="icon-192.png" alt="EFAFLU">
   <strong>Stock de ferramentas</strong>
   <span class="sp"></span>
-  <a href="assiduidade.html">← Assiduidade</a>
   <span id="user-email" style="font-size:.85rem;color:var(--brand-sub)"></span>
   <button class="btn small" id="btn-logout">Sair</button>
 </div></div>
@@ -825,8 +824,10 @@
     document.querySelectorAll("[data-panel]").forEach((p) => { p.hidden = p.dataset.panel !== name; });
     document.querySelectorAll(".tab").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === name)));
     try { history.replaceState(null, "", "#" + name); } catch (e) {}
+    window.dispatchEvent(new Event("efa:nav"));
     if (name === "leitura") focusScan();
   };
+  window.addEventListener("hashchange", () => { const h = location.hash.slice(1); if (["resumo", "leitura", "encomendar", "stock"].includes(h) && h !== S.tab) showTab(h); });
   document.querySelectorAll(".tab").forEach((b) => b.addEventListener("click", () => showTab(b.dataset.tab)));
 
   const renderAll = () => { renderStats(); renderLog(); renderTable(); renderResumo(); renderEnc(); if (S.pending && S.pending.kind === "found") { S.pending.artigo = S.artigos.get(S.pending.artigo.linha) || S.pending.artigo; renderResult(); } };
@@ -1030,5 +1031,6 @@
   });
 })();
 </script>
+<script src="menu.js"></script>
 </body>
 </html>

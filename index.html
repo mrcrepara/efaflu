@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EFAFLU · Início</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#b82d36">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<style>
+  /* Página de entrada do sistema EFAFLU: o estado de tudo num ecrã. Mesmas cores da assiduidade. */
+  :root{
+    --pri:#b82d36; --pri2:#8e1f27; --bg:#f3f5f8; --card:#fff; --txt:#1d2433; --muted:#6b7385; --line:#e2e6ee; --soft:#f7f8fb;
+    --ok:#1e9e5a; --ok-soft:#e5f5ec; --warn:#c27712; --warn-soft:#fbf1e1; --bad:#d64545; --bad-soft:#fbe7e7; --info:#0f8a9c; --info-soft:#e2f3f5;
+    --sab:#7a4fd6; --r:12px;
+    color-scheme:light;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--txt);font-size:15px;line-height:1.45}
+  [hidden]{display:none!important}
+  .band{background:linear-gradient(90deg,var(--pri2),var(--pri));color:#fff}
+  .band .in{max-width:1180px;margin:0 auto;padding:20px 16px 18px;display:flex;flex-wrap:wrap;gap:8px 20px;align-items:flex-end;justify-content:space-between}
+  .band h1{margin:0;font-size:24px;font-weight:700;letter-spacing:-.01em}
+  .band p{margin:2px 0 0;opacity:.85}
+  .band .sync{font-size:13px;opacity:.85}
+  main{max-width:1180px;margin:0 auto;padding:18px 16px 40px;display:grid;gap:18px}
+  h2{font-size:16px;margin:0}
+  .muted{color:var(--muted)}
+  .small{font-size:13px}
+  .num{font-variant-numeric:tabular-nums}
+
+  .kpis{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,13rem),1fr))}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:grid;gap:4px;text-decoration:none;color:inherit;transition:border-color .15s}
+  a.kpi:hover{border-color:var(--pri)}
+  .kpi .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+  .kpi .v{font-size:30px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+  .kpi .s{font-size:13px;color:var(--muted)}
+  .kpi.ok .v{color:var(--ok)} .kpi.warn .v{color:var(--warn)} .kpi.bad .v{color:var(--bad)}
+  .meter{height:8px;border-radius:99px;background:var(--line);overflow:hidden;display:flex;margin-top:2px}
+  .meter i{display:block;height:100%}
+
+  .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,22rem),1fr));align-items:start}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;display:grid;gap:12px;min-width:0}
+  .card-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+  .card-h a{font-size:13px;color:var(--pri);text-decoration:none;font-weight:600;white-space:nowrap}
+  .card-h a:hover{text-decoration:underline}
+
+  .alerts{display:grid;gap:8px}
+  .al{display:flex;gap:12px;align-items:center;padding:10px 12px;border-radius:10px;text-decoration:none;color:inherit;border:1px solid transparent}
+  .al:hover{border-color:currentColor}
+  .al .n{font-size:20px;font-weight:700;min-width:2.2rem;text-align:center;font-variant-numeric:tabular-nums}
+  .al .t{flex:1;min-width:0}
+  .al .t b{display:block;font-size:14px}
+  .al .t small{color:var(--muted);font-size:12.5px}
+  .al .go{font-size:13px;opacity:.7}
+  .al.bad{background:var(--bad-soft);color:var(--bad)} .al.warn{background:var(--warn-soft);color:var(--warn)} .al.info{background:var(--info-soft);color:var(--info)}
+  .al .t b, .al .t small{color:var(--txt)}
+  .allgood{padding:14px;border-radius:10px;background:var(--ok-soft);color:var(--ok);font-weight:600}
+
+  .who{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+  .who li{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .who li:last-child{border-bottom:0}
+  .tag{display:inline-block;color:#fff;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:99px;white-space:nowrap}
+
+  .legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .sw{width:10px;height:10px;border-radius:2px;display:inline-block}
+  .cols svg{width:100%;height:auto;display:block}
+  .cols text{font-size:13px;fill:var(--muted);font-family:inherit}
+
+  .mod{display:grid;gap:10px}
+  .mod .row{display:flex;justify-content:space-between;gap:10px;font-size:14px;border-bottom:1px solid var(--line);padding-bottom:6px}
+  .mod .row:last-child{border-bottom:0}
+  .mod .row b{font-variant-numeric:tabular-nums}
+  .big{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+
+  /* Login */
+  .login{position:fixed;inset:0;z-index:950;background:var(--pri);display:flex;align-items:center;justify-content:center;padding:16px}
+  .login form{background:#fff;border-radius:14px;padding:26px;width:100%;max-width:380px;display:grid;gap:12px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+  .login img{width:64px;height:64px;border-radius:12px;margin:0 auto}
+  .login h2{text-align:center;font-size:20px}
+  .login p{margin:0;text-align:center;color:var(--muted);font-size:14px}
+  .login label{display:grid;gap:4px;font-size:13px;color:var(--muted)}
+  .login input{font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:8px}
+  .btn{font:inherit;font-weight:600;padding:10px 14px;border-radius:8px;border:1px solid var(--pri);background:var(--pri);color:#fff;cursor:pointer}
+  .link{background:none;border:0;color:var(--pri);font:inherit;font-size:13px;cursor:pointer;padding:0}
+  .err{color:var(--bad);font-size:13.5px;min-height:1em;text-align:center}
+  a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--pri);outline-offset:2px}
+  @media print{.band{background:#fff;color:#000}.login{display:none!important}}
+</style>
+</head>
+<body>
+
+<div class="band"><div class="in">
+  <div>
+    <h1 id="ola">Parque de Máquinas EFAFLU</h1>
+    <p id="hoje">—</p>
+  </div>
+  <div class="sync" id="sync">A ligar…</div>
+</div></div>
+
+<main id="app" hidden>
+  <div class="kpis">
+    <a class="kpi" href="assiduidade.html#dash" id="k-eq"><span class="k">Equipa hoje</span><span class="v" id="kv-eq">—</span><span class="s" id="ks-eq">—</span></a>
+    <a class="kpi" href="assiduidade.html#dash" id="k-mes"><span class="k">Faltas este mês</span><span class="v" id="kv-mes">—</span><span class="s" id="ks-mes">—</span></a>
+    <a class="kpi" href="stock.html#resumo" id="k-st"><span class="k">Cobertura de stock</span><span class="v" id="kv-st">—</span><div class="meter" id="km-st"></div><span class="s" id="ks-st">—</span></a>
+    <a class="kpi" href="cnc-custos.html" id="k-cnc"><span class="k">Poupança CNC prevista</span><span class="v" id="kv-cnc">—</span><span class="s" id="ks-cnc">—</span></a>
+  </div>
+
+  <div class="grid">
+    <section class="card">
+      <div class="card-h"><h2>⚠️ O que precisa de atenção</h2></div>
+      <div class="alerts" id="alerts"></div>
+    </section>
+
+    <section class="card">
+      <div class="card-h"><h2>👥 Quem não está hoje</h2><a href="assiduidade.html#mapa">Mapa de férias →</a></div>
+      <ul class="who" id="aus"></ul>
+      <div class="small muted" id="aus-prox"></div>
+    </section>
+
+    <section class="card">
+      <div class="card-h"><h2>📈 Últimos 6 meses</h2><a href="assiduidade.html#dash">Ver resumo →</a></div>
+      <div class="legend"><span><i class="sw" style="background:var(--ok)"></i>Horas extra</span><span><i class="sw" style="background:var(--bad)"></i>Dias de falta</span><span><i class="sw" style="background:var(--warn)"></i>Dias de ausência</span></div>
+      <div class="cols" id="ch6"></div>
+    </section>
+
+    <section class="card mod">
+      <div class="card-h"><h2>📦 Stock de ferramentas</h2><a href="stock.html#resumo">Ver resumo →</a></div>
+      <div class="meter" id="mod-st-meter" style="height:12px"></div>
+      <div class="legend"><span><i class="sw" style="background:var(--ok)"></i>OK</span><span><i class="sw" style="background:var(--warn)"></i>Abaixo do mínimo</span><span><i class="sw" style="background:var(--bad)"></i>Rutura</span></div>
+      <div class="row"><span>Artigos em rutura</span><b id="st-rut">—</b></div>
+      <div class="row"><span>Abaixo do mínimo</span><b id="st-abx">—</b></div>
+      <div class="row"><span>Custo para repor mínimos</span><b id="st-rep">—</b></div>
+      <div class="row"><span>Valor em stock</span><b id="st-val">—</b></div>
+    </section>
+
+    <section class="card mod">
+      <div class="card-h"><h2>⚙️ Melhorias CNC</h2><a href="cnc-custos.html">Abrir →</a></div>
+      <div><span class="big" id="cnc-ano">—</span> <span class="muted small">poupança por ano prevista</span></div>
+      <div class="row"><span>Melhorias registadas</span><b id="cnc-n">—</b></div>
+      <div class="row"><span>Validadas</span><b id="cnc-val">—</b></div>
+      <div class="row"><span>Em teste / por validar</span><b id="cnc-teste">—</b></div>
+      <div class="row"><span>Rejeitadas</span><b id="cnc-rej">—</b></div>
+    </section>
+
+    <section class="card mod">
+      <div class="card-h"><h2>🚜 Máquinas</h2><a href="assiduidade.html#maq">Abrir →</a></div>
+      <div class="row"><span>Máquinas ativas</span><b id="mq-n">—</b></div>
+      <div class="row"><span>Avarias em aberto</span><b id="mq-av">—</b></div>
+      <div class="row"><span>Horas de utilização este mês</span><b id="mq-h">—</b></div>
+    </section>
+  </div>
+</main>
+
+<div class="login" id="login" hidden>
+  <form id="fLogin" autocomplete="on">
+    <img src="icon-192.png" alt="EFAFLU">
+    <h2>Parque de Máquinas EFAFLU</h2>
+    <p>Entra com a mesma conta da assiduidade.</p>
+    <label>Email<input id="lEmail" type="email" autocomplete="username" required></label>
+    <label>Palavra-passe<input id="lPass" type="password" autocomplete="current-password" required></label>
+    <div class="err" id="lErr" role="alert"></div>
+    <button class="btn" type="submit" id="lBtn">Entrar</button>
+    <button class="link" type="button" id="lForgot">Esqueci-me da palavra-passe</button>
+  </form>
+</div>
+
+<script>
+(function(){
+const FIREBASE_CONFIG={
+  apiKey:"AIzaSyAMzVccxOAb03gJ9LV7C1F03TWLKZtWaP8",
+  authDomain:"efaflu-assiduidade.firebaseapp.com",
+  projectId:"efaflu-assiduidade",
+  storageBucket:"efaflu-assiduidade.firebasestorage.app",
+  messagingSenderId:"282508571679",
+  appId:"1:282508571679:web:e72894bc6a45216400912a"
+};
+const DONO="ratonline1976@gmail.com", ARMAZEM=["armazem@efaflu.pt"];
+const $=id=>document.getElementById(id);
+const nf=new Intl.NumberFormat("pt-PT");
+const eur0=new Intl.NumberFormat("pt-PT",{style:"currency",currency:"EUR",maximumFractionDigits:0});
+const pct=x=>x==null||!isFinite(x)?"—":new Intl.NumberFormat("pt-PT",{style:"percent",maximumFractionDigits:0}).format(x);
+const pad=n=>String(n).padStart(2,"0");
+const dLocal=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const HOJE=dLocal(new Date()), MES=HOJE.slice(0,7);
+const diasAte=d=>Math.round((new Date(d+"T12:00")-new Date(HOJE+"T12:00"))/864e5);
+const cobre=(r,d)=>r.data<=d&&d<=(r.fim||r.data);
+const el=(tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e;};
+const hm=h=>{h=Math.round((h||0)*60);return Math.floor(h/60)+"h"+(h%60?pad(h%60):"");};
+const AUS={"Férias":"#d98a1c","Baixa médica":"#a8551c","Assistência à família":"#be185d","Formação":"#2563eb","Licença":"#64748b"};
+const maisMeses=(d,m)=>{const x=new Date(d+"T12:00");x.setMonth(x.getMonth()+Number(m));return dLocal(x);};
+
+$("hoje").textContent=new Date().toLocaleDateString("pt-PT",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+const h=new Date().getHours();
+const saud=h<13?"Bom dia":h<20?"Boa tarde":"Boa noite";
+
+const D={colabs:[],regs:[],pedidos:[],formacoes:[],epis:[],avarias:[],planos:[],maquinas:[],usos:[],artigos:[],cnc:[]};
+let carregou=new Set();
+
+if(!window.firebase){$("sync").textContent="Sem ligação ao Firebase. Verifica a internet.";return;}
+if(!firebase.apps.length)firebase.initializeApp(FIREBASE_CONFIG);
+const auth=firebase.auth(), db=firebase.firestore();
+try{const m=localStorage.getItem("efaflu_email");if(m)$("lEmail").value=m;}catch(e){}
+$("fLogin").addEventListener("submit",async e=>{
+  e.preventDefault();$("lErr").textContent="";$("lBtn").disabled=true;
+  const em=$("lEmail").value.trim().toLowerCase();
+  try{await auth.signInWithEmailAndPassword(em,$("lPass").value);try{localStorage.setItem("efaflu_email",em)}catch(x){}$("lPass").value="";}
+  catch(err){const c=err&&err.code||"";$("lErr").textContent=/wrong-password|invalid-credential|user-not-found|invalid-login/.test(c)?"Email ou palavra-passe errados.":c.includes("too-many")?"Demasiadas tentativas. Espera uns minutos.":c.includes("network")?"Sem internet. Verifica a ligação.":"Não foi possível entrar ("+c+").";}
+  $("lBtn").disabled=false;
+});
+$("lForgot").onclick=async()=>{const em=$("lEmail").value.trim();if(!em){$("lErr").textContent="Escreve primeiro o teu email.";return;}
+  try{await auth.sendPasswordResetEmail(em);$("lErr").textContent="Enviámos um email para criares nova palavra-passe.";}catch(err){$("lErr").textContent="Não foi possível enviar o email.";}};
+
+let unsubs=[];
+auth.onAuthStateChanged(async u=>{
+  unsubs.forEach(f=>f());unsubs=[];
+  if(!u||u.isAnonymous){$("app").hidden=true;$("login").hidden=false;$("sync").textContent="Sessão terminada";return;}
+  const email=(u.email||"").toLowerCase();
+  // armazém e colaboradores vão direto à sua página
+  if(ARMAZEM.includes(email)){location.replace("stock.html#leitura");return;}
+  if(email!==DONO){
+    try{const a=await db.collection("assid_config").doc("acessos").get();const ac=a.exists?a.data():{};
+      if(ac.colaboradores&&ac.colaboradores[email]){location.replace("assiduidade.html#eu");return;}
+      $("ola").textContent=saud+(ac.rotulos&&ac.rotulos[email]?", "+ac.rotulos[email]:"");
+    }catch(e){}
+  } else $("ola").textContent=saud+", Team Leader";
+  $("login").hidden=true;$("app").hidden=false;$("sync").textContent="A carregar dados…";
+  const ouvir=(col,key)=>unsubs.push(db.collection(col).onSnapshot(s=>{D[key]=s.docs.map(d=>({id:d.id,...d.data()}));carregou.add(key);render();},e=>{carregou.add(key);console.warn(col,e.code);render();}));
+  ouvir("assid_colaboradores","colabs");ouvir("assid_registos","regs");ouvir("assid_pedidos_ferias","pedidos");
+  ouvir("assid_formacoes","formacoes");ouvir("assid_epis","epis");ouvir("assid_avarias","avarias");ouvir("assid_planos","planos");
+  ouvir("assid_maquinas","maquinas");ouvir("assid_maq_uso","usos");ouvir("stock_artigos","artigos");ouvir("cnc_registos","cnc");
+});
+
+function render(){
+  $("sync").textContent=carregou.size>=11?"Atualizado em tempo real · "+new Date().toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"}):"A carregar dados…";
+  const nome=id=>{const c=D.colabs.find(x=>x.id===id);return c?c.nome:"(colaborador)";};
+
+  // ---------- Equipa hoje ----------
+  const ativos=D.colabs.filter(c=>c.ativo!==false);
+  const ausHoje=[];
+  ativos.forEach(c=>{const r=D.regs.find(r=>r.colId===c.id&&cobre(r,HOJE)&&(r.tipo==="ausencia"||((r.tipo==="falta_i"||r.tipo==="falta_j")&&r.dias>0)));if(r)ausHoje.push({c,r});});
+  const pres=ativos.length-ausHoje.length;
+  $("kv-eq").textContent=ativos.length?nf.format(pres)+" / "+nf.format(ativos.length):"—";
+  $("k-eq").className="kpi "+(!ativos.length?"":pres/ativos.length>=0.85?"ok":pres/ativos.length>=0.7?"warn":"bad");
+  $("ks-eq").textContent=ativos.length?(ausHoje.length?nf.format(ausHoje.length)+" ausente"+(ausHoje.length>1?"s":"")+" hoje":"Toda a equipa presente"):"Sem colaboradores registados";
+  const ul=$("aus");ul.replaceChildren();
+  if(!ausHoje.length)ul.append(el("li","muted","Toda a equipa está presente hoje. 👍"));
+  ausHoje.forEach(({c,r})=>{const li=el("li");const mot=r.tipo==="ausencia"?(r.motivo||"Ausência"):(r.tipo==="falta_i"?"Falta injustificada":"Falta justificada");
+    const tg=el("span","tag",mot);tg.style.background=r.tipo==="ausencia"?(AUS[r.motivo]||"#8a7a2a"):"#d64545";
+    const nm=el("span",null,c.nome);if(r.fim&&r.fim!==r.data){nm.append(el("span","muted small"," · até "+r.fim.split("-").reverse().slice(0,2).join("/")));}
+    li.append(nm,tg);ul.append(li);});
+  // próximos 7 dias
+  const prox=new Set();for(let i=1;i<=7;i++){const d=new Date();d.setDate(d.getDate()+i);const ds=dLocal(d);
+    ativos.forEach(c=>{if(D.regs.some(r=>r.colId===c.id&&r.tipo==="ausencia"&&cobre(r,ds)))prox.add(c.nome);});}
+  $("aus-prox").textContent=prox.size?"Próximos 7 dias: "+[...prox].join(", ")+" vão estar ausentes.":"";
+
+  // ---------- Faltas este mês ----------
+  const regMes=D.regs.filter(r=>r.data&&r.data.slice(0,7)===MES);
+  const faltas=regMes.filter(r=>r.tipo==="falta_i"||r.tipo==="falta_j");
+  const fi=faltas.filter(r=>r.tipo==="falta_i").length;
+  const extraMes=regMes.filter(r=>r.tipo==="extra").reduce((s,r)=>s+(r.horas||0),0);
+  $("kv-mes").textContent=nf.format(faltas.length);
+  $("k-mes").className="kpi "+(faltas.length===0?"ok":fi?"bad":"warn");
+  $("ks-mes").textContent=(fi?nf.format(fi)+" injustificada"+(fi>1?"s":"")+" · ":"")+hm(extraMes)+" de horas extra";
+
+  // ---------- Stock ----------
+  const sit=a=>{if(a.nao_encomendar)return"x";const s=a.stock==null?null:Number(a.stock),m=a.minimo;if(m==null||s==null)return"x";if(s<=0&&m>0)return"rut";if(s<m)return"abx";return"ok";};
+  let ok=0,abx=0,rut=0,val=0,rep=0;
+  D.artigos.forEach(a=>{const s=sit(a);if(s==="ok")ok++;else if(s==="abx")abx++;else if(s==="rut")rut++;
+    const st=Number(a.stock)||0,p=a.preco_un==null?null:Number(a.preco_un);if(st>0&&p!=null)val+=st*p;
+    if((s==="rut"||s==="abx")&&p!=null){const un=a.un_caixa>1?a.un_caixa:1;rep+=Math.ceil((a.minimo-st)/un)*un*p;}});
+  const reg=ok+abx+rut,cob=reg?ok/reg:null;
+  $("kv-st").textContent=pct(cob);$("k-st").className="kpi "+(cob==null?"":cob>=0.8?"ok":cob>=0.6?"warn":"bad");
+  $("ks-st").textContent=D.artigos.length?nf.format(rut)+" em rutura · "+nf.format(abx)+" abaixo do mínimo":"Stock ainda sem artigos";
+  [["km-st"],["mod-st-meter"]].forEach(([id])=>{const m=$(id);m.replaceChildren();[["var(--ok)",ok],["var(--warn)",abx],["var(--bad)",rut]].forEach(([c,v])=>{const i=el("i");i.style.background=c;i.style.width=(reg?v/reg*100:0)+"%";m.append(i);});});
+  $("st-rut").textContent=nf.format(rut);$("st-abx").textContent=nf.format(abx);$("st-rep").textContent=eur0.format(rep);$("st-val").textContent=eur0.format(val);
+
+  // ---------- CNC ----------
+  const est=r=>(r.f&&r.f.estado)||"Por validar";
+  const naoRej=D.cnc.filter(r=>est(r)!=="Rejeitada");
+  const ano=naoRej.reduce((s,r)=>s+(r.res&&r.res.poupAno>0?r.res.poupAno:0),0);
+  const valid=D.cnc.filter(r=>est(r)==="Validada");
+  const anoVal=valid.reduce((s,r)=>s+(r.res&&r.res.poupAno>0?r.res.poupAno:0),0);
+  $("kv-cnc").textContent=D.cnc.length?eur0.format(ano):"—";$("k-cnc").className="kpi "+(ano>0?"ok":"");
+  $("ks-cnc").textContent=D.cnc.length?"por ano · "+eur0.format(anoVal)+" já validados":"Ainda sem melhorias registadas";
+  $("cnc-ano").textContent=eur0.format(ano);$("cnc-n").textContent=nf.format(D.cnc.length);$("cnc-val").textContent=nf.format(valid.length);
+  $("cnc-teste").textContent=nf.format(D.cnc.filter(r=>["Em teste","Por validar"].includes(est(r))).length);$("cnc-rej").textContent=nf.format(D.cnc.filter(r=>est(r)==="Rejeitada").length);
+
+  // ---------- Máquinas ----------
+  const avAb=D.avarias.filter(a=>a.estado!=="resolvida");
+  $("mq-n").textContent=nf.format(D.maquinas.filter(m=>m.ativa!==false).length);
+  $("mq-av").textContent=nf.format(avAb.length);$("mq-av").style.color=avAb.length?"var(--bad)":"";
+  $("mq-h").textContent=hm(D.usos.filter(u=>u.data&&u.data.slice(0,7)===MES).reduce((s,u)=>s+(u.horas||0),0));
+
+  // ---------- Alertas ----------
+  const A=[];
+  const pedP=D.pedidos.filter(p=>p.estado==="pendente");
+  if(pedP.length)A.push(["warn",pedP.length,"Pedidos de férias por aprovar",pedP.slice(0,3).map(p=>nome(p.colId)).join(", ")+(pedP.length>3?"…":""),"assiduidade.html#mapa"]);
+  const planP=D.planos.filter(p=>!p.fechado&&p.data<=HOJE);
+  if(planP.length)A.push(["warn",planP.length,"Sábados / trabalhos por confirmar","Falta confirmar quem veio","assiduidade.html#plan"]);
+  if(avAb.length)A.push(["bad",avAb.length,"Avarias em aberto","Máquinas à espera de reparação","assiduidade.html#maq"]);
+  const foCad=D.formacoes.filter(f=>f.validade&&diasAte(f.validade)<0), foBreve=D.formacoes.filter(f=>f.validade&&diasAte(f.validade)>=0&&diasAte(f.validade)<=30);
+  if(foCad.length)A.push(["bad",foCad.length,"Formações caducadas",foCad.slice(0,3).map(f=>nome(f.colId)+" · "+f.nome).join("; "),"assiduidade.html#pes"]);
+  if(foBreve.length)A.push(["warn",foBreve.length,"Formações a caducar (30 dias)",foBreve.slice(0,3).map(f=>nome(f.colId)+" · "+f.nome).join("; "),"assiduidade.html#pes"]);
+  const epAt=D.epis.filter(e=>e.meses>0&&e.data&&diasAte(maisMeses(e.data,e.meses))<0);
+  if(epAt.length)A.push(["warn",epAt.length,"EPIs com troca em atraso",epAt.slice(0,3).map(e=>nome(e.colId)+" · "+e.item).join("; "),"assiduidade.html#pes"]);
+  if(rut)A.push(["bad",rut,"Artigos de stock em rutura","Repor mínimos custa cerca de "+eur0.format(rep),"stock.html#encomendar"]);
+  if(fi)A.push(["info",fi,"Faltas injustificadas este mês","Ver no resumo da assiduidade","assiduidade.html#dash"]);
+  const box=$("alerts");box.replaceChildren();
+  if(!A.length)box.append(el("div","allgood","✅ Está tudo em dia. Nada precisa de atenção agora."));
+  A.forEach(([cls,n,t,s,href])=>{const a=el("a","al "+cls);a.href=href;const tx=el("span","t");tx.append(el("b",null,t),el("small",null,s));a.append(el("span","n",nf.format(n)),tx,el("span","go","→"));box.append(a);});
+
+  // ---------- Gráfico 6 meses ----------
+  const meses=[];for(let i=5;i>=0;i--){const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-i);meses.push({k:d.getFullYear()+"-"+pad(d.getMonth()+1),lab:d.toLocaleDateString("pt-PT",{month:"short"}).replace(".",""),ex:0,fa:0,au:0});}
+  const idx=new Map(meses.map(m=>[m.k,m]));
+  const diasReg=r=>{if(!r.fim||r.fim===r.data)return 1;return Math.max(1,Math.round((new Date(r.fim+"T12:00")-new Date(r.data+"T12:00"))/864e5)+1);};
+  D.regs.forEach(r=>{const m=r.data&&idx.get(r.data.slice(0,7));if(!m)return;
+    if(r.tipo==="extra")m.ex+=r.horas||0;else if(r.tipo==="falta_i"||r.tipo==="falta_j")m.fa+=(r.dias>0?r.dias:0)||(r.horas?0:1);else if(r.tipo==="ausencia")m.au+=diasReg(r);});
+  desenharCols(meses);
+}
+
+function desenharCols(meses){
+  const box=$("ch6");box.replaceChildren();
+  if(!meses.some(m=>m.ex||m.fa||m.au)){box.append(el("div","muted small","Ainda sem registos nos últimos 6 meses."));return;}
+  const NS="http://www.w3.org/2000/svg",W=560,H=220,L=36,R=8,T=14,B=26,ih=H-T-B;
+  const mx=Math.max(1,...meses.map(m=>Math.max(m.ex,m.fa,m.au)));
+  const svg=document.createElementNS(NS,"svg");svg.setAttribute("viewBox",`0 0 ${W} ${H}`);svg.setAttribute("role","img");svg.setAttribute("aria-label","Horas extra, faltas e ausências nos últimos 6 meses");
+  const t=(x,y,s,a)=>{const e=document.createElementNS(NS,"text");e.setAttribute("x",x);e.setAttribute("y",y);if(a)e.setAttribute("text-anchor",a);e.textContent=s;svg.append(e);};
+  [0,0.5,1].forEach(f=>{const y=T+ih*(1-f);const l=document.createElementNS(NS,"line");l.setAttribute("x1",L);l.setAttribute("x2",W-R);l.setAttribute("y1",y);l.setAttribute("y2",y);l.style.stroke="var(--line)";svg.append(l);t(L-6,y+4,nf.format(Math.round(mx*f)),"end");});
+  const gw=(W-L-R)/meses.length,bw=Math.min(18,gw/4);
+  meses.forEach((m,i)=>{const x0=L+i*gw+gw/2-bw*1.5-2;
+    [[m.ex,"var(--ok)","Horas extra",v=>hm(v)],[m.fa,"var(--bad)","Dias de falta",v=>nf.format(v)],[m.au,"var(--warn)","Dias de ausência",v=>nf.format(v)]].forEach(([v,c,n,f],j)=>{
+      const hh=v/mx*ih,r=document.createElementNS(NS,"rect");r.setAttribute("x",x0+j*(bw+2));r.setAttribute("y",T+ih-hh);r.setAttribute("width",bw);r.setAttribute("height",Math.max(hh,v?1:0));r.setAttribute("rx",2);r.style.fill=c;
+      const tt=document.createElementNS(NS,"title");tt.textContent=m.lab+" · "+n+": "+f(v);r.append(tt);svg.append(r);});
+    t(L+i*gw+gw/2,H-8,m.lab,"middle");});
+  box.append(svg);
+}
+})();
+if(location.protocol==="https:"&&"serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+<script src="menu.js"></script>
+</body>
+</html>
