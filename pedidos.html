@@ -95,10 +95,15 @@
   .err{color:var(--bad);font-size:13.5px;min-height:1em;text-align:center}
   a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--pri);outline-offset:2px}
 
+  .qty-in{width:4.2rem;padding:5px 6px;text-align:right}
+  .in-list{font-size:12px;color:var(--ok);font-weight:600;display:block;margin-top:2px}
+  .send{border:2px solid var(--pri)}
+  .send textarea{min-height:220px;font-family:ui-monospace,Consolas,monospace;font-size:13px;background:var(--soft)}
+  .cat-count{font-size:13px;color:var(--muted)}
   .print-head{display:none}
   @media print{
     body{background:#fff}
-    .band,.kpis,details.card,.tools,.no-print,.login,.acts-col{display:none!important}
+    .band,.kpis,details.card,.tools,.no-print,.login,.acts-col,.send{display:none!important}
     .print-head{display:block;margin-bottom:8px}
     .tbox{max-height:none;overflow:visible;border:0}
     th{position:static}
@@ -114,6 +119,7 @@
   <p>Ferramenta manual a comprar e ferramentas de corte enviadas para afiar fora.</p>
   <nav class="tabs" role="tablist">
     <button class="tab" role="tab" data-tab="compras" aria-selected="true">🛒 Pedidos de ferramentas<span class="bdg" id="b-compras" hidden></span></button>
+    <button class="tab" role="tab" data-tab="catalogo" aria-selected="false">📚 Catálogo</button>
     <button class="tab" role="tab" data-tab="afiar" aria-selected="false">🔧 Afiação (subcontrato)<span class="bdg" id="b-afiar" hidden></span></button>
   </nav>
 </div></div>
@@ -137,9 +143,10 @@
         <option>Chaves de boca / luneta</option><option>Chaves Allen / Torx</option><option>Chaves de fendas / Phillips</option>
         <option>Roquetes e caixas</option><option>Chaves dinamométricas</option><option>Alicates e pinças</option>
         <option>Martelos e maços</option><option>Limas, serras e corte</option><option>Medição</option>
-        <option>Ferramenta elétrica</option><option>Outro</option></select></label>
+        <option>Pinças e cones (ER / BT40)</option><option>Ferramenta elétrica</option><option>Outro</option></select></label>
       <label class="f">Medida / tamanho<input id="c-medida" autocomplete="off" placeholder="Ex.: 13 mm, 1/2&quot;, 300 g"></label>
       <label class="f">Marca<input id="c-marca" list="dl-marcas" autocomplete="off"></label>
+      <label class="f">Referência do fabricante<input id="c-ref" autocomplete="off" placeholder="Ex.: 111M-13"></label>
       <label class="f">Quantidade<input id="c-qtd" type="number" min="1" step="1" value="1"></label>
       <label class="f">Para quem / secção<input id="c-para" list="dl-para" autocomplete="off" placeholder="Colaborador, posto ou máquina"></label>
       <label class="f">Motivo<select id="c-motivo"><option>Nova</option><option>Substituição · partida</option><option>Substituição · gasta</option><option>Perdida</option></select></label>
@@ -160,11 +167,24 @@
     <div class="card-h">
       <h2>Lista de pedidos de ferramentas</h2>
       <div class="acts no-print">
+        <button class="btn sm pri" id="c-send">📤 Enviar ao chefe</button>
         <button class="btn sm" id="c-csv">Exportar CSV</button>
         <button class="btn sm" id="c-print">🖨️ Imprimir</button>
       </div>
     </div>
     <div class="msg" id="c-imp-msg"></div>
+    <div class="card send" id="send-box" hidden>
+      <div class="card-h"><h2>📤 Enviar lista ao chefe</h2><button class="btn sm" id="send-close">Fechar</button></div>
+      <p class="small muted" style="margin:0">A lista leva os pedidos que estão no filtro de baixo (por defeito, os que estão em aberto). Podes mudar o texto antes de enviar.</p>
+      <textarea id="send-txt" aria-label="Texto da lista"></textarea>
+      <div class="acts">
+        <button class="btn pri" id="send-wa">💬 WhatsApp</button>
+        <button class="btn" id="send-mail">✉️ Email</button>
+        <button class="btn" id="send-copy">📋 Copiar texto</button>
+        <button class="btn" id="send-print">🖨️ PDF / imprimir</button>
+        <span class="msg" id="send-msg"></span>
+      </div>
+    </div>
     <div class="tools">
       <input type="search" id="c-q" placeholder="Pesquisar ferramenta, medida, para quem, fornecedor…" aria-label="Pesquisar pedidos">
       <select id="c-ftipo" aria-label="Tipo"><option value="">Todos os tipos</option></select>
@@ -187,6 +207,27 @@
         <tfoot><tr><td colspan="3" id="c-tot-l">Total</td><td class="r" id="c-tot-q"></td><td class="hide-sm"></td><td class="r" id="c-tot-c"></td><td colspan="2"></td></tr></tfoot>
       </table>
     </div>
+  </div>
+</section>
+
+<!-- ================= CATÁLOGO ================= -->
+<section data-panel="catalogo" id="catalogo" style="display:grid;gap:16px" hidden>
+  <div class="card">
+    <div class="card-h">
+      <div><h2>Catálogo de ferramentas</h2><p class="small muted" style="margin:4px 0 0">Ferramenta manual Bahco e pinças ER / cones BT40. Pesquisa, escolhe a quantidade e carrega em ➕ para juntar à lista de pedidos.</p></div>
+      <span class="cat-count" id="cat-count"></span>
+    </div>
+    <div class="tools">
+      <input type="search" id="cat-q" placeholder="Pesquisar: chave boca 13, umbrako 6, alicate corte, ER25 12, martelo…" aria-label="Pesquisar no catálogo">
+    </div>
+    <div class="chips" role="group" aria-label="Categoria" id="cat-chips"></div>
+    <div class="tbox">
+      <table>
+        <thead><tr><th>Ferramenta</th><th>Medida</th><th class="hide-sm">Referência</th><th class="hide-sm">Marca</th><th class="r">Qtd.</th><th></th></tr></thead>
+        <tbody id="cat-tbl"></tbody>
+      </table>
+    </div>
+    <p class="small muted" style="margin:0">As referências Bahco foram confirmadas em distribuidores. Onde a referência está vazia, o fornecedor indica a dele. As pinças ER seguem a norma DIN 6499 e servem de qualquer marca. Para acrescentar ferramentas ao catálogo, edita o ficheiro <b>catalogo-ferramentas.js</b>.</p>
   </div>
 </section>
 
@@ -270,6 +311,7 @@
   </form>
 </div>
 
+<script src="catalogo-ferramentas.js"></script>
 <script>
 (function(){
 const FIREBASE_CONFIG={
@@ -333,10 +375,10 @@ auth.onAuthStateChanged(async u=>{
   if(S.perfil==="c"){try{const a=await db.collection("assid_config").doc("acessos").get();const ac=a.exists?a.data():{};if((ac.dono||"").toLowerCase()===S.email)S.perfil="d";}catch(e){}}
   document.querySelectorAll("details.card").forEach(x=>x.hidden=!podeEditar());
   $("login").hidden=true;$("app").hidden=false;
-  unsubs.push(db.collection(C_COMP).onSnapshot(s=>{S.compras=s.docs.map(d=>({id:d.id,...d.data()}));renderC();badges();},e=>msg("c-imp-msg","Sem acesso aos pedidos ("+e.code+"). Verifica as regras do Firebase.","err")));
+  unsubs.push(db.collection(C_COMP).onSnapshot(s=>{S.compras=s.docs.map(d=>({id:d.id,...d.data()}));renderC();badges();if(S.tab==="catalogo")renderCat();},e=>msg("c-imp-msg","Sem acesso aos pedidos ("+e.code+"). Verifica as regras do Firebase.","err")));
   unsubs.push(db.collection(C_AF).onSnapshot(s=>{S.afiar=s.docs.map(d=>({id:d.id,...d.data()}));renderA();badges();},e=>msg("a-msg","Sem acesso à afiação ("+e.code+").","err")));
   unsubs.push(db.collection("stock_artigos").onSnapshot(s=>{S.artigos=s.docs.map(d=>d.data());listas();},()=>{}));
-  const h=location.hash.slice(1);showTab(h==="afiar"?"afiar":"compras");
+  const h=location.hash.slice(1);showTab(["afiar","catalogo"].includes(h)?h:"compras");
 });
 
 /* ---------------- Separadores ---------------- */
@@ -344,11 +386,12 @@ function showTab(t){
   S.tab=t;
   document.querySelectorAll("[data-panel]").forEach(p=>p.hidden=p.dataset.panel!==t);
   document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===t)));
+  if(t==="catalogo")renderCat();
   if(location.hash.slice(1)!==t){try{history.replaceState(null,"","#"+t);}catch(e){}}
   window.dispatchEvent(new Event("efa:nav"));
 }
 document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>showTab(b.dataset.tab)));
-window.addEventListener("hashchange",()=>{const h=location.hash.slice(1);if((h==="compras"||h==="afiar")&&h!==S.tab)showTab(h);});
+window.addEventListener("hashchange",()=>{const h=location.hash.slice(1);if(["compras","afiar","catalogo"].includes(h)&&h!==S.tab)showTab(h);});
 function badges(){
   const nc=S.compras.filter(x=>x.estado==="pedido").length, na=S.afiar.filter(atrasada).length;
   $("b-compras").textContent=nc;$("b-compras").hidden=!nc;$("b-afiar").textContent=na;$("b-afiar").hidden=!na;
@@ -370,13 +413,13 @@ const artPorDesc=d=>S.artigos.find(a=>a.descricao===d);
 // pedir outra vez uma ferramenta já pedida: preenche com os dados do último pedido igual
 $("c-artigo").addEventListener("change",()=>{const v=$("c-artigo").value.trim();if(!v||S.editC)return;
   const a=S.compras.filter(x=>x.artigo===v).sort((x,y)=>String(y.criadoEm).localeCompare(String(x.criadoEm)))[0];if(!a)return;
-  $("c-tipo").value=a.tipo||"";$("c-medida").value=a.medida||"";$("c-marca").value=a.marca||"";$("c-forn").value=a.fornecedor||"";
+  $("c-tipo").value=a.tipo||"";$("c-medida").value=a.medida||"";$("c-marca").value=a.marca||"";$("c-ref").value=a.ref||"";$("c-forn").value=a.fornecedor||"";
   $("c-preco").value=a.preco!=null?String(a.preco).replace(".",","):"";});
 $("a-ferr").addEventListener("change",()=>{const a=artPorDesc($("a-ferr").value);if(!a)return;
   $("a-ref").value=a.ref||"";$("a-tipo").value=a.tipo&&a.tipo[0]!=="("?a.tipo:"";$("a-maq").value=a.maquina&&a.maquina[0]!=="("?a.maquina:"";});
 
 /* ================= COMPRAS ================= */
-function limparC(){S.editC=null;["c-artigo","c-tipo","c-medida","c-marca","c-para","c-forn","c-preco","c-nenc","c-obs"].forEach(i=>$(i).value="");$("c-qtd").value=1;$("c-urg").value="";$("c-motivo").selectedIndex=0;
+function limparC(){S.editC=null;["c-artigo","c-tipo","c-medida","c-marca","c-ref","c-para","c-forn","c-preco","c-nenc","c-obs"].forEach(i=>$(i).value="");$("c-qtd").value=1;$("c-urg").value="";$("c-motivo").selectedIndex=0;
   $("c-form-tit").textContent="Novo pedido de ferramenta";$("c-save").textContent="Guardar pedido";$("c-cancel").hidden=true;}
 $("c-cancel").onclick=()=>{limparC();$("c-form-box").open=false;};
 $("c-save").onclick=async()=>{
@@ -384,7 +427,7 @@ $("c-save").onclick=async()=>{
   if(!artigo){msg("c-msg","Indica a ferramenta.","err");$("c-artigo").focus();return;}
   if(qtd<1){msg("c-msg","A quantidade tem de ser pelo menos 1.","err");return;}
   const now=new Date().toISOString();
-  const d={artigo,tipo:$("c-tipo").value,medida:$("c-medida").value.trim(),marca:$("c-marca").value.trim(),qtd,para:$("c-para").value.trim(),motivo:$("c-motivo").value,
+  const d={artigo,tipo:$("c-tipo").value,medida:$("c-medida").value.trim(),marca:$("c-marca").value.trim(),ref:$("c-ref").value.trim(),qtd,para:$("c-para").value.trim(),motivo:$("c-motivo").value,
     fornecedor:$("c-forn").value.trim(),preco:num($("c-preco").value),urgente:!!$("c-urg").value,nEncomenda:$("c-nenc").value.trim(),obs:$("c-obs").value.trim(),atualizadoEm:now,atualizadoPor:S.email};
   $("c-save").disabled=true;
   try{
@@ -396,7 +439,7 @@ $("c-save").onclick=async()=>{
 };
 function editarC(x){
   S.editC=x.id;$("c-form-box").open=true;
-  $("c-artigo").value=x.artigo||"";$("c-tipo").value=x.tipo||"";$("c-medida").value=x.medida||"";$("c-marca").value=x.marca||"";$("c-qtd").value=x.qtd||1;
+  $("c-artigo").value=x.artigo||"";$("c-tipo").value=x.tipo||"";$("c-medida").value=x.medida||"";$("c-marca").value=x.marca||"";$("c-ref").value=x.ref||"";$("c-qtd").value=x.qtd||1;
   $("c-para").value=x.para||"";$("c-motivo").value=x.motivo||"Nova";
   $("c-forn").value=x.fornecedor||"";$("c-preco").value=x.preco!=null?String(x.preco).replace(".",","):"";$("c-urg").value=x.urgente?"1":"";
   $("c-nenc").value=x.nEncomenda||"";$("c-obs").value=x.obs||"";
@@ -419,7 +462,7 @@ function filtrarC(){
     if(S.fc==="aberto"?!ABERTO(x.estado):(S.fc&&x.estado!==S.fc))return false;
     if(f&&(x.fornecedor||"(sem fornecedor)")!==f)return false;
     if(tp&&(x.tipo||"Outro")!==tp)return false;
-    if(q.length){const h=norm([x.artigo,x.tipo,x.medida,x.marca,x.para,x.motivo,x.fornecedor,x.obs,x.nEncomenda].join(" "));if(!q.every(w=>h.includes(w)))return false;}
+    if(q.length){const h=norm([x.artigo,x.tipo,x.medida,x.marca,x.ref,x.para,x.motivo,x.fornecedor,x.obs,x.nEncomenda].join(" "));if(!q.every(w=>h.includes(w)))return false;}
     return true;
   }).sort((a,b)=>(b.urgente?1:0)-(a.urgente?1:0)||String(b.criadoEm).localeCompare(String(a.criadoEm)));
 }
@@ -445,7 +488,7 @@ function renderC(){
     const tr=tb.insertRow(),td=(t,c)=>{const z=tr.insertCell();if(t!=null)z.textContent=t;if(c)z.className=c;return z;};
     td(dataPT(x.criadoEm),"nw");
     const c2=td(null);c2.append(document.createTextNode(x.artigo||""));if(x.urgente){c2.append(" ",el("span","urg","URGENTE"));}
-    const sub=[x.tipo,x.medida,x.marca,x.motivo&&x.motivo!=="Nova"?x.motivo:"",x.nEncomenda?"Enc. "+x.nEncomenda:""].filter(Boolean).join(" · ");if(sub)c2.append(el("span","sub",sub));
+    const sub=[x.medida,x.marca,x.ref?"ref. "+x.ref:"",x.motivo&&x.motivo!=="Nova"?x.motivo:"",x.nEncomenda?"Enc. "+x.nEncomenda:""].filter(Boolean).join(" · ");if(sub)c2.append(el("span","sub",sub));
     if(x.obs)c2.append(el("span","sub",x.obs));
     td(x.para||"","hide-sm");td(nf.format(x.qtd||0),"r");td(x.fornecedor||"","hide-sm");
     const c=custoC(x);td(c==null?"sem preço":eur2.format(c),"r");if(c==null)semP++;else tc+=c;tq+=Number(x.qtd)||0;
@@ -468,6 +511,77 @@ $("c-q").addEventListener("input",renderC);$("c-fforn").addEventListener("change
 const setFc=e=>{S.fc=e;document.querySelectorAll("#c-chips .chip").forEach(c=>c.setAttribute("aria-pressed",String(c.dataset.e===e)));renderC();};
 document.querySelectorAll("#c-chips .chip").forEach(c=>c.onclick=()=>setFc(c.dataset.e));
 document.querySelectorAll("[data-fc]").forEach(k=>k.onclick=()=>setFc(k.dataset.fc));
+
+/* ================= CATÁLOGO ================= */
+const CAT=(window.CATALOGO_FERRAMENTAS||[]);
+let catCat="";
+function chipsCat(){
+  const box=$("cat-chips");if(box.childElementCount)return;
+  const cats=[...new Set(CAT.map(x=>x.cat))];
+  [["","Todas"]].concat(cats.map(c=>[c,c])).forEach(([v,l])=>{const b=el("button","chip",l);b.setAttribute("aria-pressed",String(v===catCat));
+    b.onclick=()=>{catCat=v;box.querySelectorAll(".chip").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));renderCat();};box.append(b);});
+}
+const nomeCat=x=>(x.desc+" "+x.med).trim();
+function renderCat(){
+  chipsCat();
+  // números (13, 2,5, 1/2) procuram-se na medida como número inteiro; palavras procuram-se em todo o lado
+  const q=norm($("cat-q").value).replace(/ø/g,"").replace(/(\d)\.(\d)/g,"$1,$2").split(/\s+/).filter(Boolean);
+  const isNum=w=>/^\d+(,\d+)?$/.test(w);
+  const abertos=S.compras.filter(x=>ABERTO(x.estado));
+  const okTok=(x,w)=>{
+    if(isNum(w)){const re=new RegExp("(^|[^0-9,])"+w.replace(",","\\,")+"(?![0-9]|,[0-9])");return re.test(norm(x.med));}
+    return norm([x.desc,x.med,x.ref,x.cat,x.tipo,x.info,x.marca].join(" ")).replace(/ø/g,"").includes(w);
+  };
+  const score=x=>q.filter(w=>!isNum(w)&&norm(x.desc).includes(w)).length;
+  const rows=CAT.filter(x=>(!catCat||x.cat===catCat)&&(!q.length||q.every(w=>okTok(x,w)))).map((x,i)=>({x,i,s:score(x)})).sort((a,b)=>b.s-a.s||a.i-b.i).map(o=>o.x);
+  $("cat-count").textContent=nf.format(rows.length)+" de "+nf.format(CAT.length)+" ferramentas";
+  const tb=$("cat-tbl");tb.replaceChildren();
+  if(!rows.length){const tr=tb.insertRow(),td=tr.insertCell();td.colSpan=6;td.className="empty";td.textContent="Nada encontrado. Experimenta outra palavra ou usa o formulário em \"Pedidos de ferramentas\".";}
+  rows.slice(0,300).forEach(x=>{
+    const tr=tb.insertRow(),td=(t,c)=>{const z=tr.insertCell();if(t!=null)z.textContent=t;if(c)z.className=c;return z;};
+    const c1=td(x.desc);if(x.info)c1.append(el("span","sub",x.info));
+    const ja=abertos.filter(p=>(x.ref&&p.ref===x.ref)||p.artigo===nomeCat(x)).reduce((s,p)=>s+(Number(p.qtd)||0),0);
+    if(ja)c1.append(el("span","in-list","✓ já na lista: "+ja));
+    td(x.med,"nw");td(x.ref||"—","hide-sm nw");td(x.marca||"qualquer","hide-sm");
+    const cq=td(null,"r");const qi=el("input","qty-in");qi.type="number";qi.min="1";qi.value="1";qi.setAttribute("aria-label","Quantidade");cq.append(qi);
+    const ca=td(null,"nw");
+    if(podeEditar()){const b=el("button","btn sm ok","➕ Pedir");b.onclick=()=>pedirCat(x,Math.max(1,Math.round(Number(qi.value)||1)),b);ca.append(b);}
+  });
+}
+async function pedirCat(x,qtd,btn){
+  btn.disabled=true;const now=new Date().toISOString();
+  try{
+    await db.collection(C_COMP).doc().set({artigo:nomeCat(x),tipo:x.tipo,medida:x.med,marca:x.marca||"",ref:x.ref||"",qtd,para:"",motivo:"Nova",fornecedor:"",preco:null,urgente:false,
+      nEncomenda:"",obs:x.info||"",estado:"pedido",origem:"catalogo",criadoEm:now,criadoPor:S.email,atualizadoEm:now,atualizadoPor:S.email});
+    btn.textContent="✓ Junto";setTimeout(()=>{btn.textContent="➕ Pedir";btn.disabled=false;},1500);
+  }catch(e){btn.disabled=false;alert("Não foi possível juntar à lista ("+(e.code||e.message)+").");}
+}
+$("cat-q").addEventListener("input",renderCat);
+
+/* ---------------- Enviar ao chefe ---------------- */
+function textoLista(){
+  const rows=filtrarC(), linhas=[];
+  linhas.push("Pedido de ferramentas – EFAFLU – "+new Date().toLocaleDateString("pt-PT"));
+  linhas.push("");
+  let tot=0,semP=0;
+  rows.forEach((x,i)=>{
+    const c=custoC(x);if(c==null)semP++;else tot+=c;
+    const det=[x.medida&&!String(x.artigo).includes(x.medida)?x.medida:"",x.marca,x.ref?"ref. "+x.ref:""].filter(Boolean).join(" · ");
+    const extra=[x.para?"para: "+x.para:"",x.motivo&&x.motivo!=="Nova"?x.motivo.toLowerCase():"",x.urgente?"URGENTE":""].filter(Boolean).join(" · ");
+    linhas.push((i+1)+". "+(x.qtd||1)+" × "+x.artigo+(det?" ("+det+")":"")+(extra?" – "+extra:"")+(c!=null?" – ≈ "+eur2.format(c):""));
+  });
+  linhas.push("");
+  linhas.push("Total: "+rows.length+" artigo"+(rows.length===1?"":"s")+(tot?" · custo estimado ≈ "+eur2.format(tot)+(semP?" (+"+semP+" sem preço)":""):""));
+  linhas.push("");
+  linhas.push("Rui Veloso – Team Leader");
+  return linhas.join("\n");
+}
+$("c-send").onclick=()=>{const b=$("send-box");b.hidden=!b.hidden;if(!b.hidden){$("send-txt").value=textoLista();b.scrollIntoView({behavior:"smooth",block:"nearest"});}};
+$("send-close").onclick=()=>{$("send-box").hidden=true;};
+$("send-wa").onclick=()=>window.open("https://wa.me/?text="+encodeURIComponent($("send-txt").value),"_blank");
+$("send-mail").onclick=()=>{location.href="mailto:?subject="+encodeURIComponent("Pedido de ferramentas – EFAFLU – "+new Date().toLocaleDateString("pt-PT"))+"&body="+encodeURIComponent($("send-txt").value);};
+$("send-copy").onclick=async()=>{const t=$("send-txt");try{await navigator.clipboard.writeText(t.value);msg("send-msg","Copiado. Cola no email ou no WhatsApp.","ok");}catch(e){t.select();msg("send-msg","Carrega em Ctrl + C para copiar.","");}};
+$("send-print").onclick=()=>{$("send-box").hidden=true;document.querySelectorAll(".pdate").forEach(s=>s.textContent=new Date().toLocaleDateString("pt-PT"));window.print();};
 
 /* ================= AFIAÇÃO ================= */
 function limparA(){S.editA=null;["a-ferr","a-ref","a-tipo","a-maq","a-guia","a-reg","a-custo","a-obs"].forEach(i=>$(i).value="");$("a-qtd").value=1;
@@ -565,8 +679,8 @@ function csv(nome,head,rows){
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([txt],{type:"text/csv;charset=utf-8"}));a.download=nome+"-"+hoje()+".csv";
   document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
 }
-$("c-csv").onclick=()=>csv("pedidos-ferramentas-efaflu",["Data","Ferramenta","Tipo","Medida","Marca","Qtd.","Para quem","Motivo","Fornecedor","Preço un. (€)","Custo (€)","Urgente","Estado","Nº encomenda","Observações"],
-  filtrarC().map(x=>[dataPT(x.criadoEm),x.artigo,x.tipo,x.medida,x.marca,x.qtd,x.para,x.motivo,x.fornecedor,num(x.preco),custoC(x),x.urgente?"Sim":"",(EC[x.estado]||[""])[0],x.nEncomenda,x.obs]));
+$("c-csv").onclick=()=>csv("pedidos-ferramentas-efaflu",["Data","Ferramenta","Tipo","Medida","Marca","Referência","Qtd.","Para quem","Motivo","Fornecedor","Preço un. (€)","Custo (€)","Urgente","Estado","Nº encomenda","Observações"],
+  filtrarC().map(x=>[dataPT(x.criadoEm),x.artigo,x.tipo,x.medida,x.marca,x.ref,x.qtd,x.para,x.motivo,x.fornecedor,num(x.preco),custoC(x),x.urgente?"Sim":"",(EC[x.estado]||[""])[0],x.nEncomenda,x.obs]));
 $("a-csv").onclick=()=>csv("afiacao-efaflu",["Ferramenta","Referência","Tipo","Qtd.","Máquina","Empresa","Enviada","Prevista","Regresso","Guia","Custo (€)","Estado","Observações"],
   filtrarA().map(x=>[x.ferramenta,x.ref,x.tipo,x.qtd,x.maquina,x.empresa,dataPT(x.envio),dataPT(x.previsto),dataPT(x.regresso),x.guia,num(x.custo),atrasada(x)?"Atrasada":(EA[x.estado]||[""])[0],x.obs]));
 const imprimir=()=>{document.querySelectorAll(".pdate").forEach(s=>s.textContent=new Date().toLocaleDateString("pt-PT"));window.print();};
