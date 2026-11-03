@@ -31,6 +31,8 @@
     { href: "stock.html#leitura", ic: "🔫", t: "Leitura (pistola)", p: "da" },
     { href: "stock.html#encomendar", ic: "🛒", t: "A encomendar", p: "dca" },
     { href: "stock.html#stock", ic: "📦", t: "Stock atual", p: "dca" },
+    { href: "pedidos.html#compras", ic: "📝", t: "Pedidos de ferramentas", p: "dca" },
+    { href: "pedidos.html#afiar", ic: "🔧", t: "Afiação (subcontrato)", p: "dca" },
   ];
   const NOME_PERFIL = { d: "Team Leader", c: "Chefia · só consulta", a: "Armazém", k: "Colaborador" };
 
