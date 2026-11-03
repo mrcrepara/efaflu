@@ -167,6 +167,20 @@ tr.total td{font-weight:600;border-bottom:0}
 .login .err{color:var(--bad);font-size:13.5px;min-height:1em}
 .login .link{background:none;border:0;color:var(--accent);font:500 13px var(--f-body);cursor:pointer;padding:0;text-align:left}
 .ro{margin-top:10px;padding:10px 14px;border-radius:8px;background:var(--soft);color:var(--accent);font-size:14px}
+.ops{display:flex;flex-direction:column;gap:14px}
+.op{border:1px solid var(--line);border-radius:8px;padding:14px;background:var(--surface)}
+.op-head{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;margin-bottom:12px}
+.op-n{font-family:var(--f-num);font-size:13px;color:var(--accent);font-weight:500}
+.op-head .op-name{flex:1 1 200px;width:auto;font-weight:600}
+.op-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.btn.sm{padding:6px 10px;font-size:12.5px}
+.grid3{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr);gap:10px 12px;margin-bottom:12px}
+.op-res{margin-top:10px;font-size:12.5px;color:var(--muted);font-family:var(--f-num)}
+.op-res.warn{color:var(--warn);font-family:var(--f-body)}
+.add-op{margin-top:12px;width:100%;border-style:dashed}
+.ref-row{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+td small{display:block;color:var(--muted);font-size:11.5px}
+@media (max-width:520px){.grid3{grid-template-columns:1fr 1fr}.grid3 label:first-child{grid-column:1/-1}}
 .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20;max-width:calc(100% - 32px)}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
@@ -231,56 +245,33 @@ tr.total td{font-weight:600;border-bottom:0}
         <div class="grid2">
           <label class="f">Referência da peça<input id="ref" list="dl_ref" autocomplete="off"></label>
           <label class="f">Data<input id="data" type="date"></label>
-          <label class="f">Máquina<input id="maquina" list="dl_maquina" autocomplete="off"></label>
-          <label class="f">Operação / fase<input id="operacao" list="dl_operacao" autocomplete="off"></label>
-          <label class="f">Responsável<input id="responsavel" list="dl_responsavel" autocomplete="off"></label>
+          <label class="f full">Responsável<input id="responsavel" list="dl_responsavel" autocomplete="off"></label>
           <label class="f">Quantidade do lote (peças boas)<input id="lote" class="num-in" inputmode="numeric"></label>
-          <label class="f full">Quantidade anual prevista (peças) <input id="anual" class="num-in" inputmode="numeric" placeholder="Opcional, para a poupança por ano"></label>
+          <label class="f">Quantidade anual prevista<input id="anual" class="num-in" inputmode="numeric" placeholder="Opcional"></label>
         </div>
       </section>
 
       <section class="panel" aria-labelledby="s2">
-        <h2 id="s2"><span class="n">02</span>Custos por hora</h2>
+        <h2 id="s2"><span class="n">02</span>Custos comuns</h2>
         <div class="grid2">
           <label class="f">Operador (€/h)<input id="c_op" class="num-in" inputmode="decimal"></label>
-          <label class="f">Máquina (€/h)<input id="c_maq" class="num-in" inputmode="decimal"></label>
-          <label class="f">Consumo médio (kW)<input id="c_kw" class="num-in" inputmode="decimal"></label>
           <label class="f">Eletricidade (€/kWh)<input id="c_kwh" class="num-in" inputmode="decimal"></label>
-          <label class="check full"><input type="checkbox" id="c_incl"> O custo da máquina já inclui eletricidade</label>
+          <label class="check full"><input type="checkbox" id="c_incl"> O custo das máquinas já inclui eletricidade</label>
           <label class="f full">Material por peça (€)<input id="c_mat" class="num-in" inputmode="decimal" placeholder="Opcional, conta para o custo do refugo"></label>
         </div>
-        <div class="derived"><span>Custo total por hora</span><b id="dHora">—</b></div>
-        <p class="hint">Operador: custo completo para a empresa. Máquina: depreciação, manutenção e outros encargos. Consumo: potência média efetiva, não a potência instalada. Valores sem IVA.</p>
+        <p class="hint">Operador: custo completo para a empresa. O custo hora e o consumo de cada máquina indicas na operação. Valores sem IVA.</p>
       </section>
 
       <section class="panel" aria-labelledby="s3">
-        <h2 id="s3"><span class="n">03</span>Alteração do processo</h2>
-        <div class="ab">
+        <h2 id="s3"><span class="n">03</span>Operações da peça <span class="opt" id="opsCount"></span></h2>
+        <div class="ops" id="ops"></div>
+        <button class="btn add-op" id="bAddOp" type="button">+ Adicionar operação</button>
+        <div class="ab ref-row">
           <span class="h l"></span><span class="h">Antes</span><span class="h d">Depois</span>
-
-          <span class="lab">Programa / revisão</span>
-          <input id="a_prog" list="dl_prog" autocomplete="off" aria-label="Programa antes"><input id="d_prog" list="dl_prog" autocomplete="off" aria-label="Programa depois">
-          <span class="lab">Ferramenta</span>
-          <input id="a_ferr" list="dl_ferr" autocomplete="off" aria-label="Ferramenta antes"><input id="d_ferr" list="dl_ferr" autocomplete="off" aria-label="Ferramenta depois">
-
-          <span class="sep"></span>
-          <span class="lab">Tempo de ciclo<small>por peça, mm:ss ou segundos</small></span>
-          <input id="a_t" class="num-in" placeholder="2:30" aria-label="Tempo de ciclo antes"><input id="d_t" class="num-in" placeholder="2:05" aria-label="Tempo de ciclo depois">
-          <div class="sub"><span id="a_t_h"></span><span id="d_t_h"></span></div>
-          <span class="lab">Preparação do lote<small>setup, em minutos</small></span>
-          <input id="a_setup" class="num-in" inputmode="decimal" aria-label="Preparação antes (min)"><input id="d_setup" class="num-in" inputmode="decimal" aria-label="Preparação depois (min)">
-
-          <span class="sep"></span>
-          <span class="lab">Preço da ferramenta<small>€ por aresta ou pastilha</small></span>
-          <input id="a_fp" class="num-in" inputmode="decimal" aria-label="Preço ferramenta antes"><input id="d_fp" class="num-in" inputmode="decimal" aria-label="Preço ferramenta depois">
-          <span class="lab">Vida da ferramenta<small>peças por aresta</small></span>
-          <input id="a_fv" class="num-in" inputmode="numeric" aria-label="Vida ferramenta antes"><input id="d_fv" class="num-in" inputmode="numeric" aria-label="Vida ferramenta depois">
-
-          <span class="sep"></span>
-          <span class="lab">Refugo<small>% de peças rejeitadas</small></span>
+          <span class="lab">Refugo da peça<small>% de peças rejeitadas no fim</small></span>
           <input id="a_ref" class="num-in" inputmode="decimal" aria-label="Refugo antes (%)"><input id="d_ref" class="num-in" inputmode="decimal" aria-label="Refugo depois (%)">
         </div>
-        <p class="hint">Mede os ciclos nas mesmas condições. O operador conta durante todo o ciclo. Deixa em branco o que não mudou ou não sabes; conta como zero dos dois lados.</p>
+        <p class="hint">Mete todas as operações da peça, mesmo as que não mudaram, para o custo por peça ficar completo. No "Depois", deixa em branco o que ficou igual. Tempo 0 no "Depois" quer dizer operação eliminada; "Antes" em branco quer dizer operação nova.</p>
       </section>
 
       <section class="panel" aria-labelledby="s4">
@@ -291,7 +282,7 @@ tr.total td{font-weight:600;border-bottom:0}
           <label class="f full">Outros custos (€)<input id="i_out" class="num-in" inputmode="decimal" placeholder="Suporte novo, fixação, formação…"></label>
         </div>
         <div class="derived"><span>Custo total da alteração</span><b id="dInv">—</b></div>
-        <p class="hint">As horas são valorizadas ao custo total por hora (máquina parada mais operador).</p>
+        <p class="hint">As horas são valorizadas ao custo hora médio das operações (máquina mais operador).</p>
       </section>
     </div>
 
@@ -367,14 +358,16 @@ tr.total td{font-weight:600;border-bottom:0}
 <script>
 (function(){
 const $=id=>document.getElementById(id);
-const FIELDS=["ref","data","maquina","operacao","responsavel","lote","anual","c_op","c_maq","c_kw","c_kwh","c_mat",
-"a_prog","d_prog","a_ferr","d_ferr","a_t","d_t","a_setup","d_setup","a_fp","d_fp","a_fv","d_fv","a_ref","d_ref","i_h","i_pe","i_out","estado","obs"];
+const FIELDS=["ref","data","responsavel","lote","anual","c_op","c_kwh","c_mat","a_ref","d_ref","i_h","i_pe","i_out","estado","obs"];
 const CHECKS=["c_incl"];
-const EXEMPLO={ref:"EF-2231 Corpo de válvula",data:"",maquina:"Torno CNC 2",operacao:"Op. 20 · Torneamento exterior",responsavel:"",lote:"500",anual:"6000",
-c_op:"18",c_maq:"32",c_kw:"9",c_kwh:"0,16",c_mat:"2,40",c_incl:false,
-a_prog:"O1234 rev. B",d_prog:"O1234 rev. C",a_ferr:"CNMG 120408 sem revestimento",d_ferr:"CNMG 120408 revestida PVD",
-a_t:"2:30",d_t:"2:05",a_setup:"45",d_setup:"40",a_fp:"9,80",d_fp:"14,50",a_fv:"180",d_fv:"320",a_ref:"3",d_ref:"1,5",
-i_h:"3",i_pe:"5",i_out:"",estado:"Em teste",obs:"Velocidade de corte de 180 para 220 m/min e um só passe de acabamento."};
+const OPK=["nome","maquina","c_maq","c_kw","a_prog","d_prog","a_ferr","d_ferr","a_t","d_t","a_setup","d_setup","a_fp","d_fp","a_fv","d_fv"];
+const EXEMPLO={ref:"EF-2231 Corpo de válvula",data:"",responsavel:"",lote:"500",anual:"6000",
+c_op:"18",c_kwh:"0,16",c_mat:"2,40",c_incl:false,a_ref:"3",d_ref:"1,5",i_h:"4",i_pe:"5",i_out:"",estado:"Em teste",
+obs:"Op. 10: velocidade de corte de 180 para 220 m/min e um só passe de acabamento. Op. 20: fresa de metal duro com menos passes.",
+ops:[{nome:"Op. 10 · Torneamento exterior",maquina:"Torno CNC 2",c_maq:"32",c_kw:"9",a_prog:"O1234 rev. B",d_prog:"O1234 rev. C",
+a_ferr:"CNMG 120408 sem revestimento",d_ferr:"CNMG 120408 revestida PVD",a_t:"2:30",d_t:"2:05",a_setup:"45",d_setup:"40",a_fp:"9,80",d_fp:"14,50",a_fv:"180",d_fv:"320"},
+{nome:"Op. 20 · Fresagem e furação",maquina:"Centro de maquinação 1",c_maq:"40",c_kw:"12",a_prog:"O2210 rev. A",d_prog:"O2210 rev. B",
+a_ferr:"Fresa Ø16 HSS",d_ferr:"Fresa Ø16 metal duro",a_t:"3:10",d_t:"2:20",a_setup:"30",d_setup:"",a_fp:"18",d_fp:"65",a_fv:"400",d_fv:"1500"}]};
 
 const eur=new Intl.NumberFormat("pt-PT",{style:"currency",currency:"EUR",minimumFractionDigits:2,maximumFractionDigits:2});
 const eur3=new Intl.NumberFormat("pt-PT",{style:"currency",currency:"EUR",minimumFractionDigits:3,maximumFractionDigits:3});
@@ -384,7 +377,9 @@ const fe=v=>Math.abs(v)<1?eur3.format(v):eur.format(v);
 let currentId=null, records=[], store=null, mode="local", isExample=false, pendingDelete=null;
 
 function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove("show"),2600)}
-function num(id){const v=String($(id).value||"").trim().replace(/\s/g,"").replace(",",".");if(v==="")return null;const n=Number(v);return isFinite(n)?n:null}
+function numv(x){const v=String(x==null?"":x).trim().replace(/\s/g,"").replace(",",".");if(v==="")return null;const n=Number(v);return isFinite(n)?n:null}
+function num(id){return numv($(id).value)}
+function blank(x){return x==null||String(x).trim()===""}
 function parseTime(str){
   let s=String(str||"").trim().toLowerCase().replace(",",".");if(!s)return null;
   let m=s.match(/^(\d+(?:\.\d+)?)\s*m(?:in)?\s*(\d+(?:\.\d+)?)?\s*s?$/);if(m)return Number(m[1])*60+Number(m[2]||0);
@@ -392,32 +387,49 @@ function parseTime(str){
   s=s.replace(/s$/,"");const n=Number(s);return isFinite(n)?n:null}
 function fmtDur(sec){
   if(sec==null||!isFinite(sec))return "—";const neg=sec<0;sec=Math.abs(sec);let out;
-  if(sec>=3600){const h=Math.floor(sec/3600),m=Math.round((sec%3600)/60);out=h+" h "+(m?m+" min":"")}
-  else if(sec>=60){const m=Math.floor(sec/60),s=Math.round(sec%60);out=m+" min"+(s?" "+s+" s":"")}
+  if(sec>=3570){const tm=Math.round(sec/60),h=Math.floor(tm/60),m=tm%60;out=h+" h "+(m?m+" min":"")}
+  else if(sec>=59.5){const ts=Math.round(sec),m=Math.floor(ts/60),s=ts%60;out=m+" min"+(s?" "+s+" s":"")}
   else out=nf(1).format(sec)+" s";
   return (neg?"−":"")+out.trim()}
 
-function read(){const o={};FIELDS.forEach(k=>o[k]=$(k).value);CHECKS.forEach(k=>o[k]=$(k).checked);return o}
-function fill(o){FIELDS.forEach(k=>{$(k).value=(o&&o[k]!=null)?o[k]:(k==="estado"?"Por validar":"")});CHECKS.forEach(k=>$(k).checked=!!(o&&o[k]))}
+let ops=[],pendingOpDel=null;
+function blankOp(){const o={};OPK.forEach(k=>o[k]="");return o}
+// Registos antigos (uma só operação em campos soltos) passam a lista de operações
+function opsOf(f){
+  if(!f)return [blankOp()];
+  if(Array.isArray(f.ops)&&f.ops.length)return f.ops.map(o=>Object.assign(blankOp(),o));
+  const o=blankOp();o.nome=f.operacao||"";o.maquina=f.maquina||"";
+  OPK.slice(2).forEach(k=>{if(f[k]!=null)o[k]=f[k]});return [o]}
+function read(){const o={};FIELDS.forEach(k=>o[k]=$(k).value);CHECKS.forEach(k=>o[k]=$(k).checked);o.ops=ops.map(x=>Object.assign({},x));return o}
+function fill(o){FIELDS.forEach(k=>{$(k).value=(o&&o[k]!=null)?o[k]:(k==="estado"?"Por validar":"")});CHECKS.forEach(k=>$(k).checked=!!(o&&o[k]));
+  ops=opsOf(o);pendingOpDel=null;renderOps()}
+function dv(o,k){return blank(o["d_"+k])?o["a_"+k]:o["d_"+k]}
+function opTimes(o){let a=parseTime(o.a_t);const d=blank(o.d_t)?a:parseTime(o.d_t);if(a==null&&d!=null&&blank(o.a_t))a=0;return {a,d}}
 
 function calc(){
-  const op=num("c_op"),maq=num("c_maq"),kw=num("c_kw")||0,kwh=num("c_kwh")||0,incl=$("c_incl").checked;
-  const H=(op==null&&maq==null)?null:(op||0)+(maq||0)+(incl?0:kw*kwh);
-  const lote=num("lote"),anual=num("anual"),mat=num("c_mat")||0;
-  const side=p=>{
-    const t=parseTime($(p+"_t").value);if(t==null||H==null)return {t};
-    const setup=num(p+"_setup")||0,fp=num(p+"_fp"),fv=num(p+"_fv");
+  const cop=num("c_op"),kwh=num("c_kwh")||0,incl=$("c_incl").checked;
+  const lote=num("lote"),anual=num("anual"),mat=num("c_mat")||0,L=lote&&lote>0?lote:null;
+  const per=ops.map(o=>{
+    const cm=numv(o.c_maq),kw=numv(o.c_kw)||0;
+    const H=(cop==null&&cm==null)?null:(cop||0)+(cm||0)+(incl?0:kw*kwh);
+    const T=opTimes(o);
+    const val=(p,k)=>numv(p==="a"?o["a_"+k]:dv(o,k));
+    const ok=H!=null&&T.a!=null&&T.d!=null;
+    const s=p=>{if(!ok)return null;const t=T[p],fp=val(p,"fp"),fv=val(p,"fv"),su=val(p,"setup")||0;
+      return {t,ciclo:t/3600*H,ferr:fp&&fv?fp/fv:0,setup:su,setupCost:su/60*H}};
+    return {o,H,T,ok,A:s("a"),D:s("d")}});
+  const side=(p,key)=>{
     const r=Math.min(Math.max((num(p+"_ref")||0)/100,0),0.95);
-    const ciclo=t/3600*H, ferr=(fp&&fv)?fp/fv:0;
-    const prod=ciclo+ferr+mat, boa=prod/(1-r);
-    const L=lote&&lote>0?lote:null;
-    const setupP=L?setup/60*H/L:0;
-    return {t,r,setup,ciclo,ferr,mat,refugo:boa-prod,setupP,prod,
-      total:boa+setupP,tBoa:t/(1-r)+(L?setup*60/L:0),loteTempo:L?L*t/(1-r)+setup*60:null}};
-  const A=side("a"),D=side("d");
-  const inv=H==null?null:(num("i_h")||0)*H+(num("i_pe")||0)*(D.prod||0)+(num("i_out")||0);
-  const ready=H!=null&&A.total!=null&&D.total!=null;
-  let res={H,lote,anual,A,D,inv,ready};
+    const S={t:0,ciclo:0,ferr:0,setup:0,setupCost:0};
+    per.forEach(x=>{const v=x[key];if(v)for(const k in S)S[k]+=v[k]});
+    const prod=S.ciclo+S.ferr+mat,boa=prod/(1-r),setupP=L?S.setupCost/L:0;
+    return Object.assign(S,{r,mat,prod,refugo:boa-prod,setupP,total:boa+setupP,
+      tBoa:S.t/(1-r)+(L?S.setup*60/L:0),loteTempo:L?L*S.t/(1-r)+S.setup*60:null})};
+  const Hs=per.map(x=>x.H).filter(h=>h!=null),Havg=Hs.length?Hs.reduce((a,b)=>a+b,0)/Hs.length:null;
+  const ready=per.length>0&&per.every(x=>x.ok);
+  const A=side("a","A"),D=side("d","D");
+  const inv=Havg==null?null:(num("i_h")||0)*Havg+(num("i_pe")||0)*(ready?D.prod:0)+(num("i_out")||0);
+  const res={per,Havg,lote,anual,A,D,inv,ready};
   if(ready){
     res.poupPeca=A.total-D.total;
     res.poupLote=lote?res.poupPeca*lote:null;
@@ -431,17 +443,61 @@ function calc(){
 }
 
 function tile(k,v,s,cls){return `<div class="tile ${cls||""}"><div class="k">${k}</div><div class="v">${v}</div>${s?`<div class="s">${s}</div>`:""}</div>`}
+function opCard(o,i){
+  const v=k=>esc(o[k]==null?"":o[k]);
+  const I=(k,cls,extra,aria)=>`<input id="op${i}_${k}" data-i="${i}" data-k="${k}" value="${v(k)}" class="${cls||""}" ${extra||""} aria-label="${aria}" autocomplete="off">`;
+  const ab=(lab,small,k,cls,extra,ph)=>`<span class="lab">${lab}${small?`<small>${small}</small>`:""}</span>`+
+    I("a_"+k,cls,(extra||"")+(ph?` placeholder="${ph}"`:""),lab+" antes")+I("d_"+k,cls,(extra||"")+' placeholder="igual"',lab+" depois");
+  const del=ops.length<2?"":pendingOpDel===i
+    ?`<span class="confirm">Remover? <button class="btn sm danger" type="button" data-act="delyes" data-i="${i}">Sim</button><button class="btn sm" type="button" data-act="delno" data-i="${i}">Não</button></span>`
+    :`<button class="btn sm ghost danger" type="button" data-act="del" data-i="${i}">Remover</button>`;
+  return `<div class="op">
+    <div class="op-head"><span class="op-n">${String(i+1).padStart(2,"0")}</span>${I("nome","op-name",'list="dl_operacao" placeholder="Ex.: Op. 10 · Torneamento exterior"',"Nome da operação "+(i+1))}
+      <div class="op-actions"><button class="btn sm ghost" type="button" data-act="copy" data-i="${i}">Copiar Antes → Depois</button>${del}</div></div>
+    <div class="grid3">
+      <label class="f">Máquina${I("maquina","",'list="dl_maquina"',"Máquina da operação "+(i+1))}</label>
+      <label class="f">Máquina (€/h)${I("c_maq","num-in",'inputmode="decimal"',"Custo da máquina por hora")}</label>
+      <label class="f">Consumo (kW)${I("c_kw","num-in",'inputmode="decimal"',"Consumo médio em kW")}</label>
+    </div>
+    <div class="ab">
+      <span class="h l"></span><span class="h">Antes</span><span class="h d">Depois</span>
+      ${ab("Programa / revisão","","prog","",'list="dl_prog"')}
+      ${ab("Ferramenta","","ferr","",'list="dl_ferr"')}
+      <span class="sep"></span>
+      ${ab("Tempo de ciclo","mm:ss ou segundos","t","num-in","","2:30")}
+      ${ab("Preparação","setup, em minutos","setup","num-in",'inputmode="decimal"')}
+      <span class="sep"></span>
+      ${ab("Preço da ferramenta","€ por aresta","fp","num-in",'inputmode="decimal"')}
+      ${ab("Vida da ferramenta","peças por aresta","fv","num-in",'inputmode="numeric"')}
+    </div>
+    <div class="op-res" id="op${i}_res"></div>
+  </div>`}
+function renderOps(){
+  $("ops").innerHTML=ops.map(opCard).join("");
+  $("opsCount").textContent=ops.length===1?"1 operação":ops.length+" operações"}
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 
 function render(){
   const R=calc();
-  $("dHora").textContent=R.H!=null?eur.format(R.H)+"/h  ·  "+fe(R.H/60)+"/min":"—";
   $("dInv").textContent=R.inv!=null&&R.inv>0?eur.format(R.inv):"—";
-  ["a","d"].forEach(p=>{const t=parseTime($(p+"_t").value);$(p+"_t_h").textContent=t!=null?"= "+fmtDur(t)+(t>=60?" ("+nf(1).format(t)+" s)":""):($(p+"_t").value?"Formato não reconhecido":"")});
+  R.per.forEach((x,i)=>{const el=$("op"+i+"_res");if(!el)return;const o=x.o;
+    if((!blank(o.a_t)&&parseTime(o.a_t)==null)||(!blank(o.d_t)&&parseTime(o.d_t)==null)){el.className="op-res warn";el.textContent="Tempo com formato não reconhecido. Escreve 2:30 ou 150.";return}
+    el.className="op-res";
+    if(x.T.a==null){el.textContent="Falta o tempo de ciclo.";return}
+    let s;
+    if(blank(o.a_t))s="Operação nova · "+fmtDur(x.T.d);
+    else if(x.T.d===0)s="Operação eliminada · era "+fmtDur(x.T.a);
+    else{s=fmtDur(x.T.a)+" → "+fmtDur(x.T.d);if(x.T.a>0&&x.T.d!==x.T.a)s+=" ("+(x.T.d<x.T.a?"−":"+")+nf(1).format(Math.abs(x.T.a-x.T.d)/x.T.a*100)+" %)"}
+    s+=x.H!=null?" · "+eur.format(x.H)+"/h":" · falta o custo hora";
+    if(x.ok)s+=" · "+fe(x.A.ciclo+x.A.ferr)+" → "+fe(x.D.ciclo+x.D.ferr)+" por peça";
+    el.textContent=s});
   const v=$("verdict");
   if(!R.ready){
     v.className="verdict";
-    const miss=[];if(R.H==null)miss.push("custos por hora");if(R.A.t==null)miss.push("tempo antes");if(R.D.t==null)miss.push("tempo depois");if(!R.lote)miss.push("quantidade do lote");
+    const miss=[],noH=R.per.filter(x=>x.H==null);
+    if(noH.length)miss.push(noH.length===R.per.length?"custos por hora":"custo hora da máquina em "+R.per.map((x,i)=>x.H==null?"Op. "+(i+1):null).filter(Boolean).join(", "));
+    R.per.forEach((x,i)=>{if(x.T.a==null||x.T.d==null)miss.push("tempo de ciclo da Op. "+(i+1))});
+    if(!R.lote)miss.push("quantidade do lote");
     v.textContent="Falta preencher: "+miss.join(", ")+".";
     $("tiles").innerHTML="";$("barsBox").hidden=true;$("cmpBox").hidden=true;return R;
   }
@@ -484,7 +540,8 @@ function render(){
     return `<tr class="${cl||""}"><td>${lab}</td><td class="num">${isTime?fmtDur(a):f(a)}</td><td class="num">${isTime?fmtDur(d):f(d)}</td><td class="num ${dc}">${fd}</td></tr>`};
   const pct=x=>nf(1).format(x*100)+" %";
   let t="";
-  t+=row("Tempo de ciclo",R.A.t,R.D.t,null,false,true);
+  if(R.per.length>1)R.per.forEach((x,i)=>{t+=row(esc(x.o.nome||("Operação "+(i+1)))+(x.o.maquina?"<small>"+esc(x.o.maquina)+"</small>":""),x.A.t,x.D.t,null,false,true)});
+  t+=row(R.per.length>1?"Tempo de ciclo total":"Tempo de ciclo",R.A.t,R.D.t,null,false,true);
   t+=row("Tempo por peça boa <small>com preparação e refugo</small>",R.A.tBoa,R.D.tBoa,null,false,true);
   t+=row("Máquina e operador",R.A.ciclo,R.D.ciclo,fe);
   t+=row("Ferramenta",R.A.ferr,R.D.ferr,fe);
@@ -503,13 +560,20 @@ function loadDraft(){try{return JSON.parse(localStorage.getItem(DKEY)||"null")}c
 let dT;function onInput(){render();clearTimeout(dT);dT=setTimeout(saveDraft,400)}
 document.querySelectorAll(".main input,.main select,.main textarea").forEach(el=>{el.addEventListener("input",onInput);el.addEventListener("change",onInput)});
 
+$("ops").addEventListener("input",e=>{const el=e.target;if(el.dataset.k==null)return;ops[+el.dataset.i][el.dataset.k]=el.value;onInput()});
+$("ops").addEventListener("click",e=>{const b=e.target.closest("button[data-act]");if(!b)return;const i=+b.dataset.i,a=b.dataset.act;
+  if(a==="copy"){["prog","ferr","t","setup","fp","fv"].forEach(k=>ops[i]["d_"+k]=ops[i]["a_"+k]);renderOps();onInput();toast("Valores do Antes copiados para o Depois")}
+  else if(a==="del"){pendingOpDel=i;renderOps();render()}
+  else if(a==="delno"){pendingOpDel=null;renderOps();render()}
+  else if(a==="delyes"){ops.splice(i,1);pendingOpDel=null;renderOps();onInput();toast("Operação removida")}});
+$("bAddOp").onclick=()=>{ops.push(blankOp());pendingOpDel=null;renderOps();onInput();const el=$("op"+(ops.length-1)+"_nome");if(el)el.focus()};
 function setExample(on){isExample=on;$("exBanner").hidden=!on}
 function setEditing(){const r=records.find(x=>x.id===currentId);$("editing").innerHTML=r?`A editar <b>${esc(r.f.ref||"registo sem referência")}</b>`:"Registo novo";renderHist()}
 function today(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
 
 $("bExample").onclick=()=>{currentId=null;fill(Object.assign({},EXEMPLO,{data:today()}));setExample(true);onInput();setEditing();toast("Exemplo carregado")};
 $("bClearEx").onclick=()=>{currentId=null;fill({data:today()});setExample(false);onInput();setEditing()};
-$("bNew").onclick=()=>{const keep={};["data","c_op","c_maq","c_kw","c_kwh","c_incl","c_mat","maquina","responsavel"].forEach(k=>keep[k]=isExample?undefined:read()[k]);
+$("bNew").onclick=()=>{const keep={};["data","c_op","c_kwh","c_incl","c_mat","responsavel"].forEach(k=>keep[k]=isExample?undefined:read()[k]);
   currentId=null;fill(Object.assign(keep,{data:today()}));setExample(false);onInput();setEditing();toast("Novo registo. Custos por hora mantidos.")};
 
 // ---------- Histórico ----------
@@ -517,7 +581,7 @@ const LKEY="cnc_tc_registos_v2";
 function localAll(){try{return JSON.parse(localStorage.getItem(LKEY)||"[]")}catch(e){return []}}
 function localPut(arr){try{localStorage.setItem(LKEY,JSON.stringify(arr));return true}catch(e){return false}}
 
-function summary(R){return {poupPeca:R.ready?R.poupPeca:null,poupAno:R.ready?R.poupAno:null,redCiclo:R.ready?R.redCiclo:null,poupLote:R.ready?R.poupLote:null}}
+function summary(R){return {tA:R.ready?R.A.t:null,tD:R.ready?R.D.t:null,nOps:ops.length,poupPeca:R.ready?R.poupPeca:null,poupAno:R.ready?R.poupAno:null,redCiclo:R.ready?R.redCiclo:null,poupLote:R.ready?R.poupLote:null}}
 
 let readOnly=false,userEmail="";
 function setReadOnly(on){readOnly=on;$("roBanner").hidden=!on;$("bSave").disabled=on;$("fImport").disabled=on;
@@ -526,7 +590,7 @@ async function save(){
   if(readOnly){toast("A tua conta é só de consulta.");return}
   if(window.firebase&&!store){toast("Entra com a tua conta para guardar.");$("login").hidden=false;return}
   const f=read(), R=calc();
-  if(!f.ref.trim()&&!f.maquina.trim()){toast("Indica pelo menos a referência ou a máquina.");$("ref").focus();return}
+  if(!f.ref.trim()&&!ops.some(o=>String(o.maquina||"").trim())){toast("Indica pelo menos a referência ou a máquina.");$("ref").focus();return}
   const now=new Date().toISOString();
   const prev=records.find(x=>x.id===currentId);
   const rec={f,res:summary(R),criadoEm:prev?prev.criadoEm:now,atualizadoEm:now,autor:userEmail||""};
@@ -546,15 +610,16 @@ $("bPrint").onclick=()=>window.print();
 
 function matches(r,q,est){
   if(est&&(r.f.estado||"Por validar")!==est)return false;if(!q)return true;
-  const hay=[r.f.ref,r.f.maquina,r.f.operacao,r.f.a_prog,r.f.d_prog,r.f.a_ferr,r.f.d_ferr,r.f.responsavel,r.f.obs].join(" ").toLowerCase();
+  const hay=[r.f.ref,r.f.responsavel,r.f.obs].concat(opsOf(r.f).flatMap(o=>[o.nome,o.maquina,o.a_prog,o.d_prog,o.a_ferr,o.d_ferr])).join(" ").toLowerCase();
   return q.toLowerCase().split(/\s+/).every(w=>hay.includes(w))}
 function fdate(s){if(!s)return "";const [y,m,d]=s.split("-");return d&&m?`${d}/${m}/${y}`:s}
 
 function fillLists(){
-  const sets={dl_ref:["ref"],dl_maquina:["maquina"],dl_operacao:["operacao"],dl_responsavel:["responsavel"],dl_prog:["a_prog","d_prog"],dl_ferr:["a_ferr","d_ferr"]};
-  for(const [dl,keys] of Object.entries(sets)){
-    const vals=new Set();records.forEach(r=>keys.forEach(k=>{const v=(r.f&&r.f[k]||"").trim();if(v)vals.add(v)}));
-    $(dl).innerHTML=[...vals].sort((a,b)=>a.localeCompare(b,"pt")).map(v=>`<option value="${esc(v)}"></option>`).join("")}
+  const sets={dl_ref:new Set(),dl_responsavel:new Set(),dl_maquina:new Set(),dl_operacao:new Set(),dl_prog:new Set(),dl_ferr:new Set()};
+  const add=(k,v)=>{v=String(v||"").trim();if(v)sets[k].add(v)};
+  records.forEach(r=>{const f=r.f||{};add("dl_ref",f.ref);add("dl_responsavel",f.responsavel);
+    opsOf(f).forEach(o=>{add("dl_maquina",o.maquina);add("dl_operacao",o.nome);add("dl_prog",o.a_prog);add("dl_prog",o.d_prog);add("dl_ferr",o.a_ferr);add("dl_ferr",o.d_ferr)})});
+  for(const k in sets)$(k).innerHTML=[...sets[k]].sort((a,b)=>a.localeCompare(b,"pt")).map(v=>`<option value="${esc(v)}"></option>`).join("");
 }
 function renderHist(){
   fillLists();
@@ -566,14 +631,15 @@ function renderHist(){
   if(!records.length){$("histList").innerHTML=`<div class="empty">Ainda não há melhorias guardadas. Preenche o formulário acima e carrega em <b>Guardar registo</b>. Cada registo fica aqui, com a poupança e o estado de validação.</div>`;return}
   if(!list.length){$("histList").innerHTML=`<div class="empty">Nenhum registo corresponde à pesquisa.</div>`;return}
   $("histList").innerHTML=list.map(r=>{
-    const f=r.f,s=r.res||{},st=f.estado||"Por validar";
+    const f=r.f,s=r.res||{},st=f.estado||"Por validar",os=opsOf(f);
+    const maqs=[...new Set(os.map(o=>String(o.maquina||"").trim()).filter(Boolean))].join(" · ");
     const pp=s.poupPeca,pa=s.poupAno;
     const c=v=>v==null?"":v>0?"delta-pos":v<0?"delta-neg":"";
     const del=readOnly?"":pendingDelete===r.id?`<span class="confirm" data-stop>Apagar? <button class="btn danger" data-del="${r.id}" type="button">Sim, apagar</button><button class="btn" data-cancel type="button">Não</button></span>`
       :`<button class="btn ghost danger" data-ask="${r.id}" type="button" aria-label="Apagar registo">Apagar</button>`;
     return `<div class="hist-item ${r.id===currentId?"on":""}" tabindex="0" data-id="${r.id}">
-      <div><div class="r1">${esc(f.ref||"Sem referência")}</div><div class="r2">${esc([fdate(f.data),f.operacao,(f.a_prog||f.d_prog)?(f.a_prog||"?")+" → "+(f.d_prog||"?"):""].filter(Boolean).join(" · "))}</div></div>
-      <div class="c-maq r2">${esc(f.maquina||"")}<br><span class="pill ${st.replace(" ","-")}">${esc(st)}</span></div>
+      <div><div class="r1">${esc(f.ref||"Sem referência")}</div><div class="r2">${esc([fdate(f.data),os.length>1?os.length+" operações":os[0].nome,os.length===1&&(os[0].a_prog||os[0].d_prog)?(os[0].a_prog||"?")+" → "+(os[0].d_prog||os[0].a_prog||"?"):""].filter(Boolean).join(" · "))}</div></div>
+      <div class="c-maq r2">${esc(maqs)}<br><span class="pill ${st.replace(" ","-")}">${esc(st)}</span></div>
       <div class="num c-red">${s.redCiclo!=null?nf(1).format(s.redCiclo*100)+" %":"—"}<small>ciclo</small></div>
       <div class="num ${c(pa!=null?pa:pp)}">${pa!=null?eur.format(pa):pp!=null?fe(pp):"—"}<small>${pa!=null?"por ano":"por peça"}</small></div>
       <div>${del}</div></div>`}).join("");
@@ -607,11 +673,15 @@ async function offer(filename,data){
 $("bJson").onclick=()=>{if(!records.length){toast("Não há registos para exportar.");return}
   offer("cnc-tempos-custos-"+today()+".json",JSON.stringify({versao:2,exportadoEm:new Date().toISOString(),registos:records},null,2))};
 $("bCsv").onclick=()=>{if(!records.length){toast("Não há registos para exportar.");return}
-  const cols=[["Data","data"],["Referência","ref"],["Máquina","maquina"],["Operação","operacao"],["Responsável","responsavel"],["Estado","estado"],["Programa antes","a_prog"],["Programa depois","d_prog"],["Ferramenta antes","a_ferr"],["Ferramenta depois","d_ferr"],["Ciclo antes","a_t"],["Ciclo depois","d_t"],["Lote","lote"],["Qtd anual","anual"],["Observações","obs"]];
   const q=v=>'"'+String(v==null?"":v).replace(/"/g,'""')+'"';
   const n=v=>v==null?"":String(Math.round(v*1000)/1000).replace(".",",");
-  const head=cols.map(c=>q(c[0])).concat(["Poupança/peça (€)","Poupança/lote (€)","Poupança/ano (€)","Redução ciclo (%)"].map(q)).join(";");
-  const rows=records.map(r=>cols.map(c=>q(r.f[c[1]])).concat([n(r.res&&r.res.poupPeca),n(r.res&&r.res.poupLote),n(r.res&&r.res.poupAno),n(r.res&&r.res.redCiclo!=null?r.res.redCiclo*100:null)]).join(";"));
+  const head=["Data","Referência","Responsável","Estado","Nº operações","Máquinas","Operações (antes → depois)","Ciclo antes (s)","Ciclo depois (s)","Lote","Qtd anual","Observações","Poupança/peça (€)","Poupança/lote (€)","Poupança/ano (€)","Redução ciclo (%)"].map(q).join(";");
+  const rows=records.map(r=>{const f=r.f||{},s=r.res||{},os=opsOf(f);
+    let tA=s.tA,tD=s.tD;if(tA==null){const ts=os.map(opTimes);if(ts.every(t=>t.a!=null&&t.d!=null)){tA=ts.reduce((a,t)=>a+t.a,0);tD=ts.reduce((a,t)=>a+t.d,0)}}
+    const desc=os.map((o,i)=>(o.nome||"Op. "+(i+1))+(o.maquina?" ("+o.maquina+")":"")+": "+(o.a_t||"nova")+" → "+(blank(o.d_t)?(o.a_t||"?"):o.d_t)).join(" | ");
+    const maqs=[...new Set(os.map(o=>String(o.maquina||"").trim()).filter(Boolean))].join(", ");
+    return [q(f.data),q(f.ref),q(f.responsavel),q(f.estado),q(os.length),q(maqs),q(desc),n(tA),n(tD),q(f.lote),q(f.anual),q(f.obs),
+      n(s.poupPeca),n(s.poupLote),n(s.poupAno),n(s.redCiclo!=null?s.redCiclo*100:null)].join(";")});
   offer("cnc-melhorias-"+today()+".csv","﻿"+[head].concat(rows).join("\r\n"))};
 $("fImport").addEventListener("change",async e=>{
   const file=e.target.files[0];e.target.value="";if(!file)return;
