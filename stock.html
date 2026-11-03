@@ -143,6 +143,63 @@
   .pill.Outro { color: var(--muted); background: var(--hover); }
   .codes { font-family: var(--font-code); font-size: .75rem; color: var(--muted); }
   .admin { border-style: dashed; }
+  /* Separadores */
+  .tabs { background: var(--panel); border-bottom: 1px solid var(--line); }
+  .tabs-in { max-width: 1280px; margin: 0 auto; padding: 0 16px; display: flex; gap: 4px; overflow-x: auto; }
+  .tab { appearance: none; background: none; border: 0; border-bottom: 3px solid transparent; font: inherit; font-weight: 600; color: var(--muted); padding: 12px 14px; cursor: pointer; white-space: nowrap; }
+  .tab[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--brand); }
+  .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+  /* Resumo */
+  .sum-head { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: end; }
+  .sum-head p { margin: 4px 0 0; color: var(--muted); }
+  .takeaway { font-size: 1.05rem; line-height: 1.5; max-width: 80ch; margin: 0; }
+  .takeaway b { font-variant-numeric: tabular-nums; }
+  .takeaway .bad { color: var(--out); } .takeaway .warn { color: var(--warn); } .takeaway .good { color: var(--in); }
+  .kpis { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 11.5rem), 1fr)); }
+  .kpi { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; display: grid; gap: 4px; align-content: start; }
+  .kpi .k { font-size: .78rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; font-weight: 600; }
+  .kpi .v { font-size: 1.9rem; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .kpi .s { font-size: .82rem; color: var(--muted); }
+  .kpi.good .v { color: var(--in); } .kpi.bad .v { color: var(--out); } .kpi.warn .v { color: var(--warn); }
+  .meter { height: 8px; border-radius: 99px; background: var(--hover); overflow: hidden; display: flex; }
+  .meter i { display: block; height: 100%; }
+  .charts { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); }
+  .card h3 { margin: 0; font-size: 1rem; font-weight: 600; }
+  .charts .card { align-content: start; gap: 10px; }
+  .card .note { margin: 0; color: var(--muted); font-size: .82rem; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: .8rem; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .sw { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+  .c-ok { background: var(--in); } .c-abx { background: var(--warn); } .c-rut { background: var(--out); } .c-out { background: var(--line); } .c-acc { background: var(--accent); }
+  .donut-wrap { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+  .donut-wrap svg { width: 170px; height: 170px; flex: none; }
+  .donut-list { display: grid; gap: 8px; flex: 1; min-width: 12rem; }
+  .donut-list div { display: grid; grid-template-columns: 12px 1fr auto auto; gap: 8px; align-items: center; font-size: .9rem; }
+  .donut-list b { font-variant-numeric: tabular-nums; text-align: right; }
+  .donut-list em { font-style: normal; color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; min-width: 3.2rem; }
+  .hbars { display: grid; gap: 8px; }
+  .hbar { display: grid; grid-template-columns: minmax(6rem, 9rem) 1fr minmax(4.5rem, auto); gap: 10px; align-items: center; font-size: .85rem; }
+  .hbar .lab { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hbar .track { height: 18px; background: var(--hover); border-radius: 4px; overflow: hidden; display: flex; }
+  .hbar .track i { display: block; height: 100%; }
+  .hbar .val { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+  .hbar .val small { font-weight: 400; color: var(--muted); }
+  .cols svg { width: 100%; height: auto; display: block; }
+  .cols text { font-size: 15px; fill: var(--muted); font-family: var(--font-ui); }
+  .chart-empty { color: var(--muted); font-size: .88rem; padding: 18px 0; border: 1px dashed var(--line); border-radius: var(--r); text-align: center; }
+  .dq { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .dq li { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 6px; font-size: .9rem; }
+  .dq li:last-child { border-bottom: 0; }
+  .dq b { font-variant-numeric: tabular-nums; }
+  tfoot td { font-weight: 700; border-top: 2px solid var(--line); background: var(--panel); position: sticky; bottom: 0; }
+  @media print {
+    .band, .tabs, #btn-print, .no-print, #view-login, #view-loading { display: none !important; }
+    body { background: #fff; }
+    [data-panel]:not([data-panel="resumo"]) { display: none !important; }
+    [data-panel="resumo"] { display: grid !important; }
+    .card, .kpi { break-inside: avoid; }
+  }
   .band { background: var(--brand); color: var(--brand-ink); }
   .band-in { max-width: 1280px; margin: 0 auto; padding: 12px 16px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
   .band-in img { width: 34px; height: 34px; border-radius: 6px; }
@@ -185,7 +242,86 @@
   <span id="user-email" style="font-size:.85rem;color:var(--brand-sub)"></span>
   <button class="btn small" id="btn-logout">Sair</button>
 </div></div>
-<div class="wrap">
+<nav class="tabs" role="tablist" aria-label="Secções"><div class="tabs-in">
+  <button class="tab" role="tab" data-tab="resumo" aria-selected="true">📊 Resumo</button>
+  <button class="tab" role="tab" data-tab="leitura" aria-selected="false">🔫 Leitura</button>
+  <button class="tab" role="tab" data-tab="encomendar" aria-selected="false">🛒 A encomendar</button>
+  <button class="tab" role="tab" data-tab="stock" aria-selected="false">📦 Stock atual</button>
+</div></nav>
+
+<!-- ===== Resumo ===== -->
+<div class="wrap" data-panel="resumo" id="resumo">
+  <div class="sum-head">
+    <div>
+      <h1>Resumo do stock de ferramentas</h1>
+      <p id="sum-when">Atualizado em tempo real</p>
+    </div>
+    <button class="btn" id="btn-print">🖨️ Imprimir / PDF</button>
+  </div>
+  <p class="takeaway" id="takeaway">A calcular…</p>
+
+  <div class="kpis">
+    <div class="kpi" id="k-cob"><span class="k">Cobertura de stock</span><span class="v" id="kv-cob">—</span><div class="meter" id="km-cob"></div><span class="s" id="ks-cob">artigos com stock igual ou acima do mínimo</span></div>
+    <div class="kpi bad"><span class="k">Em rutura</span><span class="v" id="kv-rut">—</span><span class="s" id="ks-rut">stock a zero</span></div>
+    <div class="kpi warn"><span class="k">Abaixo do mínimo</span><span class="v" id="kv-abx">—</span><span class="s" id="ks-abx">ainda há, mas pouco</span></div>
+    <div class="kpi"><span class="k">Valor em stock</span><span class="v" id="kv-val">—</span><span class="s" id="ks-val">stock × preço unitário</span></div>
+    <div class="kpi"><span class="k">Custo para repor mínimos</span><span class="v" id="kv-rep">—</span><span class="s" id="ks-rep">—</span></div>
+    <div class="kpi"><span class="k">Movimentos (30 dias)</span><span class="v" id="kv-mov">—</span><span class="s" id="ks-mov">—</span></div>
+  </div>
+
+  <div class="charts">
+    <section class="card">
+      <h3>Situação geral do stock</h3>
+      <p class="note">Percentagem de artigos em cada situação.</p>
+      <div class="donut-wrap"><svg viewBox="0 0 42 42" id="donut" role="img" aria-label="Situação geral do stock"></svg><div class="donut-list" id="donut-list"></div></div>
+    </section>
+    <section class="card">
+      <h3>Cobertura por máquina</h3>
+      <p class="note">Percentagem de artigos de cada máquina com stock suficiente.</p>
+      <div class="legend"><span><i class="sw c-ok"></i>OK</span><span><i class="sw c-abx"></i>Abaixo do mínimo</span><span><i class="sw c-rut"></i>Rutura</span><span><i class="sw c-out"></i>Sem regra / não encomendar</span></div>
+      <div class="hbars" id="ch-maq"></div>
+    </section>
+    <section class="card">
+      <h3>Faltas por tipo de ferramenta</h3>
+      <p class="note">Artigos em rutura ou abaixo do mínimo, e a percentagem do tipo que está em falta.</p>
+      <div class="hbars" id="ch-tipo"></div>
+    </section>
+    <section class="card">
+      <h3>Custo de reposição por fornecedor</h3>
+      <p class="note">Quanto custa repor o stock mínimo, por fornecedor (artigos com preço).</p>
+      <div class="hbars" id="ch-forn"></div>
+    </section>
+    <section class="card">
+      <h3>Entradas e saídas nos últimos 30 dias</h3>
+      <p class="note">Unidades por dia, registadas com a pistola.</p>
+      <div class="legend"><span><i class="sw c-ok"></i>Entradas</span><span><i class="sw c-rut"></i>Saídas</span></div>
+      <div class="cols" id="ch-mov"></div>
+    </section>
+    <section class="card">
+      <h3>Mais consumidos (30 dias)</h3>
+      <p class="note">Artigos com mais unidades a sair do armazém.</p>
+      <div class="hbars" id="ch-top"></div>
+    </section>
+    <section class="card">
+      <h3>Valor em stock por marca</h3>
+      <p class="note">Onde está o dinheiro parado em armazém (8 maiores).</p>
+      <div class="hbars" id="ch-marca"></div>
+    </section>
+    <section class="card">
+      <h3>Qualidade dos dados</h3>
+      <p class="note">O que falta preencher para os números ficarem completos.</p>
+      <ul class="dq">
+        <li><span>Artigos com código de barras associado</span><b id="dq-cod">—</b></li>
+        <li><span>Artigos sem preço</span><b id="dq-preco">—</b></li>
+        <li><span>Artigos sem fornecedor</span><b id="dq-forn">—</b></li>
+        <li><span>Artigos sem regra de stock mínimo</span><b id="dq-regra">—</b></li>
+      </ul>
+    </section>
+  </div>
+</div>
+
+<!-- ===== Leitura ===== -->
+<div class="wrap" data-panel="leitura" id="leitura" hidden>
   <header class="top">
     <div>
       <h1>Leitura de stock</h1>
@@ -227,7 +363,37 @@
       <ul class="log" id="log"><li class="empty">Ainda não há movimentos registados.</li></ul>
     </section>
   </div>
+</div>
 
+<!-- ===== A encomendar ===== -->
+<div class="wrap" data-panel="encomendar" id="encomendar" hidden>
+  <section class="card">
+    <div class="r-head">
+      <div>
+        <h2>Lista a encomendar</h2>
+        <p class="note" style="margin-top:4px">Artigos abaixo do mínimo. A quantidade a pedir arredonda para caixas inteiras.</p>
+      </div>
+      <button class="btn small" id="btn-enc-csv">Exportar CSV</button>
+    </div>
+    <div class="tools">
+      <select class="pick-search" id="enc-forn" style="flex:0 1 18rem" aria-label="Fornecedor"><option value="">Todos os fornecedores</option></select>
+      <span class="muted" style="font-size:.85rem" id="enc-sum"></span>
+    </div>
+    <div class="tbox">
+      <table>
+        <thead><tr>
+          <th>Ref. interna</th><th>Descrição</th><th class="hide-sm">Máquina</th><th class="hide-sm">Fornecedor</th>
+          <th class="r">Stock</th><th class="r">Mín.</th><th class="r">A pedir</th><th class="r hide-sm">Preço un.</th><th class="r">Custo</th>
+        </tr></thead>
+        <tbody id="enc-tbl"></tbody>
+        <tfoot><tr><td colspan="2">Total</td><td class="hide-sm"></td><td class="hide-sm"></td><td></td><td></td><td class="r" id="enc-tot-q"></td><td class="hide-sm"></td><td class="r" id="enc-tot-c"></td></tr></tfoot>
+      </table>
+    </div>
+  </section>
+</div>
+
+<!-- ===== Stock atual ===== -->
+<div class="wrap" data-panel="stock" id="stock" hidden>
   <section class="card">
     <div class="r-head">
       <h2>Stock atual</h2>
@@ -280,6 +446,8 @@
     messagingSenderId: "282508571679",
     appId: "1:282508571679:web:e72894bc6a45216400912a",
   };
+  // Contas do armazém: abrem logo no separador de leitura.
+  const ARMAZEM_EMAILS = ["armazem@efaflu.pt"];
   // Email da conta de administrador. Só esta conta vê a importação.
   const ADMIN_EMAIL = "ratonline1976@gmail.com";
   // =====================================================================
@@ -295,6 +463,7 @@
   const onSnapshot = (ref, next, err) => ref.onSnapshot(next, err);
   const orderBy = (f, d) => (q) => q.orderBy(f, d);
   const limit = (n) => (q) => q.limit(n);
+  const where = (f, op, v) => (q) => q.where(f, op, v);
   const query = (c, ...mods) => mods.reduce((q, m) => m(q), c);
   const writeBatch = () => db.batch();
   const increment = (n) => firebase.firestore.FieldValue.increment(n);
@@ -307,7 +476,7 @@
   const when = (iso) => { const d = new Date(iso); return d.toLocaleDateString("pt-PT", { day: "2-digit", month: "2-digit" }) + " " + d.toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" }); };
   const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
 
-  const S = { email: null, artigos: new Map(), codigos: new Map(), movs: [], mode: "entrada", pending: null, tq: "", tsit: "", unsubs: [] };
+  const S = { email: null, artigos: new Map(), codigos: new Map(), movs: [], movs30: [], tab: "resumo", mode: "entrada", pending: null, tq: "", tsit: "", unsubs: [] };
 
   // ---------- som ----------
   let actx = null;
@@ -455,7 +624,212 @@
     box.append(h, flow, hint, w, acts);
   };
 
-  const renderAll = () => { renderStats(); renderLog(); renderTable(); if (S.pending && S.pending.kind === "found") { S.pending.artigo = S.artigos.get(S.pending.artigo.linha) || S.pending.artigo; renderResult(); } };
+
+  // ================= Resumo para a direção =================
+  const eur0 = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
+  const eur2 = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const pct = (x) => (x == null || !isFinite(x) ? "—" : new Intl.NumberFormat("pt-PT", { style: "percent", maximumFractionDigits: 0 }).format(x));
+  const reposicao = (a) => {
+    if (a.nao_encomendar) return null;
+    const st = stockOf(a), mn = a.minimo;
+    if (mn == null || st == null || st >= mn) return null;
+    const un = a.un_caixa > 1 ? a.un_caixa : 1;
+    const pedir = Math.ceil((mn - st) / un) * un;
+    const preco = a.preco_un == null ? null : Number(a.preco_un);
+    return { pedir, preco, custo: preco == null ? null : pedir * preco };
+  };
+  const hbars = (box, rows, opts) => {
+    box.replaceChildren();
+    if (!rows.length) { box.append(el("div", "chart-empty", opts.empty || "Sem dados.")); return; }
+    const max = opts.max || Math.max(...rows.map((r) => r.parts.reduce((s, p) => s + p.v, 0)), 1);
+    rows.forEach((r) => {
+      const row = el("div", "hbar");
+      const lab = el("span", "lab", r.label); lab.title = r.label;
+      const tr = el("div", "track");
+      r.parts.forEach((p) => { const i = el("i", p.cls); i.style.width = (p.v / max * 100) + "%"; i.title = (p.name ? p.name + ": " : "") + (opts.fmtPart ? opts.fmtPart(p.v) : fmt.format(p.v)); tr.append(i); });
+      const val = el("span", "val", r.value);
+      if (r.sub) { val.append(" "); val.append(el("small", null, r.sub)); }
+      row.append(lab, tr, val); box.append(row);
+    });
+  };
+
+  const renderResumo = () => {
+    if (!S.artigos.size) return;
+    const arts = Array.from(S.artigos.values());
+    const cnt = { "OK": 0, "Abaixo do mínimo": 0, "Rutura": 0, outros: 0 };
+    let valor = 0, semPreco = 0, semForn = 0, semRegra = 0, custoRep = 0, nRep = 0, repSemPreco = 0;
+    const comCodigo = new Set(S.codigos.values());
+    const porMaq = new Map(), porTipo = new Map(), porMarca = new Map(), porForn = new Map();
+    arts.forEach((a) => {
+      const s = situacao(a);
+      if (s in cnt) cnt[s]++; else cnt.outros++;
+      if (s === "Sem regra") semRegra++;
+      const st = stockOf(a), pr = a.preco_un == null ? null : Number(a.preco_un);
+      if (pr == null) semPreco++;
+      if (!a.fornecedor) semForn++;
+      if (st > 0 && pr != null) { valor += st * pr; porMarca.set(a.marca, (porMarca.get(a.marca) || 0) + st * pr); }
+      const m = porMaq.get(a.maquina) || { ok: 0, abx: 0, rut: 0, out: 0, n: 0 };
+      m.n++; if (s === "OK") m.ok++; else if (s === "Abaixo do mínimo") m.abx++; else if (s === "Rutura") m.rut++; else m.out++;
+      porMaq.set(a.maquina, m);
+      const t = porTipo.get(a.tipo) || { rut: 0, abx: 0, n: 0 };
+      t.n++; if (s === "Rutura") t.rut++; if (s === "Abaixo do mínimo") t.abx++;
+      porTipo.set(a.tipo, t);
+      const r = reposicao(a);
+      if (r) { nRep++; if (r.custo == null) repSemPreco++; else { custoRep += r.custo; const f = a.fornecedor || "(sem fornecedor)"; porForn.set(f, (porForn.get(f) || 0) + r.custo); } }
+    });
+    const comRegra = cnt["OK"] + cnt["Abaixo do mínimo"] + cnt["Rutura"];
+    const cob = comRegra ? cnt["OK"] / comRegra : null;
+    const total = arts.length;
+
+    $("sum-when").textContent = "Atualizado em tempo real · " + new Date().toLocaleString("pt-PT", { dateStyle: "long", timeStyle: "short" });
+    // frase principal
+    const tk = $("takeaway"); tk.replaceChildren();
+    const b = (txt, cls) => el("b", cls, txt);
+    tk.append(b(pct(cob), cob >= 0.8 ? "good" : cob >= 0.6 ? "warn" : "bad"), " dos artigos com regra de stock estão em ordem. ",
+      b(fmt.format(cnt["Rutura"]), "bad"), " estão em rutura e ", b(fmt.format(cnt["Abaixo do mínimo"]), "warn"), " abaixo do mínimo. Repor o stock mínimo custa cerca de ",
+      b(eur0.format(custoRep)), repSemPreco ? " (mais " + fmt.format(repSemPreco) + " artigos sem preço registado)." : ".");
+
+    // KPIs
+    $("kv-cob").textContent = pct(cob);
+    $("k-cob").className = "kpi " + (cob >= 0.8 ? "good" : cob >= 0.6 ? "warn" : "bad");
+    const km = $("km-cob"); km.replaceChildren();
+    [["c-ok", cnt["OK"]], ["c-abx", cnt["Abaixo do mínimo"]], ["c-rut", cnt["Rutura"]]].forEach(([c, v]) => { const i = el("i", c); i.style.width = (comRegra ? v / comRegra * 100 : 0) + "%"; km.append(i); });
+    $("ks-cob").textContent = fmt.format(cnt["OK"]) + " de " + fmt.format(comRegra) + " artigos com stock igual ou acima do mínimo";
+    $("kv-rut").textContent = fmt.format(cnt["Rutura"]); $("ks-rut").textContent = pct(cnt["Rutura"] / total) + " dos artigos · stock a zero";
+    $("kv-abx").textContent = fmt.format(cnt["Abaixo do mínimo"]); $("ks-abx").textContent = pct(cnt["Abaixo do mínimo"] / total) + " dos artigos · ainda há, mas pouco";
+    $("kv-val").textContent = eur0.format(valor); $("ks-val").textContent = "stock × preço · " + fmt.format(total - semPreco) + " artigos com preço";
+    $("kv-rep").textContent = eur0.format(custoRep); $("ks-rep").textContent = fmt.format(nRep) + " artigos a repor" + (repSemPreco ? " · " + fmt.format(repSemPreco) + " sem preço" : "");
+    const ent = S.movs30.filter((m) => !m.anulado && m.qtd > 0).reduce((s, m) => s + m.qtd, 0);
+    const sai = S.movs30.filter((m) => !m.anulado && m.qtd < 0).reduce((s, m) => s - m.qtd, 0);
+    $("kv-mov").textContent = fmt.format(S.movs30.filter((m) => !m.anulado).length);
+    $("ks-mov").textContent = "leituras · " + fmt.format(ent) + " un. entraram, " + fmt.format(sai) + " saíram";
+
+    // Donut
+    const parts = [["OK", cnt["OK"], "var(--in)", "c-ok"], ["Abaixo do mínimo", cnt["Abaixo do mínimo"], "var(--warn)", "c-abx"], ["Rutura", cnt["Rutura"], "var(--out)", "c-rut"], ["Sem regra / não encomendar", cnt.outros, "var(--line)", "c-out"]];
+    const svg = $("donut"); svg.replaceChildren();
+    const NS = "http://www.w3.org/2000/svg"; const C = 2 * Math.PI * 15.915;
+    let off = 0;
+    const bg = document.createElementNS(NS, "circle"); bg.setAttribute("cx", 21); bg.setAttribute("cy", 21); bg.setAttribute("r", 15.915); bg.setAttribute("fill", "none"); bg.setAttribute("stroke", "var(--hover)"); bg.setAttribute("stroke-width", 6); svg.append(bg);
+    parts.forEach(([name, v, col]) => {
+      if (!v) return;
+      const c = document.createElementNS(NS, "circle");
+      c.setAttribute("cx", 21); c.setAttribute("cy", 21); c.setAttribute("r", 15.915); c.setAttribute("fill", "none");
+      c.setAttribute("stroke-width", 6); c.style.stroke = col;
+      c.setAttribute("stroke-dasharray", (v / total * 100) + " " + (100 - v / total * 100));
+      c.setAttribute("stroke-dashoffset", 25 - off); off += v / total * 100;
+      const ttl = document.createElementNS(NS, "title"); ttl.textContent = name + ": " + fmt.format(v) + " (" + pct(v / total) + ")"; c.append(ttl);
+      svg.append(c);
+    });
+    const tx = document.createElementNS(NS, "text"); tx.setAttribute("x", 21); tx.setAttribute("y", 20.5); tx.setAttribute("text-anchor", "middle");
+    tx.setAttribute("font-size", 7); tx.setAttribute("font-weight", 700); tx.style.fill = "var(--fg)"; tx.textContent = pct(cob); svg.append(tx);
+    const tx2 = document.createElementNS(NS, "text"); tx2.setAttribute("x", 21); tx2.setAttribute("y", 26.5); tx2.setAttribute("text-anchor", "middle");
+    tx2.setAttribute("font-size", 3); tx2.style.fill = "var(--muted)"; tx2.textContent = "cobertura"; svg.append(tx2);
+    const dl = $("donut-list"); dl.replaceChildren();
+    parts.forEach(([name, v, , cls]) => { const r = el("div"); r.append(el("i", "sw " + cls), el("span", null, name), el("b", null, fmt.format(v)), el("em", null, pct(v / total))); dl.append(r); });
+
+    // Cobertura por máquina (100%)
+    hbars($("ch-maq"), Array.from(porMaq, ([k, m]) => ({ label: k, value: pct(m.ok / m.n), sub: fmt.format(m.n) + " art.",
+      parts: [{ v: m.ok / m.n, cls: "c-ok", name: "OK" }, { v: m.abx / m.n, cls: "c-abx", name: "Abaixo" }, { v: m.rut / m.n, cls: "c-rut", name: "Rutura" }, { v: m.out / m.n, cls: "c-out", name: "Outros" }] }))
+      .sort((x, y) => porMaq.get(y.label).n - porMaq.get(x.label).n), { max: 1, fmtPart: (v) => pct(v) });
+    // Faltas por tipo
+    hbars($("ch-tipo"), Array.from(porTipo, ([k, t]) => ({ label: k, n: t.rut + t.abx, value: fmt.format(t.rut + t.abx), sub: pct((t.rut + t.abx) / t.n),
+      parts: [{ v: t.rut, cls: "c-rut", name: "Rutura" }, { v: t.abx, cls: "c-abx", name: "Abaixo" }] })).filter((r) => r.n > 0).sort((x, y) => y.n - x.n).slice(0, 10),
+      { empty: "Nenhum tipo com faltas." });
+    // Reposição por fornecedor
+    hbars($("ch-forn"), Array.from(porForn, ([k, v]) => ({ label: k, v, value: eur0.format(v), sub: pct(v / custoRep), parts: [{ v, cls: "c-acc" }] })).sort((x, y) => y.v - x.v).slice(0, 8),
+      { empty: "Nada a repor com preço registado.", fmtPart: (v) => eur0.format(v) });
+    // Valor por marca
+    hbars($("ch-marca"), Array.from(porMarca, ([k, v]) => ({ label: k, v, value: eur0.format(v), sub: pct(v / valor), parts: [{ v, cls: "c-acc" }] })).sort((x, y) => y.v - x.v).slice(0, 8),
+      { empty: "Sem artigos com preço em stock.", fmtPart: (v) => eur0.format(v) });
+    // Mais consumidos
+    const cons = new Map();
+    S.movs30.forEach((m) => { if (!m.anulado && m.qtd < 0) cons.set(m.linha, (cons.get(m.linha) || 0) - m.qtd); });
+    hbars($("ch-top"), Array.from(cons, ([l, v]) => { const a = S.artigos.get(l) || {}; return { label: a.descricao || "Linha " + l, v, value: fmt.format(v) + " un.", parts: [{ v, cls: "c-rut" }] }; })
+      .sort((x, y) => y.v - x.v).slice(0, 8), { empty: "Ainda sem saídas registadas. O gráfico enche-se à medida que se lê com a pistola." });
+    renderCols();
+
+    // Qualidade dos dados
+    $("dq-cod").textContent = fmt.format(comCodigo.size) + " de " + fmt.format(total) + " (" + pct(comCodigo.size / total) + ")";
+    $("dq-preco").textContent = fmt.format(semPreco); $("dq-forn").textContent = fmt.format(semForn); $("dq-regra").textContent = fmt.format(semRegra);
+  };
+
+  const renderCols = () => {
+    const box = $("ch-mov"); box.replaceChildren();
+    const days = []; const today = new Date(); today.setHours(0, 0, 0, 0);
+    for (let i = 29; i >= 0; i--) { const d = new Date(today); d.setDate(d.getDate() - i); days.push({ d, key: d.toDateString(), ent: 0, sai: 0 }); }
+    const idx = new Map(days.map((x) => [x.key, x]));
+    S.movs30.forEach((m) => { if (m.anulado) return; const d = new Date(m.at); d.setHours(0, 0, 0, 0); const x = idx.get(d.toDateString()); if (!x) return; if (m.qtd > 0) x.ent += m.qtd; else x.sai -= m.qtd; });
+    const max = Math.max(1, ...days.map((x) => Math.max(x.ent, x.sai)));
+    if (!days.some((x) => x.ent || x.sai)) { box.append(el("div", "chart-empty", "Ainda sem movimentos nos últimos 30 dias. O gráfico enche-se à medida que se lê com a pistola.")); return; }
+    const NS = "http://www.w3.org/2000/svg", W = 600, H = 220, L = 44, R = 6, T = 8, B = 22, mid = T + (H - T - B) / 2, half = (H - T - B) / 2;
+    const svg = document.createElementNS(NS, "svg"); svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    const line = (y, dash) => { const l = document.createElementNS(NS, "line"); l.setAttribute("x1", L); l.setAttribute("x2", W - R); l.setAttribute("y1", y); l.setAttribute("y2", y); l.style.stroke = "var(--line)"; if (dash) l.setAttribute("stroke-dasharray", "3 3"); svg.append(l); };
+    const txt = (x, y, s, anchor) => { const t = document.createElementNS(NS, "text"); t.setAttribute("x", x); t.setAttribute("y", y); if (anchor) t.setAttribute("text-anchor", anchor); t.textContent = s; svg.append(t); };
+    line(mid); line(T, true); line(H - B, true);
+    txt(L - 4, T + 4, "+" + fmt.format(max), "end"); txt(L - 4, mid + 4, "0", "end"); txt(L - 4, H - B + 4, "−" + fmt.format(max), "end");
+    const bw = (W - L - R) / days.length;
+    days.forEach((x, i) => {
+      const cx = L + i * bw;
+      [[x.ent, -1, "var(--in)", "Entradas"], [x.sai, 1, "var(--out)", "Saídas"]].forEach(([v, dir, col, name]) => {
+        if (!v) return;
+        const h = v / max * half, r = document.createElementNS(NS, "rect");
+        r.setAttribute("x", cx + bw * 0.15); r.setAttribute("width", bw * 0.7); r.setAttribute("y", dir < 0 ? mid - h : mid); r.setAttribute("height", Math.max(h, 1)); r.setAttribute("rx", 1.5); r.style.fill = col;
+        const t = document.createElementNS(NS, "title"); t.textContent = x.d.toLocaleDateString("pt-PT") + " · " + name + ": " + fmt.format(v) + " un."; r.append(t); svg.append(r);
+      });
+      if (i % 5 === 0 || i === days.length - 1) txt(cx + bw / 2, H - 6, x.d.toLocaleDateString("pt-PT", { day: "2-digit", month: "2-digit" }), "middle");
+    });
+    box.append(svg);
+  };
+
+  // ================= Lista a encomendar =================
+  const encRows = () => {
+    const f = $("enc-forn").value;
+    return Array.from(S.artigos.values()).map((a) => ({ a, r: reposicao(a) })).filter((x) => x.r && (!f || (x.a.fornecedor || "(sem fornecedor)") === f))
+      .sort((x, y) => (situacao(x.a) === situacao(y.a) ? (y.r.custo ?? -1) - (x.r.custo ?? -1) : situacao(x.a) === "Rutura" ? -1 : 1));
+  };
+  const renderEnc = () => {
+    const sel = $("enc-forn"), cur = sel.value;
+    const forns = Array.from(new Set(Array.from(S.artigos.values()).filter((a) => reposicao(a)).map((a) => a.fornecedor || "(sem fornecedor)"))).sort((a, b) => a.localeCompare(b, "pt"));
+    sel.replaceChildren(new Option("Todos os fornecedores", ""), ...forns.map((f) => new Option(f, f)));
+    sel.value = forns.includes(cur) ? cur : "";
+    const rows = encRows(), tb = $("enc-tbl"); tb.replaceChildren();
+    let tq = 0, tc = 0, semP = 0;
+    rows.forEach(({ a, r }) => {
+      const tr = tb.insertRow();
+      const td = (t, c) => { const x = tr.insertCell(); x.textContent = t; if (c) x.className = c; return x; };
+      td(a.ref, "ref"); const d = td(a.descricao); d.prepend(el("span", "pill " + pillCls(situacao(a)), situacao(a) === "Rutura" ? "Rutura" : "Baixo"), " ");
+      td(a.maquina, "hide-sm"); td(a.fornecedor || "", "hide-sm");
+      td(fmt.format(stockOf(a)), "r"); td(fmt.format(a.minimo), "r");
+      td(fmt.format(r.pedir) + (a.un_caixa > 1 ? " (" + fmt.format(r.pedir / a.un_caixa) + " cx)" : ""), "r");
+      td(r.preco == null ? "" : eur2.format(r.preco), "r hide-sm"); td(r.custo == null ? "sem preço" : eur2.format(r.custo), "r");
+      tq += r.pedir; if (r.custo == null) semP++; else tc += r.custo;
+    });
+    $("enc-tot-q").textContent = fmt.format(tq) + " un."; $("enc-tot-c").textContent = eur2.format(tc);
+    $("enc-sum").textContent = fmt.format(rows.length) + " artigos · " + eur0.format(tc) + (semP ? " · " + fmt.format(semP) + " sem preço" : "");
+  };
+  $("enc-forn").addEventListener("change", renderEnc);
+  $("btn-enc-csv").addEventListener("click", () => {
+    const esc = (v) => { const s = String(v ?? ""); return /[;"\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    const n2 = (v) => (v == null ? "" : String(Math.round(v * 100) / 100).replace(".", ","));
+    const lines = [["Ref. interna", "Descrição", "Máquina", "Fornecedor", "Situação", "Stock", "Mínimo", "A pedir (un.)", "Un. por caixa", "Preço un. (€)", "Custo (€)"].join(";")];
+    encRows().forEach(({ a, r }) => lines.push([a.ref, a.descricao, a.maquina, a.fornecedor, situacao(a), stockOf(a), a.minimo, r.pedir, a.un_caixa || 1, n2(r.preco), n2(r.custo)].map(esc).join(";")));
+    const blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
+    const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = "encomendar-efaflu-" + new Date().toISOString().slice(0, 10) + ".csv";
+    document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(link.href), 2000);
+  });
+  $("btn-print").addEventListener("click", () => window.print());
+
+  // ================= Separadores =================
+  const showTab = (name) => {
+    S.tab = name;
+    document.querySelectorAll("[data-panel]").forEach((p) => { p.hidden = p.dataset.panel !== name; });
+    document.querySelectorAll(".tab").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === name)));
+    try { history.replaceState(null, "", "#" + name); } catch (e) {}
+    if (name === "leitura") focusScan();
+  };
+  document.querySelectorAll(".tab").forEach((b) => b.addEventListener("click", () => showTab(b.dataset.tab)));
+
+  const renderAll = () => { renderStats(); renderLog(); renderTable(); renderResumo(); renderEnc(); if (S.pending && S.pending.kind === "found") { S.pending.artigo = S.artigos.get(S.pending.artigo.linha) || S.pending.artigo; renderResult(); } };
 
   // ---------- ações ----------
   const findByCode = (code) => {
@@ -538,7 +912,7 @@
     if (S.pending && S.pending.kind === "found") S.pending.qtd = stepFor(S.pending.artigo);
     renderResult(); focusScan();
   };
-  const focusScan = () => { const s = $("scan"); if (s && !$("view-app").hidden && document.activeElement !== s) s.focus({ preventScroll: true }); };
+  const focusScan = () => { const s = $("scan"); if (s && !$("view-app").hidden && S.tab === "leitura" && document.activeElement !== s) s.focus({ preventScroll: true }); };
 
   // ---------- ligações ----------
   $("scan").addEventListener("keydown", (e) => {
@@ -547,7 +921,7 @@
   });
   document.querySelectorAll(".mode").forEach((b) => b.addEventListener("click", () => setMode(b.dataset.mode)));
   document.addEventListener("keydown", (e) => {
-    if ($("view-app").hidden) return;
+    if ($("view-app").hidden || S.tab !== "leitura") return;
     if (e.key === "F2") { e.preventDefault(); setMode("entrada"); }
     if (e.key === "F4") { e.preventDefault(); setMode("saida"); }
   });
@@ -628,7 +1002,12 @@
     }, (err) => { $("scan-hint").textContent = "Sem acesso aos artigos (" + err.code + "). Verifique as regras do Firestore."; }));
     S.unsubs.push(onSnapshot(collection(db, C_COD), (snap) => {
       S.codigos = new Map(snap.docs.map((d) => { const v = d.data(); return [v.codigo, v.linha]; }));
-      renderStats(); renderTable();
+      renderStats(); renderTable(); renderResumo();
+    }, () => {}));
+    const desde = new Date(); desde.setDate(desde.getDate() - 30); desde.setHours(0, 0, 0, 0);
+    S.unsubs.push(onSnapshot(query(collection(db, C_MOV), where("at", ">=", desde.toISOString()), orderBy("at", "desc")), (snap) => {
+      S.movs30 = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      renderResumo();
     }, () => {}));
     S.unsubs.push(onSnapshot(query(collection(db, C_MOV), orderBy("at", "desc"), limit(60)), (snap) => {
       S.movs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -644,6 +1023,9 @@
     $("user-email").textContent = S.email;
     $("admin").hidden = (user.email || "").toLowerCase() !== ADMIN_EMAIL.toLowerCase();
     $("view-login").hidden = true; $("view-app").hidden = false;
+    const pedido = location.hash.slice(1);
+    const def = ARMAZEM_EMAILS.includes(S.email) ? "leitura" : "resumo";
+    showTab(["resumo", "leitura", "encomendar", "stock"].includes(pedido) ? pedido : def);
     renderResult(); subscribe(); focusScan();
   });
 })();
