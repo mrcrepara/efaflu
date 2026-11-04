@@ -1,7 +1,7 @@
 {
-  "name": "Assiduidade EFAFLU",
-  "short_name": "Assiduidade",
-  "description": "Assiduidade dos colaboradores – Parque de Máquinas EFAFLU",
+  "name": "Gestão Parque Máquinas EFAFLU",
+  "short_name": "Parque Máquinas",
+  "description": "Gestão do Parque de Máquinas EFAFLU – assiduidade, máquinas, formações e EPIs",
   "lang": "pt-PT",
   "start_url": "./assiduidade.html",
   "scope": "./",

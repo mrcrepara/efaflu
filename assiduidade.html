@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Assiduidade">
-<title>Assiduidade – EFAFLU</title>
+<meta name="apple-mobile-web-app-title" content="Parque Máquinas">
+<title>Gestão Parque Máquinas – EFAFLU</title>
 <!-- Firebase (opcional) – só é usado se preencheres FIREBASE_CONFIG mais abaixo -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -192,7 +192,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
 <body class="locked">
 <div id="lock"><div class="lockbox">
   <img class="lklogo" src="" data-logo alt="EFAFLU">
-  <h2 id="lkTit">Assiduidade</h2>
+  <h2 id="lkTit">Gestão Parque Máquinas</h2>
   <p class="small" id="lkTxt">A carregar…</p>
   <input type="email" id="lkEmail" autocomplete="username" placeholder="Email" class="hide">
   <input type="password" id="lkP0" autocomplete="off" placeholder="Palavra-passe atual" class="hide">
@@ -202,12 +202,13 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
   <button class="btn sec hide" id="lkCancel">Cancelar</button>
   <p id="lkErr"></p>
   <a href="#" id="lkEsq" class="small hide" style="color:var(--pri)">Esqueci-me da palavra-passe</a>
-  <div class="small" style="margin-top:14px;opacity:.6">versão 02/11h · login por email</div>
+  <div class="small" style="margin-top:14px;opacity:.6">versão 04/11 · login por email</div>
 </div></div>
 <header>
   <span class="logo"><img src="" data-logo alt="EFAFLU"></span>
-  <h1>Assiduidade dos Colaboradores</h1>
+  <h1>Gestão Parque Máquinas</h1>
   <span id="estado">A carregar…</span>
+  <a href="index.html">← Parque Máquinas EFAFLU</a>
   <button class="btn sec" style="padding:6px 12px" onclick="bloquear()">🔒 Sair</button>
 </header>
 
@@ -855,7 +856,6 @@ function definirPapel(p){
   if(p==='colaborador') mostrar('eu');
   else if(at && at.dataset.t==='eu') mostrar('dash');
   else if(p==='consulta' && at && ['folha','reg','rel'].includes(at.dataset.t)) mostrar('dash');
-  setTimeout(irHash,0);
 }
 function desligarDados(){
   unsubs.forEach(u=>{ try{u();}catch(e){} }); unsubs=[];
@@ -2078,18 +2078,7 @@ function render(){
 function mostrar(t){
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
   document.querySelectorAll('main>section').forEach(s=>s.classList.toggle('hide',s.id!=='t-'+t));
-  if(location.hash.slice(1)!==t){ try{ history.replaceState(null,'','#'+t); }catch(e){} }
-  window.dispatchEvent(new Event('efa:nav'));
 }
-/* abrir o separador indicado no endereço (#maq, #mapa…) – usado pelo menu lateral */
-function irHash(){
-  const t=location.hash.slice(1), b=t && document.querySelector('.tabs button[data-t="'+t+'"]');
-  if(!b) return;
-  if(document.body.classList.contains('colab') && t!=='eu') return;
-  if(b.classList.contains('hide') || getComputedStyle(b).display==='none') return;
-  mostrar(t);
-}
-window.addEventListener('hashchange', irHash);
 
 /* ---------------- EXPORTAR ---------------- */
 function baixar(nome, conteudo, tipo){
@@ -2184,8 +2173,8 @@ async function gravarHash(h){
 function abrirLock(modo){
   if(fbAuth && modo==='entrar') modo='login';
   lkModo=modo;
-  const cfg={login:['Assiduidade','Entra com o teu email e palavra-passe.','Entrar'],
-             entrar:['Assiduidade','Introduz a palavra-passe.','Entrar'],
+  const cfg={login:['Gestão Parque Máquinas','Entra com o teu email e palavra-passe.','Entrar'],
+             entrar:['Gestão Parque Máquinas','Introduz a palavra-passe.','Entrar'],
              criar:['Criar palavra-passe','Primeira utilização neste computador. Escolhe uma palavra-passe (mínimo 4 caracteres) e guarda-a bem: não há forma de a recuperar.','Criar e entrar'],
              mudar:['Mudar palavra-passe','Indica a atual e a nova.','Guardar']}[modo];
   $('lkTit').textContent=cfg[0]; $('lkTxt').textContent=cfg[1]; $('lkBtn').textContent=cfg[2];
@@ -2268,6 +2257,5 @@ iniciar().then(async()=>{
   if(pwHash && ok===pwHash) desbloquear(); else abrirLock(pwHash?'entrar':'criar');
 });
 </script>
-<script src="menu.js"></script>
 </body>
 </html>
