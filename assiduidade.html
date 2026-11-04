@@ -194,6 +194,8 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
   <img class="lklogo" src="" data-logo alt="EFAFLU">
   <h2 id="lkTit">Gestão Parque Máquinas</h2>
   <p class="small" id="lkTxt">A carregar…</p>
+  <div id="lkQuem" class="hide" style="margin-top:12px;font-size:17px">👤 <b id="lkNome"></b>
+    <div><a href="#" id="lkOutra" class="small" style="color:var(--muted)">Não és tu? Entrar com outra conta</a></div></div>
   <input type="email" id="lkEmail" autocomplete="username" placeholder="Email" class="hide">
   <input type="password" id="lkP0" autocomplete="off" placeholder="Palavra-passe atual" class="hide">
   <input type="password" id="lkP1" autocomplete="off" placeholder="Palavra-passe">
@@ -202,7 +204,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
   <button class="btn sec hide" id="lkCancel">Cancelar</button>
   <p id="lkErr"></p>
   <a href="#" id="lkEsq" class="small hide" style="color:var(--pri)">Esqueci-me da palavra-passe</a>
-  <div class="small" style="margin-top:14px;opacity:.6">versão 04/11d · login por email</div>
+  <div class="small" style="margin-top:14px;opacity:.6">versão 04/11g</div>
 </div></div>
 <header>
   <span class="logo"><img src="" data-logo alt="EFAFLU"></span>
@@ -391,6 +393,12 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
               <option value="aus:Aniversário">🎂 Aniversário</option>
               <option value="aus:Outro">• Outra ausência</option></optgroup>
             <option value="sabado">Sábado trabalhado</option>
+          </select></div>
+        <div id="boxComp" class="hide"><label>Como fica este dia de aniversário?</label>
+          <select id="rComp" onchange="ajustarForm()">
+            <option value="folga">🎁 Folga oferecida (não desconta)</option>
+            <option value="banco">🏦 Descontar no banco de horas</option>
+            <option value="ferias">🏖️ Descontar nas férias</option>
           </select></div>
         <div id="boxMov"><label>Movimento</label>
           <select id="rMov">
@@ -747,7 +755,10 @@ const AUS = {'Férias':{k:'fer',curto:'Férias',sig:'F',cor:'#d98a1c',ic:'🏖�
              'Aniversário':{k:'ani',curto:'Aniversário',sig:'AN',cor:'#c026d3',ic:'🎂'},
              'Outro':{k:'out',curto:'Outra ausência',sig:'O',cor:'#8a7a2a',ic:'•'}};
 const motAus = r => AUS[r.motivo] ? r.motivo : 'Outro';
-const nomeTipo = r => r.tipo==='ausencia' ? AUS[motAus(r)].curto : TIPOS[r.tipo]+(r.tipo==='banco'?(r.mov==='-'?' −':' +'):'');
+const COMP_TXT={folga:'folga',banco:'banco de horas',ferias:'férias'};
+const ehAni = r => r.tipo==='ausencia' && motAus(r)==='Aniversário';
+const horasAniBanco = r => ehAni(r) && r.compensa==='banco' ? (r.horas || 8*(r.dias||1)) : 0;
+const nomeTipo = r => r.tipo==='ausencia' ? AUS[motAus(r)].curto+(ehAni(r)&&r.compensa&&r.compensa!=='folga'?' → '+COMP_TXT[r.compensa]:'') : TIPOS[r.tipo]+(r.tipo==='banco'?(r.mov==='-'?' −':' +'):'');
 const tagReg = r => r.tipo==='ausencia' ? `<span class="tag" style="background:${AUS[motAus(r)].cor}">${AUS[motAus(r)].curto}</span>` : `<span class="tag t-${r.tipo}">${nomeTipo(r)}</span>`;
 const valTipo = () => { const v=$('rTipo').value; return v.startsWith('aus:') ? 'ausencia' : v; };
 let colabs = [], regs = [], relogios = [], planos = [], logs = [], formacoes = [], epis = [], maquinas = [], usos = [], avarias = [], pedidos = [], meuColabId = '', cfg = {geral:{}, acessos:null, fechos:{meses:{}}}, papel = 'editor', db = null, editReg = null, editCol = null;
@@ -762,7 +773,7 @@ const hm = h => { const neg=h<0; h=Math.abs(h); let H=Math.floor(h), M=Math.roun
                   return (neg?'−':'')+H+'h'+(M?pad(M):''); };
 const esc = s => String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const dataPT = d => d ? d.split('-').reverse().join('/') : '';
-const valBanco = r => r.tipo==='banco' ? (r.mov==='-' ? -(r.horas||0) : (r.horas||0)) : 0;
+const valBanco = r => r.tipo==='banco' ? (r.mov==='-' ? -(r.horas||0) : (r.horas||0)) : -horasAniBanco(r);
 
 /* ---------------- ARMAZENAMENTO ---------------- */
 function estado(t){ $('estado').textContent = t; }
@@ -841,18 +852,19 @@ function iniciarDados(p){
 }
 const meuEmail = () => (fbAuth && fbAuth.currentUser && fbAuth.currentUser.email || 'local').toLowerCase();
 function rotulo(e){
-  if(!e) return ''; e=String(e).toLowerCase(); if(e==='local') return 'Team Leader';
+  if(!e) return ''; e=String(e).toLowerCase(); if(e==='local') return 'Rui Veloso';
   const a=cfg.acessos||{};
   if(a.rotulos && a.rotulos[e]) return a.rotulos[e];
-  if((a.editores||[]).map(x=>x.toLowerCase()).includes(e)) return 'Team Leader';
+  if((a.editores||[]).map(x=>x.toLowerCase()).includes(e)) return 'Rui Veloso';
   if((a.consulta||[]).map(x=>x.toLowerCase()).includes(e)) return 'Chefia';
   if(a.colaboradores && a.colaboradores[e]) return nomeCol(a.colaboradores[e]).nome;
-  if(e===meuEmail()) return papel==='consulta' ? 'Chefia' : papel==='colaborador' ? nomeCol(meuColabId).nome : 'Team Leader';
+  if(e===meuEmail()) return papel==='consulta' ? 'Chefia' : papel==='colaborador' ? nomeCol(meuColabId).nome : 'Rui Veloso';
   return e.split('@')[0];
 }
 const quemCurto = e => rotulo(e);
 function atualizarEstado(){
-  if(fbAuth && fbAuth.currentUser) estado(papel==='editor' ? '☁️ Ligado' : ({consulta:'👁️ ',colaborador:'🙋 '}[papel])+rotulo(meuEmail())+(papel==='consulta'?' (só consulta)':''));
+  if(fbAuth && fbAuth.currentUser && (papel!=='colaborador' || colabs.length)){ try{ localStorage.setItem('assid_nome', rotulo(meuEmail())); }catch(e){} }
+  if(fbAuth && fbAuth.currentUser) estado(papel==='editor' ? '👤 '+rotulo(meuEmail()) : ({consulta:'👁️ ',colaborador:'🙋 '}[papel])+rotulo(meuEmail())+(papel==='consulta'?' (só consulta)':''));
 }
 function definirPapel(p){
   papel=p; document.body.classList.toggle('ro', p==='consulta'); document.body.classList.toggle('colab', p==='colaborador');
@@ -942,7 +954,7 @@ function aniHTML(c){
 }
 function parabens(id){ const c=colabs.find(x=>x.id===id); abrirWa(`Parabéns ${primeiroNome(c.nome)}! 🎉🎂\nQue tenhas um excelente dia, com muita saúde e alegria.\nUm abraço de toda a equipa do Parque de Máquinas!\n${assinatura()}`, c.tel); }
 const direitoFerias = colId => { const c=colabs.find(x=>x.id===colId); return c && c.diasFerias!=null ? +c.diasFerias : 22; };
-const feriasGozadas = (colId, ano, excl) => regs.filter(r=>r.colId===colId && r.id!==excl && r.tipo==='ausencia' && motAus(r)==='Férias' && r.data.slice(0,4)===ano).reduce((s,r)=>s+(r.dias||0),0);
+const feriasGozadas = (colId, ano, excl) => regs.filter(r=>r.colId===colId && r.id!==excl && r.tipo==='ausencia' && (motAus(r)==='Férias' || (ehAni(r) && r.compensa==='ferias')) && r.data.slice(0,4)===ano).reduce((s,r)=>s+(r.dias||0),0);
 function feriasHTML(colId, ano){
   const d=direitoFerias(colId), g=feriasGozadas(colId,ano), f=d-g;
   return `<span title="Gozou ${fmt(g)} de ${fmt(d)} dias em ${ano}">${fmt(g)}/${fmt(d)} · <b class="${f<0?'neg':f<=3?'':'pos'}">${f<0?'excedeu '+fmt(-f):'faltam '+fmt(f)}</b></span>`;
@@ -1062,13 +1074,16 @@ function ajustarForm(){
   $('boxFimH').classList.toggle('hide', !temHoras);
   $('boxMotivo').classList.add('hide');
   $('boxMov').classList.toggle('hide', t!=='banco');
+  const ani=$('rTipo').value==='aus:Aniversário';
+  $('boxComp').classList.toggle('hide', !ani);
+  if(ani && $('rComp').value==='banco'){ $('boxHoras').classList.remove('hide'); if(!$('rHoras').value) $('rHoras').value=8; }
   if(['extra','banco','sabado'].includes(t)) $('rDias').value = t==='sabado'?1:0;
   $('dica').textContent = {
     falta_i:'Falta de dia inteiro: Dias = 1. Falta parcial (ex.: chegou tarde): Dias = 0 e indica as horas.',
     falta_j:'Indica o motivo nas observações (ex.: consulta, tribunal…). Falta parcial: Dias = 0 e indica as horas.',
     extra:'Horas para além do horário normal, a pagar. Preenche início e fim (ou carrega em "Agora") e as horas são calculadas sozinhas.',
     banco:'Crédito: horas a mais que ficam no banco. Débito: horas que o colaborador gozou (saiu mais cedo, folga…) e são descontadas do saldo.',
-    ausencia:'Para vários dias seguidos (ex.: férias de 15 dias) preenche "Até": os dias úteis (seg–sex) são contados sozinhos.',
+    ausencia: $('rTipo').value==='aus:Aniversário' ? 'Escolhe se o dia de aniversário é folga oferecida, se desconta no banco de horas (indica as horas, normalmente 8) ou se desconta nas férias.' : 'Para vários dias seguidos (ex.: férias de 15 dias) preenche "Até": os dias úteis (seg–sex) são contados sozinhos.',
     sabado:'Regista cada sábado trabalhado. As horas são opcionais, mas úteis para pagar.'
   }[t];
 }
@@ -1088,16 +1103,22 @@ async function guardarRegisto(){
   if(['falta_i','falta_j','ausencia'].includes(tipo) && !dias && !horas) return aviso('Indica dias ou horas.');
   if(horas>12 && !await perguntar(`São ${hm(horas)} – mais de 12 horas.${hIni&&hFim&&hFim<hIni?'\nA hora de fim é mais cedo que a de início, por isso contou como se passasse para o dia seguinte.':''}\n\nEstá certo?`,'Sim, gravar','Corrigir')) return;
   if(tipo==='sabado' && new Date(data+'T12:00').getDay()!==6 && !await perguntar('Essa data não é um sábado. Guardar mesmo assim?')) return;
-  if(tipo==='ausencia' && $('rTipo').value==='aus:Férias'){
+  const compensa = $('rTipo').value==='aus:Aniversário' ? $('rComp').value : '';
+  if(tipo==='ausencia' && ($('rTipo').value==='aus:Férias' || compensa==='ferias')){
     const ano=data.slice(0,4), d=direitoFerias(colId), g=feriasGozadas(colId,ano,editReg);
     if(g+dias>d && !await perguntar(`Com estes ${fmtD(dias)}, ${nomeCol(colId).nome} fica com ${fmt(g+dias)} dias de férias em ${ano}, mais do que os ${fmt(d)} a que tem direito.\n\nGuardar mesmo assim?`,'Sim, guardar','Corrigir')) return;
+  }
+  if(compensa==='banco'){
+    if(!horas) return aviso('Indica quantas horas descontar do banco (normalmente 8).');
+    const s=saldoBanco(colId, r=>r.id!==editReg);
+    if(horas>s && !await perguntar(`O saldo do banco de horas é ${hm(s)}. Ao descontar ${hm(horas)} fica negativo (${hm(s-horas)}). Guardar mesmo assim?`)) return;
   }
   if(tipo==='banco' && $('rMov').value==='-'){
     const s=saldoBanco(colId, r=>r.id!==editReg);
     if(horas>s && !await perguntar(`O saldo atual é ${hm(s)}. Com este débito fica negativo (${hm(s-horas)}). Guardar mesmo assim?`)) return;
   }
   const obs=$('rObs').value.trim(), motivo = tipo==='ausencia' ? $('rTipo').value.slice(4) : '';
-  const r = {id: editReg||uid(), colId, tipo, mov: tipo==='banco'?$('rMov').value:'', data, fim, dias, horas, hIni, hFim, motivo, obs,
+  const r = {id: editReg||uid(), colId, tipo, mov: tipo==='banco'?$('rMov').value:'', data, fim, dias, horas: compensa==='banco'?horas:(tipo==='ausencia'?0:horas), hIni, hFim, motivo, compensa, obs,
              criado: new Date().toISOString()};
   await salvar(COL_REG, r);
   const eraEdit = !!editReg;
@@ -1107,14 +1128,14 @@ async function guardarRegisto(){
 function limparForm(){
   editReg=null; $('regTitulo').textContent='Novo registo'; $('boxCancel').classList.add('hide'); $('boxApagar').classList.add('hide');
   if(!$('rData').value) $('rData').value=hoje();
-  $('rFim').value=''; rotulosDia(); $('rDias').value=1; $('rHoras').value='';
+  $('rFim').value=''; $('rComp').value='folga'; rotulosDia(); $('rDias').value=1; $('rHoras').value='';
   $('rHIni').value=''; $('rHFim').value=''; $('rObs').value=''; $('rMov').value='+';
   ajustarForm();
 }
 function editarReg(id){
   const r=regs.find(x=>x.id===id); editReg=id; voltarMapa=false;
   mostrar('reg');
-  $('rCol').value=r.colId; $('rTipo').value = r.tipo==='ausencia' ? 'aus:'+motAus(r) : r.tipo; ajustarForm();
+  $('rCol').value=r.colId; $('rTipo').value = r.tipo==='ausencia' ? 'aus:'+motAus(r) : r.tipo; $('rComp').value=r.compensa||'folga'; ajustarForm();
   $('rData').value=r.data; rotulosDia(); $('rFim').value=r.fim||''; $('rDias').value=r.dias||0; $('rHoras').value=r.horas||'';
   $('rHIni').value=(r.hIni||'').slice(0,5); $('rHFim').value=(r.hFim||'').slice(0,5);
   if(r.mov) $('rMov').value=r.mov;
@@ -1144,7 +1165,8 @@ function rotulosDia(){
 /* ---------------- FOLHA DO DIA ---------------- */
 const FD_OP = [['','—'],['falta_i','Falta injust. (dia)'],['falta_j','Falta just. (dia)'],['extra','Horas extra'],
                ['banco+','Banco de horas +'],['banco-','Banco de horas − (gozou)'],['sabado','Sábado trabalhado'],
-               ...Object.keys(AUS).map(m=>['aus:'+m, AUS[m].ic+' '+AUS[m].curto+' (dia)'])];
+               ...Object.keys(AUS).filter(m=>m!=='Aniversário').map(m=>['aus:'+m, AUS[m].ic+' '+AUS[m].curto+' (dia)']),
+               ['ani:folga','🎂 Aniversário – folga'],['ani:banco','🎂 Aniversário – desconta banco (8h)'],['ani:ferias','🎂 Aniversário – desconta férias']];
 let fdChave=null;
 function lerFolha(){
   const v={};
@@ -1190,11 +1212,13 @@ async function guardarFolha(){
     let tipo=x.t, mov='';
     let motivo='';
     if(tipo.startsWith('banco')){ mov=tipo.slice(5); tipo='banco'; }
+    let compensa='';
     if(tipo.startsWith('aus:')){ motivo=tipo.slice(4); tipo='ausencia'; }
+    if(tipo.startsWith('ani:')){ compensa=tipo.slice(4); motivo='Aniversário'; tipo='ausencia'; }
     if((tipo==='extra'||tipo==='banco') && !horas){ erros.push(c.nome+': faltam as horas'); continue; }
     const dias = tipo==='sabado'||tipo==='ausencia' ? 1 : (tipo==='falta_i'||tipo==='falta_j') ? (horas?0:1) : 0;
     if(regs.some(r=>r.colId===colId && cobre(r,data) && r.tipo===tipo && (r.mov||'')===mov)) dup.push(c.nome);
-    novos.push({id:uid(), colId, tipo, mov, data, fim:'', dias, horas:tipo==='ausencia'?0:horas, hIni:tipo==='ausencia'?'':x.i, hFim:tipo==='ausencia'?'':x.f, motivo, obs:x.o.trim(), criado:new Date().toISOString()});
+    novos.push({id:uid(), colId, tipo, mov, data, fim:'', dias, horas:compensa==='banco'?(horas||8):(tipo==='ausencia'?0:horas), hIni:tipo==='ausencia'?'':x.i, hFim:tipo==='ausencia'?'':x.f, motivo, compensa, obs:x.o.trim(), criado:new Date().toISOString()});
   }
   if(erros.length) return aviso('Corrige primeiro:\n• '+erros.join('\n• '));
   const muitas = novos.filter(r=>r.horas>12).map(r=>nomeCol(r.colId).nome+': '+hm(r.horas));
@@ -1223,7 +1247,7 @@ function calcResumo(){
     const soma=(t,k,f)=>m.filter(r=>r.tipo===t && (!f||f(r))).reduce((s,r)=>s+(r[k]||0),0);
     const saldo = saldoBanco(c.id, ateFimPeriodo);
     return {c, fjD:soma('falta_j','dias'), fjH:soma('falta_j','horas'), fiD:soma('falta_i','dias'), fiH:soma('falta_i','horas'),
-            ext:soma('extra','horas'), bMais:soma('banco','horas',r=>r.mov!=='-'), bMenos:soma('banco','horas',r=>r.mov==='-'), saldo,
+            ext:soma('extra','horas'), bMais:soma('banco','horas',r=>r.mov!=='-'), bMenos:soma('banco','horas',r=>r.mov==='-')+m.reduce((s,r)=>s+horasAniBanco(r),0), saldo,
             aus:soma('ausencia','dias'), ausM:Object.fromEntries(Object.keys(AUS).map(k=>[k,soma('ausencia','dias',r=>motAus(r)===k)])),
             sab:soma('sabado','dias'), sabH:soma('sabado','horas'),
             tem:m.length>0 || saldo!==0};
@@ -2204,15 +2228,21 @@ function abrirLock(modo){
   $('lkTit').textContent=cfg[0]; $('lkTxt').textContent=cfg[1]; $('lkBtn').textContent=cfg[2];
   $('lkP0').classList.toggle('hide',modo!=='mudar');
   $('lkP2').classList.toggle('hide',modo==='entrar'||modo==='login');
-  $('lkEmail').classList.toggle('hide',modo!=='login');
   $('lkEsq').classList.toggle('hide',modo!=='login');
-  if(modo==='login'){ try{ $('lkEmail').value=localStorage.getItem('assid_email')||''; }catch(e){} }
+  let emGuardado='', nmGuardado='';
+  if(modo==='login'){ try{ emGuardado=localStorage.getItem('assid_email')||''; nmGuardado=localStorage.getItem('assid_nome')||''; }catch(e){} $('lkEmail').value=emGuardado; }
+  const conhecido = modo==='login' && !!emGuardado;
+  $('lkEmail').classList.toggle('hide', modo!=='login' || conhecido);
+  $('lkQuem').classList.toggle('hide', !conhecido);
+  $('lkNome').textContent = nmGuardado || 'Rui Veloso';
+  if(conhecido) $('lkTxt').textContent='Escreve a tua palavra-passe.';
   $('lkP1').placeholder = (modo==='entrar'||modo==='login') ? 'Palavra-passe' : 'Nova palavra-passe';
   $('lkCancel').classList.toggle('hide',modo!=='mudar');
   ['lkP0','lkP1','lkP2'].forEach(i=>$(i).value=''); $('lkErr').textContent='';
   document.body.classList.add('locked'); $('lock').classList.remove('hide');
   setTimeout(()=>$(modo==='mudar'?'lkP0':(modo==='login'&&!$('lkEmail').value?'lkEmail':'lkP1')).focus(),50);
 }
+function outraConta(e){ if(e) e.preventDefault(); try{ localStorage.removeItem('assid_email'); localStorage.removeItem('assid_nome'); }catch(x){} abrirLock('login'); }
 function desbloquear(){
   document.body.classList.remove('locked'); $('lock').classList.add('hide');
   try{ sessionStorage.setItem('assid_ok',pwHash); }catch(e){}
@@ -2266,6 +2296,7 @@ $('lkEsq').onclick=async e=>{
   catch(x){ $('lkErr').style.color=''; $('lkErr').textContent=ERR_FB(x); }
 };
 $('lkEmail').addEventListener('input',()=>{ $('lkErr').style.color=''; });
+$('lkOutra').onclick=outraConta;
 $('lkBtn').onclick=confirmarLock;
 $('lkCancel').onclick=desbloquear;
 ['lkEmail','lkP0','lkP1','lkP2'].forEach(i=>$(i).addEventListener('keydown',e=>{ if(e.key==='Enter') confirmarLock(); }));
