@@ -202,7 +202,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
   <button class="btn sec hide" id="lkCancel">Cancelar</button>
   <p id="lkErr"></p>
   <a href="#" id="lkEsq" class="small hide" style="color:var(--pri)">Esqueci-me da palavra-passe</a>
-  <div class="small" style="margin-top:14px;opacity:.6">versão 04/11c · login por email</div>
+  <div class="small" style="margin-top:14px;opacity:.6">versão 04/11d · login por email</div>
 </div></div>
 <header>
   <span class="logo"><img src="" data-logo alt="EFAFLU"></span>
@@ -388,6 +388,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
               <option value="aus:Assistência à família">👨‍👩‍👧 Assistência à família</option>
               <option value="aus:Formação">🎓 Formação</option>
               <option value="aus:Licença">📄 Licença</option>
+              <option value="aus:Aniversário">🎂 Aniversário</option>
               <option value="aus:Outro">• Outra ausência</option></optgroup>
             <option value="sabado">Sábado trabalhado</option>
           </select></div>
@@ -598,6 +599,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
               <option value="aus:Assistência à família">👨‍👩‍👧 Assistência à família</option>
               <option value="aus:Formação">🎓 Formação</option>
               <option value="aus:Licença">📄 Licença</option>
+              <option value="aus:Aniversário">🎂 Aniversário</option>
               <option value="aus:Outro">• Outra ausência</option></optgroup>
           </select></div>
         <div><label>Mês</label><input type="month" id="hMes"></div>
@@ -742,6 +744,7 @@ const AUS = {'Férias':{k:'fer',curto:'Férias',sig:'F',cor:'#d98a1c',ic:'🏖�
              'Assistência à família':{k:'asf',curto:'Assist. família',sig:'AF',cor:'#be185d',ic:'👨‍👩‍👧'},
              'Formação':{k:'frm',curto:'Formação',sig:'FM',cor:'#2563eb',ic:'🎓'},
              'Licença':{k:'lic',curto:'Licença',sig:'L',cor:'#64748b',ic:'📄'},
+             'Aniversário':{k:'ani',curto:'Aniversário',sig:'AN',cor:'#c026d3',ic:'🎂'},
              'Outro':{k:'out',curto:'Outra ausência',sig:'O',cor:'#8a7a2a',ic:'•'}};
 const motAus = r => AUS[r.motivo] ? r.motivo : 'Outro';
 const nomeTipo = r => r.tipo==='ausencia' ? AUS[motAus(r)].curto : TIPOS[r.tipo]+(r.tipo==='banco'?(r.mov==='-'?' −':' +'):'');
