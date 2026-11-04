@@ -202,7 +202,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
   <button class="btn sec hide" id="lkCancel">Cancelar</button>
   <p id="lkErr"></p>
   <a href="#" id="lkEsq" class="small hide" style="color:var(--pri)">Esqueci-me da palavra-passe</a>
-  <div class="small" style="margin-top:14px;opacity:.6">versão 04/11 · login por email</div>
+  <div class="small" style="margin-top:14px;opacity:.6">versão 04/11c · login por email</div>
 </div></div>
 <header>
   <span class="logo"><img src="" data-logo alt="EFAFLU"></span>
@@ -567,6 +567,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
       <div class="lg" style="flex-wrap:wrap;margin:12px 0 0">
         <span id="mpLegAus"></span>
         <span><i style="background:#ffe9b3"></i>🎉 Feriado</span>
+        <span>🎂 aniversário</span>
         <span><i style="border:2px dashed var(--aus);background:#fff"></i>F? pedido de férias por aprovar</span>
         <span><i style="background:var(--falta)"></i>Falta injust.</span><span><i style="background:#e48a8a"></i>Falta just.</span>
         <span><i style="background:var(--sab)"></i>S sábado</span><span><i style="background:var(--extra)"></i>HE horas extra</span>
@@ -620,12 +621,13 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
         <div><label>Nome</label><input id="cNome" placeholder="Nome completo"></div>
         <div><label>Função (opcional)</label><input id="cFun" placeholder="ex.: Operador"></div>
         <div style="max-width:150px"><label>Dias de férias/ano</label><input id="cFer" type="number" min="0" max="60" value="22"></div>
+        <div style="max-width:170px"><label>Aniversário</label><input type="date" id="cAni"></div>
         <div><label>Telemóvel (opcional)</label><input id="cTel" type="tel" inputmode="tel" autocomplete="off" placeholder="ex.: 912 345 678"></div>
         <div style="flex:0"><button class="btn" onclick="guardarCol()">💾 Guardar</button></div>
       </div>
     </div>
     <div class="card"><div class="wrap"><table class="tbl">
-      <thead><tr><th>Nº colab.</th><th>Nome</th><th>Função</th><th>Telemóvel</th><th id="thFer">Férias</th><th>Saldo banco</th><th>Estado</th><th></th></tr></thead>
+      <thead><tr><th>Nº colab.</th><th>Nome</th><th>Função</th><th>Telemóvel</th><th>Aniversário</th><th id="thFer">Férias</th><th>Saldo banco</th><th>Estado</th><th></th></tr></thead>
       <tbody id="tbCol"></tbody>
     </table></div></div>
     <div class="card noprint w" id="acessosCard">
@@ -847,7 +849,7 @@ function rotulo(e){
 }
 const quemCurto = e => rotulo(e);
 function atualizarEstado(){
-  if(fbAuth && fbAuth.currentUser) estado(({consulta:'👁️ ',colaborador:'🙋 '}[papel]||'☁️ ')+rotulo(meuEmail())+(papel==='consulta'?' (só consulta)':''));
+  if(fbAuth && fbAuth.currentUser) estado(papel==='editor' ? '☁️ Ligado' : ({consulta:'👁️ ',colaborador:'🙋 '}[papel])+rotulo(meuEmail())+(papel==='consulta'?' (só consulta)':''));
 }
 function definirPapel(p){
   papel=p; document.body.classList.toggle('ro', p==='consulta'); document.body.classList.toggle('colab', p==='colaborador');
@@ -921,6 +923,21 @@ async function apagar(col, id){
 /* ---------------- COLABORADORES ---------------- */
 const ordCol = () => [...colabs].sort((a,b)=>String(a.num).localeCompare(String(b.num),'pt',{numeric:true}));
 const nomeCol = id => colabs.find(c=>c.id===id) || {num:'?',nome:'(removido)'};
+/* ---- aniversários ---- */
+function proxAni(c){ // {dias, idade} até ao próximo aniversário
+  if(!c || !c.aniversario) return null;
+  const [y,m,d]=c.aniversario.split('-').map(Number), h=new Date(hoje()+'T12:00');
+  let a=new Date(h.getFullYear(), m-1, d, 12); if(a<h) a=new Date(h.getFullYear()+1, m-1, d, 12);
+  return {dias:Math.round((a-h)/864e5), idade: y>1900 ? a.getFullYear()-y : null, data:dLocal(a)};
+}
+const fazAnosEm = (c, dia) => c && c.aniversario && c.aniversario.slice(5)===dia.slice(5);
+function aniHTML(c){
+  if(!c.aniversario) return '<span class="small">–</span>';
+  const p=proxAni(c), dm=dataPT(c.aniversario).slice(0,5);
+  if(p.dias===0) return `🎂 <b style="color:var(--pri)">Hoje!</b>${p.idade?' ('+p.idade+' anos)':''} ${c.tel?`<button class="wa-mini" title="Dar os parabéns" onclick="parabens('${c.id}')">💬 Parabéns</button>`:''}`;
+  return `${dm}${p.dias<=30?` <span class="chip pend">🎂 daqui a ${fmtD(p.dias)}</span>`:''}`;
+}
+function parabens(id){ const c=colabs.find(x=>x.id===id); abrirWa(`Parabéns ${primeiroNome(c.nome)}! 🎉🎂\nQue tenhas um excelente dia, com muita saúde e alegria.\nUm abraço de toda a equipa do Parque de Máquinas!\n${assinatura()}`, c.tel); }
 const direitoFerias = colId => { const c=colabs.find(x=>x.id===colId); return c && c.diasFerias!=null ? +c.diasFerias : 22; };
 const feriasGozadas = (colId, ano, excl) => regs.filter(r=>r.colId===colId && r.id!==excl && r.tipo==='ausencia' && motAus(r)==='Férias' && r.data.slice(0,4)===ano).reduce((s,r)=>s+(r.dias||0),0);
 function feriasHTML(colId, ano){
@@ -932,17 +949,17 @@ const opcoesCol = lista => lista.length ? lista.map(c=>`<option value="${c.id}">
                                         : '<option value="">(sem colaboradores)</option>';
 
 async function guardarCol(){
-  const num=$('cNum').value.trim(), nome=$('cNome').value.trim(), funcao=$('cFun').value.trim(), tel=$('cTel').value.trim(), diasFerias=parseFloat($('cFer').value);
+  const num=$('cNum').value.trim(), nome=$('cNome').value.trim(), funcao=$('cFun').value.trim(), tel=$('cTel').value.trim(), diasFerias=parseFloat($('cFer').value), aniversario=$('cAni').value;
   if(!num||!nome) return aviso('Preenche o número e o nome.');
   if(colabs.some(c=>c.num===num && c.id!==editCol)) return aviso('Já existe um colaborador com o número '+num+'.');
   const base = editCol ? colabs.find(c=>c.id===editCol) : {id:uid(),ativo:true};
   if(tel && !telWa(tel)) return aviso('O número de telemóvel não parece válido.\nEx.: 912 345 678');
-  await salvar(COL_COLAB,{...base,num,nome,funcao,tel,diasFerias:isNaN(diasFerias)?22:diasFerias});
-  editCol=null; $('cNum').value=$('cNome').value=$('cFun').value=$('cTel').value=''; $('cFer').value=22; $('colTitulo').textContent='Adicionar colaborador';
+  await salvar(COL_COLAB,{...base,num,nome,funcao,tel,aniversario,diasFerias:isNaN(diasFerias)?22:diasFerias});
+  editCol=null; $('cNum').value=$('cNome').value=$('cFun').value=$('cTel').value=''; $('cAni').value=''; $('cFer').value=22; $('colTitulo').textContent='Adicionar colaborador';
 }
 function editarCol(id){
   const c=colabs.find(x=>x.id===id); editCol=id;
-  $('cNum').value=c.num; $('cNome').value=c.nome; $('cFun').value=c.funcao||''; $('cTel').value=c.tel||''; $('cFer').value=c.diasFerias??22;
+  $('cNum').value=c.num; $('cNome').value=c.nome; $('cFun').value=c.funcao||''; $('cTel').value=c.tel||''; $('cAni').value=c.aniversario||''; $('cFer').value=c.diasFerias??22;
   $('colTitulo').textContent='Editar colaborador'; $('cNome').focus();
 }
 async function toggleCol(id){ const c=colabs.find(x=>x.id===id); await salvar(COL_COLAB,{...c,ativo:c.ativo===false}); }
@@ -1821,6 +1838,8 @@ function calcAvisos(){
     }
   });
   if(porGozar.length) A.push({ic:'🏖️', t:`Férias de ${anoF} ainda por gozar (dias): ${porGozar.join(' · ')}`});
+  ordCol().filter(c=>c.ativo!==false).forEach(c=>{ const p=proxAni(c); if(p && p.dias<=7)
+    A.push({ic:'🎂', t: p.dias===0 ? `Hoje é o aniversário de ${c.nome}${p.idade?' ('+p.idade+' anos)':''}! 🎉` : `${c.nome} faz anos ${p.dias===1?'amanhã':'daqui a '+p.dias+' dias'} (${dataPT(p.data).slice(0,5)})${p.idade?' – '+p.idade+' anos':''}`, tab:'col'}); });
   planos.filter(p=>!p.fechado).forEach(p=>{
     const pend=Object.values(p.pessoas).filter(v=>v.estado==='pend').length;
     const dd=Math.round((new Date(p.data+'T12:00')-new Date(hj+'T12:00'))/864e5);
@@ -1938,7 +1957,8 @@ function renderMapa(){
   h+=cols.map(c=>`<tr><td class="nmc" title="${esc(c.nome)}">${esc(c.num)} ${esc(primeiroNome(c.nome))}</td>`+dias.map(x=>{
     const ce=celula(c.id,x.d), cls=x.cls;
     const tip=`${c.nome}\n${diaLongo(x.d)}${x.fer?'\n🎉 '+x.fer:''}${ce?'\n'+ce.txt:''}${papel==='consulta'?'':ce&&ce.id?'\n(clica para corrigir ou apagar)':'\n(clica para registar)'}`;
-    return `<td class="${cls}" data-tip="${esc(tip)}" onclick="${ce&&ce.id?`abrirDoMapa('${ce.id}')`:ce&&ce.ped?`document.getElementById('pedCard').scrollIntoView({behavior:'smooth'})`:`registarEm('${c.id}','${x.d}')`}">${ce?`<span class="mc ${ce.plan?'plan':''} ${ce.ped?'ped':''}" style="${ce.cor?'background:'+ce.cor:''}">${ce.sig}</span>`:''}</td>`;
+    const ani=fazAnosEm(c,x.d);
+    return `<td class="${cls}" data-tip="${esc(tip+(ani?'\n🎂 Faz anos!':''))}" onclick="${ce&&ce.id?`abrirDoMapa('${ce.id}')`:ce&&ce.ped?`document.getElementById('pedCard').scrollIntoView({behavior:'smooth'})`:`registarEm('${c.id}','${x.d}')`}">${ce?`<span class="mc ${ce.plan?'plan':''} ${ce.ped?'ped':''}" style="${ce.cor?'background:'+ce.cor:''}">${ce.sig}</span>`:ani?'<span style="font-size:15px">🎂</span>':''}</td>`;
   }).join('')+'</tr>').join('');
   const ativos=ordCol().filter(c=>c.ativo!==false);
   h+='<tr class="disp"><td class="nmc">Disponíveis</td>'+dias.map(x=>{ const k=ativos.filter(c=>!ausente(c.id,x.d)).length;
@@ -2031,13 +2051,14 @@ function render(){
   $('tbCol').innerHTML = colabs.length ? ordCol().map(c=>`<tr>
     <td>${esc(c.num)}</td><td>${esc(c.nome)}</td><td>${esc(c.funcao||'')}</td>
     <td style="white-space:nowrap">${c.tel?`<a href="tel:${esc(c.tel.replace(/\s/g,''))}" style="color:var(--pri)">${esc(c.tel)}</a>`:''}</td>
+    <td style="white-space:nowrap">${aniHTML(c)}</td>
     <td style="white-space:nowrap">${feriasHTML(c.id, String(new Date().getFullYear()))}</td>
     <td class="n">${saldoHTML(saldoBanco(c.id))}</td>
     <td>${c.ativo!==false?'Ativo':'<span class="small">Inativo</span>'}</td>
     <td style="white-space:nowrap"><button class="edit" title="Editar" onclick="editarCol('${c.id}')">✏️</button>
       <button class="edit" title="Ativar/Desativar" onclick="toggleCol('${c.id}')">${c.ativo!==false?'⏸️':'▶️'}</button>
       <button class="del" title="Apagar" onclick="apagarCol('${c.id}')">🗑️</button></td></tr>`).join('')
-    : '<tr><td colspan="8" class="vazio">Sem colaboradores.</td></tr>';
+    : '<tr><td colspan="9" class="vazio">Sem colaboradores.</td></tr>';
   $('thFer').textContent='Férias '+new Date().getFullYear();
 
   const fc=$('hCol').value, ft=$('hTipo').value, fm=$('hMes').value;
