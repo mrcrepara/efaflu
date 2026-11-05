@@ -204,7 +204,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
   <button class="btn sec hide" id="lkCancel">Cancelar</button>
   <p id="lkErr"></p>
   <a href="#" id="lkEsq" class="small hide" style="color:var(--pri)">Esqueci-me da palavra-passe</a>
-  <div class="small" style="margin-top:14px;opacity:.6">versão 04/11g</div>
+  <div class="small" style="margin-top:14px;opacity:.6">versão 05/11</div>
 </div></div>
 <header>
   <span class="logo"><img src="" data-logo alt="EFAFLU"></span>
@@ -657,7 +657,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
       <h2>✍️ Assinatura das mensagens</h2>
       <p class="small" style="margin-top:0">Aparece no fim das mensagens de WhatsApp (pedidos de sábado, presenças, convites e relatório).</p>
       <div class="row">
-        <div><label>Assinatura</label><input id="asTxt" placeholder="ex.: Rui, Team Leader"></div>
+        <div><label>Assinatura</label><input id="asTxt" placeholder="ex.: Rui Veloso, Team Leader"></div>
         <div style="flex:0"><button class="btn" onclick="guardarAssinatura()">💾 Guardar</button></div>
       </div>
     </div>
@@ -1367,27 +1367,28 @@ async function apagarPlano(pid){
   if(fecharId===pid) fecharId=null;
   await apagar(COL_PLAN,pid);
 }
+function assinaturaBloco(){
+  const a=((cfg.geral&&cfg.geral.assinatura)||'Rui Veloso, Team Leader').trim(), k=a.indexOf(',');
+  return k>0 ? `${a.slice(k+1).trim()}\n— ${a.slice(0,k).trim()}` : `— ${a}`;
+}
 function textoPlano(p){
   const ordNum=(a,b)=>String(a.c.num).localeCompare(String(b.c.num),'pt',{numeric:true});
   const todos=Object.entries(p.pessoas).map(([id,v])=>({id,v,c:nomeCol(id)})).sort(ordNum);
   const lista=l=>l.map((x,k)=>`${k+1}. ${x.c.num} – ${x.c.nome}`+(x.extra||'')).join('\n');
   const prev=hDe(p.hIni,p.hFim);
-  const agora=new Date(), quando=`${dataPT(dLocal(agora))} às ${horaLocal(agora)}`;
-  let t=`*EFAFLU · Parque de Máquinas*\n${p.fechado?'Presenças':'Pedido de trabalho'}\n\n📅 *${diaLongo(p.data)}*\n`;
-  if(p.titulo) t+=`🔧 ${p.titulo}\n`;
-  t+=`🕗 Horário${p.fechado?' previsto':''}: ${p.hIni||'?'} às ${p.hFim||'?'}${prev?' ('+hm(prev)+')':''}\n`;
+  let t=`*EFAFLU · Parque de Máquinas*\n\n*${diaLongo(p.data)}*\n`;
+  t+=`Horário: ${p.hIni||'?'} às ${p.hFim||'?'}${prev?' ('+hm(prev)+')':''}\n`;
+  if(p.titulo) t+=`Trabalho: ${p.titulo}\n`;
   if(!p.fechado){
-    const g=e=>todos.filter(x=>x.v.estado===e), sim=g('sim'), nao=g('nao').map(x=>({...x,extra:x.v.motivo?' – '+x.v.motivo:''})), pend=g('pend');
-    if(sim.length)  t+=`\n✅ *VÊM (${sim.length})*\n${lista(sim)}\n`;
-    if(sim.length && prev) t+=`\n⏱️ Horas previstas: ${sim.length} × ${hm(prev)} = *${hm(sim.length*prev)}*\n`;
+    const sim=todos.filter(x=>x.v.estado==='sim');
+    t+=`\n*VÊM*\n${sim.length?lista(sim):'(ninguém confirmado ainda)'}\n`;
   } else {
-    const vieram=todos.filter(x=>x.v.veio).map(x=>({...x,extra:(x.v.hIni&&x.v.hFim?` – ${x.v.hIni} às ${x.v.hFim}`:'')+(x.v.horas?` (${hm(x.v.horas)})`:'')}));
-    const nao=todos.filter(x=>!x.v.veio).map(x=>({...x,extra:(x.v.motivo?' – '+x.v.motivo:'')+(x.v.estado==='sim'?' _(tinha dito que vinha)_':'')}));
+    const vieram=todos.filter(x=>x.v.veio).map(x=>({...x,extra:x.v.horas&&prev&&Math.abs(x.v.horas-prev)>0.01?` (${hm(x.v.horas)})`:''}));
     const tot=vieram.reduce((s,x)=>s+(x.v.horas||0),0);
-    if(vieram.length) t+=`\n✅ *VIERAM (${vieram.length})*\n${lista(vieram)}\n`;
-    if(tot) t+=`\n⏱️ Total de horas: *${hm(tot)}*\n`;
+    t+=`\n*VIERAM*\n${vieram.length?lista(vieram):'(ninguém)'}\n`;
+    if(tot) t+=`\nTotal: ${hm(tot)}\n`;
   }
-  return t+`\n${assinatura()}\n_Atualizado a ${quando}_`;
+  return t+`\n${assinaturaBloco()}`;
 }
 async function copiarPlano(pid){
   const t=textoPlano(planos.find(x=>x.id===pid));
@@ -1517,7 +1518,7 @@ function painelTexto(tit, texto, tel){
       <button class="btn wa" onclick="abrirWa($('pnTxt').value, ${tel?`'${esc(tel)}'`:"''"})">💬 Enviar por WhatsApp</button></div>`);
 }
 const primeiroNome = n => String(n||'').trim().split(/\s+/)[0];
-const assinatura = () => '— '+((cfg.geral&&cfg.geral.assinatura)||'Rui, Team Leader');
+const assinatura = () => '— '+((cfg.geral&&cfg.geral.assinatura)||'Rui Veloso, Team Leader');
 function msgConvite(p, c){
   return `Olá ${primeiroNome(c.nome)}! 👋\nPrecisamos de ti no *Parque de Máquinas* da EFAFLU:\n\n📅 *${diaLongo(p.data)}*\n🕗 ${p.hIni||'?'} às ${p.hFim||'?'}${p.titulo?'\n🔧 '+p.titulo:''}\n\nPodes vir? Responde só *SIM* ou *NÃO*. Obrigado!\n${assinatura()}`;
 }
@@ -1559,7 +1560,7 @@ function renderAcessos(){
   $('acessosLista').innerHTML = a.editores.map(e=>linha(e,'editores')).join('')+a.consulta.map(e=>linha(e,'consulta')).join('')+Object.keys(a.colaboradores||{}).map(e=>linha(e,'colaboradores')).join('');
   const g=cfg.geral||{};
   if(document.activeElement!==$('fmData') && document.activeElement!==$('fmNome')){
-    if(document.activeElement!==$('asTxt')) $('asTxt').value = g.assinatura || 'Rui, Team Leader';
+    if(document.activeElement!==$('asTxt')) $('asTxt').value = g.assinatura || 'Rui Veloso, Team Leader';
     $('fmData').value = g.municipal ? new Date().getFullYear()+'-'+g.municipal : ''; $('fmNome').value=g.municipalNome||''; $('fmCarn').checked=!!g.carnaval; }
   const y=new Date().getFullYear(), F=feriados(y);
   $('fmLista').innerHTML = '<b>Feriados '+y+':</b> '+Object.keys(F).sort().map(d=>dataPT(d).slice(0,5)+' '+esc(F[d])).join(' · ');
