@@ -206,7 +206,18 @@ tr.opr td{font-weight:600}
 .ref-row{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
 td small{display:block;color:var(--muted);font-size:11.5px}
 @media (max-width:520px){.grid3{grid-template-columns:1fr 1fr}.grid3 label:first-child{grid-column:1/-1}}
-.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20;max-width:calc(100% - 32px)}
+.savebar{position:sticky;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:5;display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+  background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:18px;box-shadow:0 6px 22px rgba(10,30,22,.16)}
+.savebar .st{flex:1 1 200px;min-width:0;font-size:13.5px;color:var(--muted)}
+.savebar .st b{color:var(--ink)}
+.savebar.dirty{border-color:var(--warn)}
+.savebar.dirty .st .chg{color:var(--warn);font-weight:600}
+.savebar .btn:disabled{opacity:.45;cursor:default}
+.savebar.flash{animation:flash .6s 2}
+@keyframes flash{50%{background:var(--warn-soft)}}
+@media (prefers-reduced-motion:reduce){.savebar.flash{animation:none}}
+.hist-btns{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.toast{position:fixed;left:50%;top:calc(16px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20;max-width:calc(100% - 32px)}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 
@@ -252,7 +263,6 @@ td small{display:block;color:var(--muted);font-size:11.5px}
 
 <div class="wrap">
   <div class="bar">
-    <button class="btn primary" id="bSave" type="button">Guardar registo</button>
     <button class="btn" id="bNew" type="button">Novo registo</button>
     <button class="btn ghost" id="bExample" type="button">Carregar exemplo</button>
     <button class="btn ghost" id="bPrint" type="button">Imprimir / PDF</button>
@@ -349,6 +359,12 @@ td small{display:block;color:var(--muted);font-size:11.5px}
         </div>
       </section>
     </div>
+  </div>
+
+  <div class="savebar" id="saveBar">
+    <span class="st" id="sbTxt">Registo novo</span>
+    <button class="btn" id="bCancel" type="button" disabled>Cancelar alterações</button>
+    <button class="btn primary" id="bSave" type="button">Guardar registo</button>
   </div>
 
   <section class="panel hist" aria-labelledby="h1">
@@ -685,7 +701,7 @@ function render(){
 const DKEY="cnc_tc_rascunho_v2";
 function saveDraft(){try{localStorage.setItem(DKEY,JSON.stringify({f:read(),currentId,isExample}))}catch(e){}}
 function loadDraft(){try{return JSON.parse(localStorage.getItem(DKEY)||"null")}catch(e){return null}}
-let dT;function onInput(){render();clearTimeout(dT);dT=setTimeout(saveDraft,400)}
+let dT;function onInput(){render();if(baseline)updBar();clearTimeout(dT);dT=setTimeout(saveDraft,400)}
 document.querySelectorAll(".main input,.main select,.main textarea").forEach(el=>{el.addEventListener("input",onInput);el.addEventListener("change",onInput)});
 
 $("ops").addEventListener("input",e=>{const el=e.target;if(el.dataset.k==null)return;const o=ops[+el.dataset.i];
@@ -700,13 +716,29 @@ $("ops").addEventListener("click",e=>{const b=e.target.closest("button[data-act]
   else if(a==="delyes"){ops.splice(i,1);pendingOpDel=null;renderOps();onInput();toast("Operação removida")}});
 $("bAddOp").onclick=()=>{ops.push(blankOp());pendingOpDel=null;renderOps();onInput();const el=$("op"+(ops.length-1)+"_nome");if(el)el.focus()};
 function setExample(on){isExample=on;$("exBanner").hidden=!on}
-function setEditing(){const r=records.find(x=>x.id===currentId);$("editing").innerHTML=r?`A editar <b>${esc(r.f.ref||"registo sem referência")}</b>`:"Registo novo";renderHist()}
+let baseline="",baseF=null,baselinePending=false;
+function normF(f){f=f||{};return JSON.stringify({a:FIELDS.map(k=>f[k]!=null?String(f[k]):(k==="estado"?"Por validar":"")),c:CHECKS.map(k=>!!f[k]),o:opsOf(f)})}
+function isDirty(){return baseline!==""&&normF(read())!==baseline}
+function setBase(f){f=f||read();baseF=JSON.parse(JSON.stringify(f));baseline=normF(f);updBar()}
+function updBar(){
+  const d=isDirty(),r=records.find(x=>x.id===currentId);
+  $("saveBar").classList.toggle("dirty",d);
+  const quem=r?`A editar <b>${esc(r.f.ref||"registo sem referência")}</b>`:isExample?"<b>Exemplo</b> (não guardado)":"<b>Registo novo</b>";
+  $("sbTxt").innerHTML=quem+(d?' · <span class="chg">alterações por guardar</span>':r?" · sem alterações":"");
+  $("bCancel").disabled=!d;
+  $("bSave").textContent=r?"Guardar alterações":"Guardar registo"}
+function travar(){if(!isDirty())return false;toast("Tens alterações por guardar. Guarda ou cancela primeiro.");
+  const b=$("saveBar");b.classList.remove("flash");void b.offsetWidth;b.classList.add("flash");return true}
+function setEditing(){const r=records.find(x=>x.id===currentId);$("editing").innerHTML=r?`A editar <b>${esc(r.f.ref||"registo sem referência")}</b>`:"Registo novo";
+  if(baselinePending&&r){setBase(r.f);baselinePending=false}
+  renderHist();updBar()}
+$("bCancel").onclick=()=>{if(!baseF)return;fill(baseF);render();saveDraft();updBar();toast("Alterações canceladas")};
 function today(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
 
-$("bExample").onclick=()=>{currentId=null;fill(Object.assign({},EXEMPLO,{data:today()}));setExample(true);onInput();setEditing();toast("Exemplo carregado")};
-$("bClearEx").onclick=()=>{currentId=null;fill({data:today()});setExample(false);onInput();setEditing()};
-$("bNew").onclick=()=>{const keep={};["data","c_op","c_kwh","c_incl","c_mat","responsavel"].forEach(k=>keep[k]=isExample?undefined:read()[k]);
-  currentId=null;fill(Object.assign(keep,{data:today()}));setExample(false);onInput();setEditing();toast("Novo registo. Custos por hora mantidos.")};
+$("bExample").onclick=()=>{if(travar())return;currentId=null;fill(Object.assign({},EXEMPLO,{data:today()}));setExample(true);onInput();setBase();setEditing();toast("Exemplo carregado")};
+$("bClearEx").onclick=()=>{currentId=null;fill({data:today()});setExample(false);onInput();setBase();setEditing()};
+$("bNew").onclick=()=>{if(travar())return;const keep={};["data","c_op","c_kwh","c_incl","c_mat","responsavel"].forEach(k=>keep[k]=isExample?undefined:read()[k]);
+  currentId=null;fill(Object.assign(keep,{data:today()}));setExample(false);onInput();setBase();setEditing();toast("Novo registo. Custos por hora mantidos.")};
 
 // ---------- Histórico ----------
 const LKEY="cnc_tc_registos_v2";
@@ -716,7 +748,7 @@ function localPut(arr){try{localStorage.setItem(LKEY,JSON.stringify(arr));return
 function summary(R){return {tA:R.ready?R.A.t:null,tD:R.ready?R.D.t:null,nOps:ops.length,poupPeca:R.ready?R.poupPeca:null,poupAno:R.ready?R.poupAno:null,redCiclo:R.ready?R.redCiclo:null,poupLote:R.ready?R.poupLote:null}}
 
 let readOnly=false,userEmail="";
-function setReadOnly(on){readOnly=on;$("roBanner").hidden=!on;$("bSave").disabled=on;$("fImport").disabled=on;
+function setReadOnly(on){readOnly=on;$("roBanner").hidden=!on;$("bSave").disabled=on;$("bSave").hidden=on;$("fImport").disabled=on;
   document.querySelector('label[for="fImport"]').hidden=on;$("bSave").style.opacity=on?.5:1;renderHist()}
 async function save(){
   if(readOnly){toast("A tua conta é só de consulta.");return}
@@ -730,7 +762,7 @@ async function save(){
     if(store){const ref=currentId?store.doc(currentId):store.doc();await ref.set(rec);currentId=ref.id}
     else{const arr=localAll();const id=currentId||("r"+Date.now().toString(36));const i=arr.findIndex(x=>x.id===id);
       const row=Object.assign({id},rec);if(i>=0)arr[i]=row;else arr.unshift(row);if(!localPut(arr))throw {message:"Este navegador não deixou guardar."};currentId=id;records=arr;renderHist()}
-    setExample(false);saveDraft();setEditing();toast(prev?"Registo atualizado":"Registo guardado");
+    setExample(false);saveDraft();setBase(f);setEditing();toast(prev?"Alterações guardadas":"Registo guardado");
   }catch(e){
     if(e&&e.code==="quota_exceeded")toast("O histórico está cheio. Apaga registos antigos.");
     else if(e&&(e.code==="invalid_argument"||e.code==="permission-denied")){setReadOnly(true);toast("A tua conta não pode guardar. É só de consulta.")}
@@ -775,12 +807,13 @@ function renderHist(){
       <div class="c-maq r2">${esc(maqs)}<br><span class="pill ${st.replace(" ","-")}">${esc(st)}</span></div>
       <div class="num c-red">${s.redCiclo!=null?nf(1).format(s.redCiclo*100)+" %":"—"}<small>ciclo</small></div>
       <div class="num ${c(pa!=null?pa:pp)}">${pa!=null?eur.format(pa):pp!=null?fe(pp):"—"}<small>${pa!=null?"por ano":"por peça"}</small></div>
-      <div>${del}</div></div>`}).join("");
+      <div class="hist-btns">${r.id===currentId?"":`<button class="btn sm" data-open="${r.id}" type="button">Alterar</button>`}${del}</div></div>`}).join("");
 }
 $("q").addEventListener("input",renderHist);$("fEstado").addEventListener("change",renderHist);
 $("histList").addEventListener("click",async e=>{
   const b=e.target.closest("button");
   if(b){e.stopPropagation();
+    if(b.dataset.open){openRec(b.dataset.open);return}
     if(b.dataset.ask){pendingDelete=b.dataset.ask;renderHist();return}
     if(b.hasAttribute("data-cancel")){pendingDelete=null;renderHist();return}
     if(b.dataset.del){const id=b.dataset.del;pendingDelete=null;
@@ -790,7 +823,7 @@ $("histList").addEventListener("click",async e=>{
   if(e.target.closest("[data-stop]"))return;
   const it=e.target.closest(".hist-item");if(it)openRec(it.dataset.id)});
 $("histList").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.classList.contains("hist-item"))openRec(e.target.dataset.id)});
-function openRec(id){const r=records.find(x=>x.id===id);if(!r)return;currentId=id;fill(r.f);setExample(false);onInput();setEditing();window.scrollTo({top:0,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"})}
+function openRec(id){const r=records.find(x=>x.id===id);if(!r)return;if(travar())return;currentId=id;fill(r.f);setExample(false);onInput();setBase(r.f);setEditing();toast("Registo aberto. Altera e carrega em Guardar alterações.");window.scrollTo({top:0,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"})}
 
 // ---------- Exportar / importar ----------
 let downloads=null;
@@ -840,7 +873,9 @@ function setSync(kind,txt){$("syncDot").className="dot "+kind;$("syncTxt").textC
 const d=loadDraft();
 if(d&&d.f){fill(d.f);currentId=d.currentId||null;setExample(!!d.isExample)}
 else{fill(Object.assign({},EXEMPLO,{data:today()}));setExample(true)}
-records=window.firebase?[]:localAll();render();setEditing();
+records=window.firebase?[]:localAll();render();
+setBase();if(d&&d.f&&d.currentId){baselinePending=true}
+setEditing();
 setSync("","A ligar ao histórico…");
 
 const FIREBASE_CONFIG={
