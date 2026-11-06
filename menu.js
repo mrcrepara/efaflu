@@ -141,6 +141,8 @@
   })();
   function ligar() {
     const auth = firebase.auth();
+    // Sessão só enquanto a app/separador estiver aberto: ao abrir de novo pede a palavra-passe
+    try { auth.setPersistence(firebase.auth.Auth.Persistence.SESSION).catch(() => {}); } catch (e) {}
     side.querySelector("#efaOut").onclick = () => auth.signOut();
     auth.onAuthStateChanged(async (u) => {
       const html = document.documentElement;

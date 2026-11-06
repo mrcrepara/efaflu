@@ -204,7 +204,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
   <button class="btn sec hide" id="lkCancel">Cancelar</button>
   <p id="lkErr"></p>
   <a href="#" id="lkEsq" class="small hide" style="color:var(--pri)">Esqueci-me da palavra-passe</a>
-  <div class="small" style="margin-top:14px;opacity:.6">versão 06/11 · jornada 8h</div>
+  <div class="small" style="margin-top:14px;opacity:.6">versão 06/11b · jornada 8h</div>
 </div></div>
 <header>
   <span class="logo"><img src="" data-logo alt="EFAFLU"></span>
@@ -802,6 +802,8 @@ async function iniciar(){
       if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
       db = firebase.firestore();
       fbAuth = firebase.auth();
+      // Sessão só enquanto a app/separador estiver aberto: ao abrir de novo pede a palavra-passe
+      try{ fbAuth.setPersistence(firebase.auth.Auth.Persistence.SESSION).catch(()=>{}); }catch(e){}
       estado('☁️ Firebase');
       fbAuth.onAuthStateChanged(u=>{
         if(u && !u.isAnonymous){ ligarDados(); estado('☁️ '+u.email); desbloquear(); }
