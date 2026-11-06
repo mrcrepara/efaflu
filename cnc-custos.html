@@ -177,6 +177,31 @@ tr.total td{font-weight:600;border-bottom:0}
 .grid3{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr);gap:10px 12px;margin-bottom:12px}
 .op-res{margin-top:10px;font-size:12.5px;color:var(--muted);font-family:var(--f-num)}
 .op-res.warn{color:var(--warn);font-family:var(--f-body)}
+.passos-t{font:700 12px var(--f-body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:16px 0 8px;display:flex;justify-content:space-between;gap:8px}
+.passos{display:flex;flex-direction:column;gap:10px}
+.passo{background:var(--surface-2);border-radius:8px;padding:10px 12px}
+.passo input{background:var(--surface)}
+.passo-head{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.passo-head input{flex:1;width:auto;font-weight:500}
+.passo-n{font-family:var(--f-num);font-size:12px;color:var(--muted);min-width:30px}
+.passo .ab .h{font-size:10px}
+.passo-res{margin-top:8px;font-size:12px;color:var(--muted);font-family:var(--f-num)}
+.passo-res.warn{color:var(--warn);font-family:var(--f-body)}
+details.params{margin-top:10px;border-top:1px dashed var(--line);padding-top:8px}
+details.params summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--accent);list-style-position:inside}
+details.params summary small{font-weight:400;color:var(--muted);margin-left:6px}
+details.params .ab{margin-top:10px}
+.param-calc{margin-top:8px;font-size:12px;color:var(--muted)}
+.notas{margin-top:10px}
+.notas textarea{min-height:54px;background:var(--surface)}
+.params-list{margin:8px 0 0;padding-left:18px;font-size:13.5px;display:flex;flex-direction:column;gap:6px}
+.params-list b{font-weight:600}
+.add-passo{margin-top:8px;border-style:dashed}
+.tx-row{margin-top:14px}
+.gab-row{margin-top:12px}
+tr.sub td{font-size:12.5px;color:var(--muted)}
+tr.sub td:first-child{padding-left:18px}
+tr.opr td{font-weight:600}
 .add-op{margin-top:12px;width:100%;border-style:dashed}
 .ref-row{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
 td small{display:block;color:var(--muted);font-size:11.5px}
@@ -270,7 +295,7 @@ td small{display:block;color:var(--muted);font-size:11.5px}
           <span class="lab">Refugo da peça<small>% de peças rejeitadas no fim</small></span>
           <input id="a_ref" class="num-in" inputmode="decimal" aria-label="Refugo antes (%)"><input id="d_ref" class="num-in" inputmode="decimal" aria-label="Refugo depois (%)">
         </div>
-        <p class="hint">Mete todas as operações da peça, mesmo as que não mudaram, para o custo por peça ficar completo. No "Depois", deixa em branco o que ficou igual. Tempo 0 no "Depois" quer dizer operação eliminada; "Antes" em branco quer dizer operação nova.</p>
+        <p class="hint">Cada operação (OP10, OP20…) tem os seus passos: desbaste, acabamento, furação, roscagem… O tempo da operação é a soma dos passos mais a carga, descarga e trocas. Mete todas as operações e passos, mesmo os que não mudaram, para o custo por peça ficar completo. No "Depois", deixa em branco o que ficou igual. Tempo 0 no "Depois" quer dizer eliminado; "Antes" em branco quer dizer novo.</p>
       </section>
 
       <section class="panel" aria-labelledby="s4">
@@ -281,7 +306,7 @@ td small{display:block;color:var(--muted);font-size:11.5px}
           <label class="f full">Outros custos (€)<input id="i_out" class="num-in" inputmode="decimal" placeholder="Suporte novo, fixação, formação…"></label>
         </div>
         <div class="derived"><span>Custo total da alteração</span><b id="dInv">—</b></div>
-        <p class="hint">As horas são valorizadas ao custo hora médio das operações (máquina mais operador).</p>
+        <p class="hint">As horas são valorizadas ao custo hora médio das operações (máquina mais operador). O custo dos gabaritos novos indicados nas operações já entra aqui.</p>
       </section>
     </div>
 
@@ -304,6 +329,10 @@ td small{display:block;color:var(--muted);font-size:11.5px}
             <thead><tr><th>Por peça boa</th><th>Antes</th><th>Depois</th><th>Diferença</th></tr></thead>
             <tbody id="cmpBody"></tbody>
           </table></div>
+        </div>
+        <div class="cmp" id="parBox" hidden>
+          <h3>Parâmetros alterados</h3>
+          <ul class="params-list" id="parList"></ul>
         </div>
         <p class="foot">Poupança calculada de capacidade e custos variáveis. Tempo libertado só vira dinheiro se a máquina tiver outro trabalho para fazer nesse tempo.</p>
       </section>
@@ -351,7 +380,7 @@ td small{display:block;color:var(--muted);font-size:11.5px}
     <button class="link" type="button" id="lForgot">Esqueci-me da palavra-passe</button>
   </form>
 </div>
-<datalist id="dl_ref"></datalist><datalist id="dl_maquina"></datalist><datalist id="dl_operacao"></datalist><datalist id="dl_responsavel"></datalist><datalist id="dl_prog"></datalist><datalist id="dl_ferr"></datalist>
+<datalist id="dl_ref"></datalist><datalist id="dl_maquina"></datalist><datalist id="dl_operacao"></datalist><datalist id="dl_responsavel"></datalist><datalist id="dl_prog"></datalist><datalist id="dl_ferr"></datalist><datalist id="dl_passo"></datalist><datalist id="dl_fix"></datalist><datalist id="dl_cool"></datalist>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
@@ -359,14 +388,24 @@ td small{display:block;color:var(--muted);font-size:11.5px}
 const $=id=>document.getElementById(id);
 const FIELDS=["ref","data","responsavel","lote","anual","c_op","c_kwh","c_mat","a_ref","d_ref","i_h","i_pe","i_out","estado","obs"];
 const CHECKS=["c_incl"];
-const OPK=["nome","maquina","c_maq","c_kw","a_prog","d_prog","a_ferr","d_ferr","a_t","d_t","a_setup","d_setup","a_fp","d_fp","a_fv","d_fv"];
+const OPK=["nome","maquina","c_maq","c_kw","a_prog","d_prog","a_fix","d_fix","c_gab","a_setup","d_setup","a_tx","d_tx"];
+const FIX_BASE=["Bucha de 3 grampos","Bucha de pinças","Bucha hidráulica","Entre pontos","Morsa","Morsa dupla","Placa de fixação","Grampos e calços","Gabarito","Gabarito múltiplo","Cubo de fixação (torre)"];
+const PK=["nome","a_ferr","d_ferr","a_t","d_t","a_fp","d_fp","a_fv","d_fv",
+  "a_dia","d_dia","a_s","d_s","a_vc","d_vc","a_f","d_f","a_ap","d_ap","a_np","d_np","a_cool","d_cool","a_ra","d_ra","notas"];
+const PARAMK=["dia","s","vc","f","ap","np","cool","ra"];
+const COOL_BASE=["Externa","Interna (pela ferramenta)","Alta pressão","Ar comprimido","MQL (micro-lubrificação)","A seco"];
+let paramsOpen=new Set();
+const PASSOS_BASE=["Facejamento","Desbaste","Semi-acabamento","Acabamento","Pré-furação","Furação","Roscagem","Mandrilagem","Alargamento","Ranhura","Sangramento","Chanfro","Fresagem de contorno","Fresagem de caixa","Rebarbagem"];
 const EXEMPLO={ref:"EF-2231 Corpo de válvula",data:"",responsavel:"",lote:"500",anual:"6000",
 c_op:"18",c_kwh:"0,16",c_mat:"2,40",c_incl:false,a_ref:"3",d_ref:"1,5",i_h:"4",i_pe:"5",i_out:"",estado:"Em teste",
 obs:"Op. 10: velocidade de corte de 180 para 220 m/min e um só passe de acabamento. Op. 20: fresa de metal duro com menos passes.",
-ops:[{nome:"Op. 10 · Torneamento exterior",maquina:"Torno CNC 2",c_maq:"32",c_kw:"9",a_prog:"O1234 rev. B",d_prog:"O1234 rev. C",
-a_ferr:"CNMG 120408 sem revestimento",d_ferr:"CNMG 120408 revestida PVD",a_t:"2:30",d_t:"2:05",a_setup:"45",d_setup:"40",a_fp:"9,80",d_fp:"14,50",a_fv:"180",d_fv:"320"},
-{nome:"Op. 20 · Fresagem e furação",maquina:"Centro de maquinação 1",c_maq:"40",c_kw:"12",a_prog:"O2210 rev. A",d_prog:"O2210 rev. B",
-a_ferr:"Fresa Ø16 HSS",d_ferr:"Fresa Ø16 metal duro",a_t:"3:10",d_t:"2:20",a_setup:"30",d_setup:"",a_fp:"18",d_fp:"65",a_fv:"400",d_fv:"1500"}]};
+ops:[{nome:"OP10 · Torneamento",maquina:"Torno CNC 2",c_maq:"32",c_kw:"9",a_prog:"O1234 rev. B",d_prog:"O1234 rev. C",a_fix:"Bucha de 3 grampos",d_fix:"",c_gab:"",a_setup:"45",d_setup:"40",a_tx:"0:20",d_tx:"0:15",
+ passos:[{nome:"Desbaste exterior",a_ferr:"CNMG 120408 sem revestimento",d_ferr:"CNMG 120408 revestida PVD",a_t:"1:20",d_t:"1:05",a_fp:"9,80",d_fp:"14,50",a_fv:"180",d_fv:"320",a_dia:"60",a_vc:"180",d_vc:"220",a_f:"0,25",d_f:"0,30",a_ap:"2",d_ap:"2,5",a_np:"3",d_np:"2",a_cool:"Externa",d_cool:"",notas:"Com a pastilha PVD deixou de fazer aresta postiça."},
+  {nome:"Acabamento",a_ferr:"VNMG 160404",d_ferr:"",a_t:"0:50",d_t:"0:45",a_fp:"11",d_fp:"",a_fv:"250",d_fv:""},
+  {nome:"Furação Ø10",a_ferr:"Broca HSS Ø10",d_ferr:"Broca metal duro Ø10",a_t:"0:20",d_t:"0:10",a_fp:"6",d_fp:"45",a_fv:"300",d_fv:"2000",a_dia:"10",a_s:"800",d_s:"2550",a_f:"0,15",d_f:"0,25",a_cool:"Externa",d_cool:"Interna (pela ferramenta)",notas:"Furação de uma vez, sem picar."}]},
+ {nome:"OP20 · Fresagem",maquina:"Centro de maquinação 1",c_maq:"40",c_kw:"12",a_prog:"O2210 rev. A",d_prog:"O2210 rev. B",a_fix:"Morsa",d_fix:"Gabarito para 2 peças",c_gab:"350",a_setup:"30",d_setup:"20",a_tx:"0:25",d_tx:"0:15",
+ passos:[{nome:"Desbaste de caixa",a_ferr:"Fresa Ø16 HSS",d_ferr:"Fresa Ø16 metal duro",a_t:"1:50",d_t:"1:15",a_fp:"18",d_fp:"65",a_fv:"400",d_fv:"1500"},
+  {nome:"Furação e roscagem M8",a_ferr:"Broca Ø6,8 + macho M8",d_ferr:"",a_t:"0:55",d_t:"0:50",a_fp:"12",d_fp:"",a_fv:"600",d_fv:""}]}]};
 
 const eur=new Intl.NumberFormat("pt-PT",{style:"currency",currency:"EUR",minimumFractionDigits:2,maximumFractionDigits:2});
 const eur3=new Intl.NumberFormat("pt-PT",{style:"currency",currency:"EUR",minimumFractionDigits:3,maximumFractionDigits:3});
@@ -392,18 +431,51 @@ function fmtDur(sec){
   return (neg?"−":"")+out.trim()}
 
 let ops=[],pendingOpDel=null;
-function blankOp(){const o={};OPK.forEach(k=>o[k]="");return o}
+function blankPasso(){const o={};PK.forEach(k=>o[k]="");return o}
+function blankOp(){const o={};OPK.forEach(k=>o[k]="");o.passos=[blankPasso()];return o}
+const VELHOS=["a_ferr","d_ferr","a_t","d_t","a_fp","d_fp","a_fv","d_fv"];
+// Uma operação antiga (sem passos) passa a ter um passo "Maquinação" com o tempo e a ferramenta que tinha
+function normOp(op){
+  const o=Object.assign(blankOp(),op);
+  if(Array.isArray(op.passos)&&op.passos.length)o.passos=op.passos.map(x=>Object.assign(blankPasso(),x));
+  else if(VELHOS.some(k=>!blank(op[k]))){const p=blankPasso();p.nome="Maquinação";VELHOS.forEach(k=>p[k]=op[k]==null?"":op[k]);o.passos=[p]}
+  else o.passos=[blankPasso()];
+  VELHOS.forEach(k=>delete o[k]);return o}
 // Registos antigos (uma só operação em campos soltos) passam a lista de operações
 function opsOf(f){
   if(!f)return [blankOp()];
-  if(Array.isArray(f.ops)&&f.ops.length)return f.ops.map(o=>Object.assign(blankOp(),o));
-  const o=blankOp();o.nome=f.operacao||"";o.maquina=f.maquina||"";
-  OPK.slice(2).forEach(k=>{if(f[k]!=null)o[k]=f[k]});return [o]}
-function read(){const o={};FIELDS.forEach(k=>o[k]=$(k).value);CHECKS.forEach(k=>o[k]=$(k).checked);o.ops=ops.map(x=>Object.assign({},x));return o}
+  if(Array.isArray(f.ops)&&f.ops.length)return f.ops.map(normOp);
+  const o={nome:f.operacao||"",maquina:f.maquina||""};
+  ["c_maq","c_kw","a_prog","d_prog","a_fix","d_fix","c_gab","a_setup","d_setup"].concat(VELHOS).forEach(k=>{if(f[k]!=null)o[k]=f[k]});
+  return [normOp(o)]}
+// Parâmetros de corte de um lado (a/d); calcula Vc ou rotação a partir do diâmetro quando falta um deles
+function parSide(p,side){
+  const g=k=>side==="a"?p["a_"+k]:dv(p,k);
+  const o={dia:numv(g("dia")),s:numv(g("s")),vc:numv(g("vc")),f:numv(g("f")),ap:numv(g("ap")),np:numv(g("np")),ra:numv(g("ra")),cool:String(g("cool")||"").trim(),fT:String(g("f")||"").trim(),calc:""};
+  if(o.vc==null&&o.dia&&o.s){o.vc=Math.PI*o.dia*o.s/1000;o.calc="vc"}
+  else if(o.s==null&&o.dia&&o.vc){o.s=o.vc*1000/(Math.PI*o.dia);o.calc="s"}
+  return o}
+const PLAB={s:["S","rpm",0],vc:["Vc","m/min",0],f:["F","",3],ap:["ap","mm",2],np:["Passes","",0],ra:["Ra","µm",2]};
+function parChanges(p){
+  const A=parSide(p,"a"),D=parSide(p,"d"),out=[];
+  for(const k of ["vc","s","f","ap","np","ra"]){const a=A[k],d=D[k];if(a==null&&d==null)continue;
+    const [l,u,dec]=PLAB[k],f=x=>x==null?"?":nf(dec).format(x);
+    if(a!=null&&d!=null&&Math.abs(a-d)<1e-9)continue;
+    let t=l+" "+f(a)+" → "+f(d)+(u?" "+u:"");if(a&&d)t+=" ("+(d>a?"+":"−")+nf(0).format(Math.abs(d-a)/a*100)+" %)";out.push(t)}
+  if(A.cool!==D.cool&&(A.cool||D.cool))out.push("Refrigeração "+(A.cool||"?")+" → "+(D.cool||"?"));
+  return out}
+function temParams(p){return PARAMK.some(k=>!blank(p["a_"+k])||!blank(p["d_"+k]))||!blank(p.notas)}
+function cloneOps(){return ops.map(x=>Object.assign({},x,{passos:x.passos.map(p=>Object.assign({},p))}))}
+function read(){const o={};FIELDS.forEach(k=>o[k]=$(k).value);CHECKS.forEach(k=>o[k]=$(k).checked);o.ops=cloneOps();return o}
 function fill(o){FIELDS.forEach(k=>{$(k).value=(o&&o[k]!=null)?o[k]:(k==="estado"?"Por validar":"")});CHECKS.forEach(k=>$(k).checked=!!(o&&o[k]));
   ops=opsOf(o);pendingOpDel=null;renderOps()}
 function dv(o,k){return blank(o["d_"+k])?o["a_"+k]:o["d_"+k]}
-function opTimes(o){let a=parseTime(o.a_t);const d=blank(o.d_t)?a:parseTime(o.d_t);if(a==null&&d!=null&&blank(o.a_t))a=0;return {a,d}}
+function tPair(o,k){let a=parseTime(o["a_"+k]);const d=blank(o["d_"+k])?a:parseTime(o["d_"+k]);if(a==null&&d!=null&&blank(o["a_"+k]))a=0;return {a,d}}
+function badTime(o,k){return (!blank(o["a_"+k])&&parseTime(o["a_"+k])==null)||(!blank(o["d_"+k])&&parseTime(o["d_"+k])==null)}
+function txPair(o){if(blank(o.a_tx)&&blank(o.d_tx))return {a:0,d:0};const t=tPair(o,"tx");return {a:t.a==null&&blank(o.a_tx)?0:t.a,d:t.d}}
+function opTimes(o){const ps=(o.passos||[]).map(p=>tPair(p,"t")),tx=txPair(o);
+  if(tx.a==null||tx.d==null||ps.some(t=>t.a==null||t.d==null))return {a:null,d:null};
+  return {a:ps.reduce((s,t)=>s+t.a,0)+tx.a,d:ps.reduce((s,t)=>s+t.d,0)+tx.d}}
 
 function calc(){
   const cop=num("c_op"),kwh=num("c_kwh")||0,incl=$("c_incl").checked;
@@ -411,12 +483,13 @@ function calc(){
   const per=ops.map(o=>{
     const cm=numv(o.c_maq),kw=numv(o.c_kw)||0;
     const H=(cop==null&&cm==null)?null:(cop||0)+(cm||0)+(incl?0:kw*kwh);
-    const T=opTimes(o);
-    const val=(p,k)=>numv(p==="a"?o["a_"+k]:dv(o,k));
+    const T=opTimes(o),tx=txPair(o);
+    const steps=o.passos.map(p=>{const t=tPair(p,"t");const fer=side=>{const fp=numv(side==="a"?p.a_fp:dv(p,"fp")),fv=numv(side==="a"?p.a_fv:dv(p,"fv"));return fp&&fv?fp/fv:0};
+      return {p,T:t,fa:fer("a"),fd:fer("d")}});
     const ok=H!=null&&T.a!=null&&T.d!=null;
-    const s=p=>{if(!ok)return null;const t=T[p],fp=val(p,"fp"),fv=val(p,"fv"),su=val(p,"setup")||0;
-      return {t,ciclo:t/3600*H,ferr:fp&&fv?fp/fv:0,setup:su,setupCost:su/60*H}};
-    return {o,H,T,ok,A:s("a"),D:s("d")}});
+    const s=side=>{if(!ok)return null;const t=T[side],su=numv(side==="a"?o.a_setup:dv(o,"setup"))||0;
+      return {t,ciclo:t/3600*H,ferr:steps.reduce((x,y)=>x+(side==="a"?y.fa:y.fd),0),setup:su,setupCost:su/60*H}};
+    return {o,H,T,tx,steps,ok,A:s("a"),D:s("d")}});
   const side=(p,key)=>{
     const r=Math.min(Math.max((num(p+"_ref")||0)/100,0),0.95);
     const S={t:0,ciclo:0,ferr:0,setup:0,setupCost:0};
@@ -427,8 +500,9 @@ function calc(){
   const Hs=per.map(x=>x.H).filter(h=>h!=null),Havg=Hs.length?Hs.reduce((a,b)=>a+b,0)/Hs.length:null;
   const ready=per.length>0&&per.every(x=>x.ok);
   const A=side("a","A"),D=side("d","D");
-  const inv=Havg==null?null:(num("i_h")||0)*Havg+(num("i_pe")||0)*(ready?D.prod:0)+(num("i_out")||0);
-  const res={per,Havg,lote,anual,A,D,inv,ready};
+  const gab=ops.reduce((a,o)=>a+(numv(o.c_gab)||0),0);
+  const inv=Havg==null?(gab||null):(num("i_h")||0)*Havg+(num("i_pe")||0)*(ready?D.prod:0)+(num("i_out")||0)+gab;
+  const res={per,Havg,lote,anual,A,D,inv,gab,ready};
   if(ready){
     res.poupPeca=A.total-D.total;
     res.poupLote=lote?res.poupPeca*lote:null;
@@ -443,15 +517,47 @@ function calc(){
 
 function tile(k,v,s,cls){return `<div class="tile ${cls||""}"><div class="k">${k}</div><div class="v">${v}</div>${s?`<div class="s">${s}</div>`:""}</div>`}
 function opCard(o,i){
-  const v=k=>esc(o[k]==null?"":o[k]);
-  const I=(k,cls,extra,aria)=>`<input id="op${i}_${k}" data-i="${i}" data-k="${k}" value="${v(k)}" class="${cls||""}" ${extra||""} aria-label="${aria}" autocomplete="off">`;
+  const v=(x,k)=>esc(x[k]==null?"":x[k]);
+  const I=(k,cls,extra,aria)=>`<input id="op${i}_${k}" data-i="${i}" data-k="${k}" value="${v(o,k)}" class="${cls||""}" ${extra||""} aria-label="${aria}" autocomplete="off">`;
   const ab=(lab,small,k,cls,extra,ph)=>`<span class="lab">${lab}${small?`<small>${small}</small>`:""}</span>`+
     I("a_"+k,cls,(extra||"")+(ph?` placeholder="${ph}"`:""),lab+" antes")+I("d_"+k,cls,(extra||"")+' placeholder="igual"',lab+" depois");
+  const passo=(p,j)=>{
+    const P=(k,cls,extra,aria)=>`<input id="op${i}_p${j}_${k}" data-i="${i}" data-j="${j}" data-k="${k}" value="${v(p,k)}" class="${cls||""}" ${extra||""} aria-label="${aria}" autocomplete="off">`;
+    const pab=(lab,small,k,cls,extra,ph)=>`<span class="lab">${lab}${small?`<small>${small}</small>`:""}</span>`+
+      P("a_"+k,cls,(extra||"")+(ph?` placeholder="${ph}"`:""),lab+" antes")+P("d_"+k,cls,(extra||"")+' placeholder="igual"',lab+" depois");
+    return `<div class="passo">
+      <div class="passo-head"><span class="passo-n">${i+1}.${j+1}</span>${P("nome","",'list="dl_passo" placeholder="Ex.: Desbaste, Furação Ø8, Acabamento"',"Nome do passo")}
+        ${o.passos.length>1?`<button class="btn sm ghost danger" type="button" data-act="delp" data-i="${i}" data-j="${j}" aria-label="Remover passo">Remover</button>`:""}</div>
+      <div class="ab">
+        <span class="h l"></span><span class="h">Antes</span><span class="h d">Depois</span>
+        ${pab("Ferramenta","","ferr","",'list="dl_ferr"')}
+        ${pab("Tempo","mm:ss ou segundos","t","num-in","","1:20")}
+        ${pab("Preço da ferramenta","€ por aresta","fp","num-in",'inputmode="decimal"')}
+        ${pab("Vida da ferramenta","peças por aresta","fv","num-in",'inputmode="numeric"')}
+      </div>
+      <div class="passo-res" id="op${i}_p${j}_res"></div>
+      <details class="params" data-key="${i}_${j}" ${temParams(p)||paramsOpen.has(i+"_"+j)?"open":""}>
+        <summary>Parâmetros de corte e notas<small>avanços, rotações, refrigeração…</small></summary>
+        <div class="ab">
+          <span class="h l"></span><span class="h">Antes</span><span class="h d">Depois</span>
+          ${pab("Diâmetro","mm · da peça no torno, da ferramenta na fresa/broca","dia","num-in",'inputmode="decimal"')}
+          ${pab("Rotação S","rpm","s","num-in",'inputmode="numeric"')}
+          ${pab("Velocidade de corte Vc","m/min","vc","num-in",'inputmode="decimal"')}
+          ${pab("Avanço F","mm/rot no torno, mm/min na fresa","f","num-in",'inputmode="decimal"')}
+          ${pab("Profundidade de passe ap","mm","ap","num-in",'inputmode="decimal"')}
+          ${pab("Nº de passes","","np","num-in",'inputmode="numeric"')}
+          ${pab("Refrigeração","","cool","",'list="dl_cool"')}
+          ${pab("Rugosidade Ra","µm, resultado medido","ra","num-in",'inputmode="decimal"')}
+        </div>
+        <div class="param-calc" id="op${i}_p${j}_calc"></div>
+        <label class="f notas">Notas do passo<textarea id="op${i}_p${j}_notas" data-i="${i}" data-j="${j}" data-k="notas" placeholder="Vibração, aresta postiça, apara longa, desgaste…">${v(p,"notas")}</textarea></label>
+      </details>
+    </div>`};
   const del=ops.length<2?"":pendingOpDel===i
     ?`<span class="confirm">Remover? <button class="btn sm danger" type="button" data-act="delyes" data-i="${i}">Sim</button><button class="btn sm" type="button" data-act="delno" data-i="${i}">Não</button></span>`
     :`<button class="btn sm ghost danger" type="button" data-act="del" data-i="${i}">Remover</button>`;
   return `<div class="op">
-    <div class="op-head"><span class="op-n">${String(i+1).padStart(2,"0")}</span>${I("nome","op-name",'list="dl_operacao" placeholder="Ex.: Op. 10 · Torneamento exterior"',"Nome da operação "+(i+1))}
+    <div class="op-head"><span class="op-n">${String(i+1).padStart(2,"0")}</span>${I("nome","op-name",'list="dl_operacao" placeholder="Ex.: OP10 · Torneamento"',"Nome da operação "+(i+1))}
       <div class="op-actions"><button class="btn sm ghost" type="button" data-act="copy" data-i="${i}">Copiar Antes → Depois</button>${del}</div></div>
     <div class="grid3">
       <label class="f">Máquina${I("maquina","",'list="dl_maquina"',"Máquina da operação "+(i+1))}</label>
@@ -461,13 +567,15 @@ function opCard(o,i){
     <div class="ab">
       <span class="h l"></span><span class="h">Antes</span><span class="h d">Depois</span>
       ${ab("Programa / revisão","","prog","",'list="dl_prog"')}
-      ${ab("Ferramenta","","ferr","",'list="dl_ferr"')}
-      <span class="sep"></span>
-      ${ab("Tempo de ciclo","mm:ss ou segundos","t","num-in","","2:30")}
-      ${ab("Preparação","setup, em minutos","setup","num-in",'inputmode="decimal"')}
-      <span class="sep"></span>
-      ${ab("Preço da ferramenta","€ por aresta","fp","num-in",'inputmode="decimal"')}
-      ${ab("Vida da ferramenta","peças por aresta","fv","num-in",'inputmode="numeric"')}
+      ${ab("Fixação / gabarito","como a peça é presa","fix","",'list="dl_fix"')}
+      ${ab("Preparação (setup)","em minutos, por lote","setup","num-in",'inputmode="decimal"')}
+    </div>
+    <div class="grid2 gab-row"><label class="f full">Custo de gabarito ou fixação nova (€)${I("c_gab","num-in",'inputmode="decimal" placeholder="Opcional, entra no custo da alteração"',"Custo do gabarito novo")}</label></div>
+    <div class="passos-t"><span>Passos de maquinação</span><span>${o.passos.length} passo${o.passos.length===1?"":"s"}</span></div>
+    <div class="passos">${o.passos.map(passo).join("")}</div>
+    <button class="btn sm add-passo" type="button" data-act="addp" data-i="${i}">+ Adicionar passo</button>
+    <div class="ab tx-row">
+      ${ab("Carga, descarga e trocas","por peça, fora dos passos","tx","num-in","","0:20")}
     </div>
     <div class="op-res" id="op${i}_res"></div>
   </div>`}
@@ -478,19 +586,33 @@ function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;",
 
 function render(){
   const R=calc();
-  $("dInv").textContent=R.inv!=null&&R.inv>0?eur.format(R.inv):"—";
-  R.per.forEach((x,i)=>{const el=$("op"+i+"_res");if(!el)return;const o=x.o;
-    if((!blank(o.a_t)&&parseTime(o.a_t)==null)||(!blank(o.d_t)&&parseTime(o.d_t)==null)){el.className="op-res warn";el.textContent="Tempo com formato não reconhecido. Escreve 2:30 ou 150.";return}
+  $("dInv").textContent=R.inv!=null&&R.inv>0?eur.format(R.inv)+(R.gab>0?" (inclui "+eur.format(R.gab)+" de gabaritos)":""):"—";
+  const pctD=(a,d)=>a>0&&d!==a?" ("+(d<a?"−":"+")+nf(1).format(Math.abs(a-d)/a*100)+" %)":"";
+  const tTxt=(T,aBlank)=>aBlank&&T.d!=null?"novo · "+fmtDur(T.d):(T.d===0&&T.a>0?"eliminado · era "+fmtDur(T.a):fmtDur(T.a)+" → "+fmtDur(T.d)+pctD(T.a,T.d));
+  R.per.forEach((x,i)=>{
+    x.steps.forEach((st,j)=>{
+      const cEl=$("op"+i+"_p"+j+"_calc");if(cEl){const t=[];["a","d"].forEach(sd=>{const P=parSide(st.p,sd);
+        if(P.calc==="vc")t.push((sd==="a"?"Antes":"Depois")+": Vc calculada = "+nf(0).format(P.vc)+" m/min");
+        if(P.calc==="s")t.push((sd==="a"?"Antes":"Depois")+": rotação calculada = "+nf(0).format(P.s)+" rpm")});
+        cEl.textContent=t.length?t.join(" · "):"Com o diâmetro e a rotação, a Vc é calculada (e ao contrário)."}
+      const el=$("op"+i+"_p"+j+"_res");if(!el)return;
+      if(badTime(st.p,"t")){el.className="passo-res warn";el.textContent="Tempo com formato não reconhecido. Escreve 1:20 ou 80.";return}
+      el.className="passo-res";
+      if(st.T.a==null){el.textContent="Falta o tempo.";return}
+      let s=tTxt(st.T,blank(st.p.a_t));
+      if(st.fa||st.fd)s+=" · ferramenta "+fe(st.fa)+" → "+fe(st.fd)+" por peça";
+      const ch=parChanges(st.p);if(ch.length)s+=" · "+ch.join(" · ");
+      el.textContent=s});
+    const el=$("op"+i+"_res");if(!el)return;const o=x.o;
+    if(badTime(o,"tx")){el.className="op-res warn";el.textContent="Tempo de carga e trocas com formato não reconhecido.";return}
     el.className="op-res";
-    if(x.T.a==null){el.textContent="Falta o tempo de ciclo.";return}
-    let s;
-    if(blank(o.a_t))s="Operação nova · "+fmtDur(x.T.d);
-    else if(x.T.d===0)s="Operação eliminada · era "+fmtDur(x.T.a);
-    else{s=fmtDur(x.T.a)+" → "+fmtDur(x.T.d);if(x.T.a>0&&x.T.d!==x.T.a)s+=" ("+(x.T.d<x.T.a?"−":"+")+nf(1).format(Math.abs(x.T.a-x.T.d)/x.T.a*100)+" %)"}
+    if(x.T.a==null){el.textContent="Total da operação: falta o tempo de algum passo.";return}
+    let s="Total "+(o.nome||"da operação")+": "+fmtDur(x.T.a)+" → "+fmtDur(x.T.d)+pctD(x.T.a,x.T.d);
     s+=x.H!=null?" · "+eur.format(x.H)+"/h":" · falta o custo hora";
     if(x.ok)s+=" · "+fe(x.A.ciclo+x.A.ferr)+" → "+fe(x.D.ciclo+x.D.ferr)+" por peça";
     el.textContent=s});
   const v=$("verdict");
+  if(!R.ready)$("parBox").hidden=true;
   if(!R.ready){
     v.className="verdict";
     const miss=[],noH=R.per.filter(x=>x.H==null);
@@ -539,7 +661,11 @@ function render(){
     return `<tr class="${cl||""}"><td>${lab}</td><td class="num">${isTime?fmtDur(a):f(a)}</td><td class="num">${isTime?fmtDur(d):f(d)}</td><td class="num ${dc}">${fd}</td></tr>`};
   const pct=x=>nf(1).format(x*100)+" %";
   let t="";
-  if(R.per.length>1)R.per.forEach((x,i)=>{t+=row(esc(x.o.nome||("Operação "+(i+1)))+(x.o.maquina?"<small>"+esc(x.o.maquina)+"</small>":""),x.A.t,x.D.t,null,false,true)});
+  const detalhe=R.per.length>1||R.per.some(x=>x.steps.length>1||x.tx.a>0||x.tx.d>0);
+  if(detalhe)R.per.forEach((x,i)=>{
+    t+=row(esc(x.o.nome||("Operação "+(i+1)))+(x.o.maquina?"<small>"+esc(x.o.maquina)+"</small>":""),x.A.t,x.D.t,null,false,true,"opr");
+    x.steps.forEach((st,j)=>{t+=row(esc(st.p.nome||("Passo "+(i+1)+"."+(j+1))),st.T.a,st.T.d,null,false,true,"sub")});
+    if(x.tx.a>0||x.tx.d>0)t+=row("Carga, descarga e trocas",x.tx.a,x.tx.d,null,false,true,"sub")});
   t+=row(R.per.length>1?"Tempo de ciclo total":"Tempo de ciclo",R.A.t,R.D.t,null,false,true);
   t+=row("Tempo por peça boa <small>com preparação e refugo</small>",R.A.tBoa,R.D.tBoa,null,false,true);
   t+=row("Máquina e operador",R.A.ciclo,R.D.ciclo,fe);
@@ -549,6 +675,9 @@ function render(){
   if(R.A.mat>0)t+=row("Material",R.A.mat,R.D.mat,fe);
   t+=row("Custo por peça boa",R.A.total,R.D.total,fe,false,false,"total");
   $("cmpBody").innerHTML=t;$("cmpBox").hidden=false;
+  const pl=[];R.per.forEach((x,i)=>x.steps.forEach((st,j)=>{const ch=parChanges(st.p);
+    if(ch.length||!blank(st.p.notas))pl.push(`<li><b>${esc((x.o.nome||"OP "+(i+1))+" · "+(st.p.nome||"passo "+(j+1)))}:</b> ${esc(ch.join(", "))}${!blank(st.p.notas)?`<br><span class="r2">${esc(st.p.notas)}</span>`:""}</li>`)}));
+  $("parList").innerHTML=pl.join("");$("parBox").hidden=!pl.length;
   return R;
 }
 
@@ -559,9 +688,13 @@ function loadDraft(){try{return JSON.parse(localStorage.getItem(DKEY)||"null")}c
 let dT;function onInput(){render();clearTimeout(dT);dT=setTimeout(saveDraft,400)}
 document.querySelectorAll(".main input,.main select,.main textarea").forEach(el=>{el.addEventListener("input",onInput);el.addEventListener("change",onInput)});
 
-$("ops").addEventListener("input",e=>{const el=e.target;if(el.dataset.k==null)return;ops[+el.dataset.i][el.dataset.k]=el.value;onInput()});
+$("ops").addEventListener("input",e=>{const el=e.target;if(el.dataset.k==null)return;const o=ops[+el.dataset.i];
+  if(el.dataset.j!=null)o.passos[+el.dataset.j][el.dataset.k]=el.value;else o[el.dataset.k]=el.value;onInput()});
+$("ops").addEventListener("toggle",e=>{const d=e.target;if(!d.dataset||!d.dataset.key)return;if(d.open)paramsOpen.add(d.dataset.key);else paramsOpen.delete(d.dataset.key)},true);
 $("ops").addEventListener("click",e=>{const b=e.target.closest("button[data-act]");if(!b)return;const i=+b.dataset.i,a=b.dataset.act;
-  if(a==="copy"){["prog","ferr","t","setup","fp","fv"].forEach(k=>ops[i]["d_"+k]=ops[i]["a_"+k]);renderOps();onInput();toast("Valores do Antes copiados para o Depois")}
+  if(a==="copy"){const o=ops[i];["prog","fix","setup","tx"].forEach(k=>o["d_"+k]=o["a_"+k]);o.passos.forEach(p=>["ferr","t","fp","fv"].concat(PARAMK).forEach(k=>p["d_"+k]=p["a_"+k]));renderOps();onInput();toast("Valores do Antes copiados para o Depois")}
+  else if(a==="addp"){ops[i].passos.push(blankPasso());renderOps();onInput();const el=$("op"+i+"_p"+(ops[i].passos.length-1)+"_nome");if(el)el.focus()}
+  else if(a==="delp"){paramsOpen.clear();ops[i].passos.splice(+b.dataset.j,1);renderOps();onInput();toast("Passo removido")}
   else if(a==="del"){pendingOpDel=i;renderOps();render()}
   else if(a==="delno"){pendingOpDel=null;renderOps();render()}
   else if(a==="delyes"){ops.splice(i,1);pendingOpDel=null;renderOps();onInput();toast("Operação removida")}});
@@ -609,15 +742,16 @@ $("bPrint").onclick=()=>window.print();
 
 function matches(r,q,est){
   if(est&&(r.f.estado||"Por validar")!==est)return false;if(!q)return true;
-  const hay=[r.f.ref,r.f.responsavel,r.f.obs].concat(opsOf(r.f).flatMap(o=>[o.nome,o.maquina,o.a_prog,o.d_prog,o.a_ferr,o.d_ferr])).join(" ").toLowerCase();
+  const hay=[r.f.ref,r.f.responsavel,r.f.obs].concat(opsOf(r.f).flatMap(o=>[o.nome,o.maquina,o.a_prog,o.d_prog,o.a_fix,o.d_fix].concat(o.passos.flatMap(p=>[p.nome,p.a_ferr,p.d_ferr,p.notas,p.a_cool,p.d_cool])))).join(" ").toLowerCase();
   return q.toLowerCase().split(/\s+/).every(w=>hay.includes(w))}
 function fdate(s){if(!s)return "";const [y,m,d]=s.split("-");return d&&m?`${d}/${m}/${y}`:s}
 
 function fillLists(){
-  const sets={dl_ref:new Set(),dl_responsavel:new Set(),dl_maquina:new Set(),dl_operacao:new Set(),dl_prog:new Set(),dl_ferr:new Set()};
+  const sets={dl_ref:new Set(),dl_responsavel:new Set(),dl_maquina:new Set(),dl_operacao:new Set(),dl_prog:new Set(),dl_ferr:new Set(),dl_passo:new Set(PASSOS_BASE),dl_fix:new Set(FIX_BASE),dl_cool:new Set(COOL_BASE)};
   const add=(k,v)=>{v=String(v||"").trim();if(v)sets[k].add(v)};
   records.forEach(r=>{const f=r.f||{};add("dl_ref",f.ref);add("dl_responsavel",f.responsavel);
-    opsOf(f).forEach(o=>{add("dl_maquina",o.maquina);add("dl_operacao",o.nome);add("dl_prog",o.a_prog);add("dl_prog",o.d_prog);add("dl_ferr",o.a_ferr);add("dl_ferr",o.d_ferr)})});
+    opsOf(f).forEach(o=>{add("dl_maquina",o.maquina);add("dl_operacao",o.nome);add("dl_prog",o.a_prog);add("dl_prog",o.d_prog);add("dl_fix",o.a_fix);add("dl_fix",o.d_fix);
+      o.passos.forEach(p=>{add("dl_passo",p.nome);add("dl_ferr",p.a_ferr);add("dl_ferr",p.d_ferr);add("dl_cool",p.a_cool);add("dl_cool",p.d_cool)})})});
   for(const k in sets)$(k).innerHTML=[...sets[k]].sort((a,b)=>a.localeCompare(b,"pt")).map(v=>`<option value="${esc(v)}"></option>`).join("");
 }
 function renderHist(){
@@ -674,12 +808,16 @@ $("bJson").onclick=()=>{if(!records.length){toast("Não há registos para export
 $("bCsv").onclick=()=>{if(!records.length){toast("Não há registos para exportar.");return}
   const q=v=>'"'+String(v==null?"":v).replace(/"/g,'""')+'"';
   const n=v=>v==null?"":String(Math.round(v*1000)/1000).replace(".",",");
-  const head=["Data","Referência","Responsável","Estado","Nº operações","Máquinas","Operações (antes → depois)","Ciclo antes (s)","Ciclo depois (s)","Lote","Qtd anual","Observações","Poupança/peça (€)","Poupança/lote (€)","Poupança/ano (€)","Redução ciclo (%)"].map(q).join(";");
+  const head=["Data","Referência","Responsável","Estado","Nº operações","Máquinas","Operações (antes → depois)","Parâmetros alterados e notas","Ciclo antes (s)","Ciclo depois (s)","Lote","Qtd anual","Observações","Poupança/peça (€)","Poupança/lote (€)","Poupança/ano (€)","Redução ciclo (%)"].map(q).join(";");
   const rows=records.map(r=>{const f=r.f||{},s=r.res||{},os=opsOf(f);
     let tA=s.tA,tD=s.tD;if(tA==null){const ts=os.map(opTimes);if(ts.every(t=>t.a!=null&&t.d!=null)){tA=ts.reduce((a,t)=>a+t.a,0);tD=ts.reduce((a,t)=>a+t.d,0)}}
-    const desc=os.map((o,i)=>(o.nome||"Op. "+(i+1))+(o.maquina?" ("+o.maquina+")":"")+": "+(o.a_t||"nova")+" → "+(blank(o.d_t)?(o.a_t||"?"):o.d_t)).join(" | ");
+    const tt=(x,k)=>(x["a_"+k]||"novo")+"→"+(blank(x["d_"+k])?(x["a_"+k]||"?"):x["d_"+k]);
+    const desc=os.map((o,i)=>(o.nome||"Op. "+(i+1))+(o.maquina?" ("+o.maquina+")":"")+": "+
+      (blank(o.a_fix)&&blank(o.d_fix)?"":"fixação "+(o.a_fix||"?")+(blank(o.d_fix)||o.d_fix===o.a_fix?"":"→"+o.d_fix)+(numv(o.c_gab)?" (gabarito "+o.c_gab+" €)":"")+"; ")+
+      o.passos.map((p,j)=>(p.nome||"passo "+(j+1))+" "+tt(p,"t")).concat(blank(o.a_tx)&&blank(o.d_tx)?[]:["carga/trocas "+tt(o,"tx")]).join(", ")).join(" | ");
     const maqs=[...new Set(os.map(o=>String(o.maquina||"").trim()).filter(Boolean))].join(", ");
-    return [q(f.data),q(f.ref),q(f.responsavel),q(f.estado),q(os.length),q(maqs),q(desc),n(tA),n(tD),q(f.lote),q(f.anual),q(f.obs),
+    const pars=os.flatMap((o,i)=>o.passos.map((p,j)=>{const ch=parChanges(p);return ch.length||!blank(p.notas)?(o.nome||"Op. "+(i+1))+" · "+(p.nome||"passo "+(j+1))+": "+ch.join(", ")+(blank(p.notas)?"":" ["+p.notas+"]"):""}).filter(Boolean)).join(" | ");
+    return [q(f.data),q(f.ref),q(f.responsavel),q(f.estado),q(os.length),q(maqs),q(desc),q(pars),n(tA),n(tD),q(f.lote),q(f.anual),q(f.obs),
       n(s.poupPeca),n(s.poupLote),n(s.poupAno),n(s.redCiclo!=null?s.redCiclo*100:null)].join(";")});
   offer("cnc-melhorias-"+today()+".csv","﻿"+[head].concat(rows).join("\r\n"))};
 $("fImport").addEventListener("change",async e=>{

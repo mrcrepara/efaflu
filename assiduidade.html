@@ -204,7 +204,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
   <button class="btn sec hide" id="lkCancel">Cancelar</button>
   <p id="lkErr"></p>
   <a href="#" id="lkEsq" class="small hide" style="color:var(--pri)">Esqueci-me da palavra-passe</a>
-  <div class="small" style="margin-top:14px;opacity:.6">versão 05/11</div>
+  <div class="small" style="margin-top:14px;opacity:.6">versão 06/11 · jornada 8h</div>
 </div></div>
 <header>
   <span class="logo"><img src="" data-logo alt="EFAFLU"></span>
@@ -415,7 +415,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
         <div id="boxDias"><label>Dias</label><input type="number" id="rDias" step="0.5" min="0" value="1"></div>
         <div id="boxIni"><label>Hora início</label><div class="inline"><input type="time" id="rHIni"><button class="mini" onclick="agoraEm('rHIni')">Agora</button></div></div>
         <div id="boxFimH"><label>Hora fim</label><div class="inline"><input type="time" id="rHFim"><button class="mini" onclick="agoraEm('rHFim')">Agora</button></div></div>
-        <div id="boxHoras"><label>Horas</label><input type="number" id="rHoras" step="0.25" min="0"></div>
+        <div id="boxHoras"><label>Horas <span class="small" id="rAlm" style="font-weight:400"></span></label><input type="number" id="rHoras" step="0.25" min="0"></div>
         <div id="boxMotivo"><label>Motivo</label>
           <select id="rMotivo">
             <option>Férias</option><option>Baixa médica</option><option>Assistência à família</option>
@@ -768,6 +768,17 @@ const pad = n => String(n).padStart(2,'0');
 const dLocal = d => d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 const hoje = () => dLocal(new Date());
 const horaLocal = d => pad(d.getHours())+':'+pad(d.getMinutes());
+// Jornada de 8h: a pausa de almoço é descontada quando o horário a inclui toda (ex.: 08:00–17:00 = 8h; 08:00–13:00 = 5h)
+const ALMOCO = ['12:00','13:00'];
+const minDe = s => { const [h,m]=String(s).split(':').map(Number); return h*60+(m||0); };
+function minsTrab(a,b){
+  if(!a||!b) return 0;
+  const i=minDe(a); let f=minDe(b); if(f<i) f+=1440;
+  const la=minDe(ALMOCO[0]), lb=minDe(ALMOCO[1]); let m=f-i;
+  for(const o of [0,1440]) if(i<=la+o && f>lb+o) m-=lb-la;
+  return Math.max(0,m);
+}
+const descAlmoco = (a,b) => { if(!a||!b) return 0; const i=minDe(a); let f=minDe(b); if(f<i) f+=1440; return (f-i)-minsTrab(a,b); };
 const fmt = n => (Math.round((n||0)*100)/100).toString().replace('.',',');
 const hm = h => { const neg=h<0; h=Math.abs(h); let H=Math.floor(h), M=Math.round((h-H)*60); if(M===60){H++;M=0;}
                   return (neg?'−':'')+H+'h'+(M?pad(M):''); };
@@ -1006,7 +1017,8 @@ async function iniciarTimer(){
 async function pararTimer(id){
   const t=relogios.find(x=>x.id===id); if(!t) return;
   const ini=new Date(t.inicio), fim=new Date();
-  const min=Math.round((fim-ini)/60000);
+  const bruto=Math.round((fim-ini)/60000);
+  const min=Math.max(0, bruto - (bruto<1440 ? descAlmoco(horaLocal(ini),horaLocal(fim)) : 0));
   const horas=Math.round(min/60*100)/100;
   const c=nomeCol(t.colId);
   if(min<60){
@@ -1061,9 +1073,8 @@ function diasUteis(a,b){
 function agoraEm(id){ $(id).value=horaLocal(new Date()); calcHoras(); }
 function calcHoras(){
   const a=$('rHIni').value, b=$('rHFim').value; if(!a||!b) return;
-  const [h1,m1]=a.split(':').map(Number), [h2,m2]=b.split(':').map(Number);
-  let min=(h2*60+m2)-(h1*60+m1); if(min<0) min+=1440;
-  $('rHoras').value = Math.round(min/60*100)/100;
+  $('rHoras').value = Math.round(minsTrab(a,b)/60*100)/100;
+  const al=descAlmoco(a,b); $('rAlm').textContent = al ? '(já sem '+hm(al/60)+' de almoço)' : '';
 }
 function ajustarForm(){
   const t=valTipo(), temHoras = ['extra','banco','sabado','falta_j','falta_i'].includes(t);
@@ -1199,9 +1210,7 @@ function renderFolhaJa(){
 }
 function calcLinha(tr){
   const i=tr.querySelector('[data-k="i"]').value, f=tr.querySelector('[data-k="f"]').value; if(!i||!f) return;
-  const [h1,m1]=i.split(':').map(Number),[h2,m2]=f.split(':').map(Number);
-  let m=(h2*60+m2)-(h1*60+m1); if(m<0) m+=1440;
-  tr.querySelector('[data-k="h"]').value=Math.round(m/60*100)/100;
+  tr.querySelector('[data-k="h"]').value=Math.round(minsTrab(i,f)/60*100)/100;
 }
 async function guardarFolha(){
   const data=$('fdData').value; if(!data) return aviso('Escolhe o dia.');
@@ -1313,7 +1322,7 @@ const EST = {sim:'✅ Vem', nao:'❌ Não vem', pend:'⏳ Sem resposta'};
 let editPlano=null, fecharId=null, plChave=null;
 const diaLongo = d => { const t=new Date(d+'T12:00').toLocaleDateString('pt-PT',{weekday:'long'}); return t.charAt(0).toUpperCase()+t.slice(1)+', '+dataPT(d); };
 const minsEntre = (a,b) => { if(!a||!b) return 0; const [h1,m1]=a.split(':').map(Number),[h2,m2]=b.split(':').map(Number); let m=(h2*60+m2)-(h1*60+m1); if(m<0) m+=1440; return m; };
-const hDe = (a,b) => Math.round(minsEntre(a,b)/60*100)/100;
+const hDe = (a,b) => Math.round(minsTrab(a,b)/60*100)/100;
 function proxSabado(){ const d=new Date(); d.setDate(d.getDate()+((6-d.getDay()+7)%7||7)); $('plData').value=dLocal(d); rotuloPl(); }
 function rotuloPl(){ const d=$('plData').value; $('plDiaSem').textContent = d ? '('+diaSem(d)+')' : ''; }
 const sabadosAno = (colId, ano) => regs.filter(r=>r.colId===colId && r.tipo==='sabado' && r.data.slice(0,4)===ano).reduce((s,r)=>s+(r.dias||1),0);
