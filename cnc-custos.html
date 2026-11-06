@@ -18,6 +18,7 @@ html{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!i
   --brand:#153d33; --brand-ink:#eaf3ee; --brand-sub:#9fc4b4; --accent:#1e6a53; --accent-ink:#ffffff; --soft:#e2eee8;
   --good:#1b7a4c; --good-soft:#e1f2e8; --warn:#9a5f12; --warn-soft:#f8ecd9; --bad:#ae3b2b; --bad-soft:#f8e3df;
   --s-ciclo:#1e6a53; --s-ferr:#6c9c3a; --s-setup:#c48a2c; --s-ref:#b14d3c; --s-mat:#8a9a93;
+  --c1:#2a78d6; --c2:#eb6834; --c3:#1baf7a; --c4:#eda100; --c5:#e87ba4; --c6:#008300; --c7:#6250d6; --c8:#e34948; --c-antes:#a3aea9; --grid:#e3e9e5; --hero-a:#155e48; --hero-b:#1f5fae;
   --f-display:"Barlow Semi Condensed","Arial Narrow",Arial,sans-serif;
   --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-num:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
@@ -27,12 +28,12 @@ html{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!i
   --bg:#0e1412; --surface:#161f1b; --surface-2:#1b2621; --ink:#e3ebe6; --muted:#93a39b; --line:#2a3732;
   --brand:#0c2620; --brand-ink:#e3efe9; --brand-sub:#7fa898; --accent:#5cbf98; --accent-ink:#0c1f19; --soft:#1c2e27;
   --good:#5fc58f; --good-soft:#18301f; --warn:#e2a64f; --warn-soft:#33281a; --bad:#ee7e6a; --bad-soft:#3a201b;
-  --s-ciclo:#4fae8a; --s-ferr:#93c35c; --s-setup:#dda64a; --s-ref:#e0715d; --s-mat:#6f7f78; color-scheme:dark}}
+  --s-ciclo:#4fae8a; --s-ferr:#93c35c; --s-setup:#dda64a; --s-ref:#e0715d; --s-mat:#6f7f78; --c1:#3987e5; --c2:#d95926; --c3:#199e70; --c4:#c98500; --c5:#d55181; --c6:#008300; --c7:#9085e9; --c8:#e66767; --c-antes:#66736d; --grid:#26322d; --hero-a:#0f4535; --hero-b:#173f73; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0e1412; --surface:#161f1b; --surface-2:#1b2621; --ink:#e3ebe6; --muted:#93a39b; --line:#2a3732;
   --brand:#0c2620; --brand-ink:#e3efe9; --brand-sub:#7fa898; --accent:#5cbf98; --accent-ink:#0c1f19; --soft:#1c2e27;
   --good:#5fc58f; --good-soft:#18301f; --warn:#e2a64f; --warn-soft:#33281a; --bad:#ee7e6a; --bad-soft:#3a201b;
-  --s-ciclo:#4fae8a; --s-ferr:#93c35c; --s-setup:#dda64a; --s-ref:#e0715d; --s-mat:#6f7f78; color-scheme:dark}
+  --s-ciclo:#4fae8a; --s-ferr:#93c35c; --s-setup:#dda64a; --s-ref:#e0715d; --s-mat:#6f7f78; --c1:#3987e5; --c2:#d95926; --c3:#199e70; --c4:#c98500; --c5:#d55181; --c6:#008300; --c7:#9085e9; --c8:#e66767; --c-antes:#66736d; --grid:#26322d; --hero-a:#0f4535; --hero-b:#173f73; color-scheme:dark}
 
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45}
@@ -217,6 +218,60 @@ td small{display:block;color:var(--muted);font-size:11.5px}
 @keyframes flash{50%{background:var(--warn-soft)}}
 @media (prefers-reduced-motion:reduce){.savebar.flash{animation:none}}
 .hist-btns{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.tabs{display:flex;gap:8px;padding-block:16px 2px;flex-wrap:wrap}
+.tab{font:600 15px var(--f-body);padding:10px 18px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer}
+.tab:hover{color:var(--ink);border-color:var(--accent)}
+.tab[aria-selected="true"]{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.dash-filters{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-end;padding-block:14px 4px}
+.dash-filters label.f{flex:0 1 200px}
+.dash-filters .grow{flex:1}
+.hero{margin-top:12px;border-radius:14px;padding:24px 26px;color:#fff;background:linear-gradient(120deg,var(--hero-a),var(--hero-b));display:flex;flex-wrap:wrap;gap:18px 48px;align-items:flex-end}
+.hero .k{font-size:12px;letter-spacing:.14em;text-transform:uppercase;opacity:.85;font-weight:600}
+.hero .big{font:500 clamp(34px,6vw,54px)/1.05 var(--f-num);margin-top:6px;letter-spacing:-.01em}
+.hero .mid{font:500 clamp(22px,3.4vw,30px)/1.1 var(--f-num);margin-top:6px}
+.hero .s{font-size:13.5px;opacity:.88;margin-top:6px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+.kpi{border-radius:12px;padding:14px 16px;background:color-mix(in srgb,var(--t) 13%,var(--surface));border:1px solid color-mix(in srgb,var(--t) 30%,var(--line));min-width:0}
+.kpi .k{font-size:12.5px;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:7px}
+.kpi .k i{width:10px;height:10px;border-radius:3px;background:var(--t);display:inline-block}
+.kpi .v{font:500 26px/1.15 var(--f-num);margin-top:6px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi .s{font-size:12px;color:var(--muted);margin-top:3px}
+.dgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-block:18px 28px}
+.chart{min-width:0}
+.chart.wide{grid-column:1/-1}
+.chart h3{font:700 17px var(--f-display);margin:0}
+.chart .sub{margin:3px 0 0;font-size:12.5px;color:var(--muted)}
+.cbox{margin-top:12px;min-width:0}
+.cbox svg{display:block;width:100%;height:auto;overflow:visible}
+.cbox svg text{font-family:var(--f-body);fill:var(--muted);font-size:12px}
+.cbox svg text.num{font-family:var(--f-num);font-size:11px}
+.cbox svg text.val{font-family:var(--f-num);font-size:11.5px;fill:var(--ink)}
+.cbox svg text.lab{fill:var(--ink);font-size:12.5px}
+.cbox svg .gl{stroke:var(--grid);stroke-width:1}
+.cbox svg .base{stroke:var(--line);stroke-width:1}
+.cbox svg [data-tip]{cursor:default;outline:none;transition:opacity .15s}
+.cbox svg [data-tip]:hover,.cbox svg [data-tip]:focus{opacity:.82}
+.lgd{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--muted);margin-top:10px}
+.lgd span{display:inline-flex;align-items:center;gap:6px}
+.lgd i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.lgd b{font-family:var(--f-num);font-weight:500;color:var(--ink)}
+.donut{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:center}
+.donut svg{width:190px;flex:0 0 190px;max-width:100%}
+.donut .lgd{flex-direction:column;gap:8px;flex:1 1 160px;min-width:0;margin:0}
+.donut .lgd span{justify-content:space-between;gap:10px}
+.donut .lgd span em{font-style:normal;display:inline-flex;align-items:center;gap:7px;min-width:0}
+.ctip{position:fixed;z-index:50;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12.5px;line-height:1.4;padding:8px 10px;border-radius:7px;white-space:pre-line;max-width:260px;box-shadow:0 6px 18px rgba(0,0,0,.18)}
+.dash-empty{margin-top:16px;padding:28px;border-radius:12px;border:1px dashed var(--line);background:var(--surface);text-align:center;display:flex;flex-direction:column;gap:12px;align-items:center}
+.dash-empty p{margin:0;color:var(--muted);max-width:52ch}
+.dash-empty .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.verdict.good{background:var(--good);color:#fff;font-size:15px}
+.verdict.bad{background:var(--bad);color:#fff;font-size:15px}
+.tile.pos{background:var(--good-soft);border-color:transparent}
+.tile.neg{background:var(--bad-soft);border-color:transparent}
+@media (max-width:900px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.dgrid{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:520px){.hero{padding:20px}.kpi .v{font-size:21px}}
+@media print{.tabs,.dash-filters,#dDemo{display:none!important}.hero{-webkit-print-color-adjust:exact;print-color-adjust:exact}.kpi,.cbox svg{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 .toast{position:fixed;left:50%;top:calc(16px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20;max-width:calc(100% - 32px)}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
@@ -262,6 +317,42 @@ td small{display:block;color:var(--muted);font-size:11.5px}
 </header>
 
 <div class="wrap">
+  <nav class="tabs" role="tablist" aria-label="Vistas">
+    <button class="tab" id="tabPainel" data-v="painel" role="tab" type="button">📊 Painel da direção</button>
+    <button class="tab" id="tabRegisto" data-v="registo" role="tab" type="button">✏️ Registar alteração</button>
+  </nav>
+
+  <div id="vPainel" hidden>
+    <div class="dash-filters">
+      <label class="f">Período<select id="dPer"><option value="tudo">Tudo</option><option value="ano">Este ano</option><option value="12">Últimos 12 meses</option></select></label>
+      <label class="f">Estado<select id="dEst"><option value="semrej">Sem as rejeitadas</option><option value="val">Só validadas</option><option value="todas">Todas</option></select></label>
+      <label class="f">Máquina<select id="dMaq"><option value="">Todas as máquinas</option></select></label>
+      <span class="grow"></span>
+      <button class="btn ghost" id="dPrint" type="button">Imprimir / PDF</button>
+    </div>
+    <div class="banner" id="dDemo" hidden>A mostrar dados de exemplo, só para veres o painel. Não estão guardados. <button type="button" id="dDemoOff">Ver os meus dados</button></div>
+    <div class="dash-empty" id="dEmpty" hidden>
+      <h2>Ainda não há melhorias para mostrar</h2>
+      <p>Cada alteração que guardares em "Registar alteração" aparece aqui, com a poupança, o tempo ganho e o estado.</p>
+      <div class="row"><button class="btn primary" id="dGoReg" type="button">Registar a primeira</button><button class="btn" id="dDemoOn" type="button">Ver o painel com exemplo</button></div>
+    </div>
+    <div id="dBody">
+      <section class="hero" aria-label="Resumo">
+        <div><div class="k">Poupança prevista por ano</div><div class="big" id="hPoup">—</div><div class="s" id="hPoupS"></div></div>
+        <div><div class="k">Horas de máquina libertadas por ano</div><div class="mid" id="hHoras">—</div><div class="s" id="hHorasS"></div></div>
+      </section>
+      <div class="kpis" id="dKpis"></div>
+      <div class="dgrid">
+        <section class="panel chart"><h3>Poupança anual por melhoria</h3><p class="sub">As melhorias que mais poupam, em euros por ano</p><div class="cbox" id="chTop"></div></section>
+        <section class="panel chart"><h3>Poupança anual por máquina</h3><p class="sub">Tempo, ferramenta e preparação, somados por máquina</p><div class="cbox" id="chMaq"></div></section>
+        <section class="panel chart wide"><h3>Tempo de ciclo por peça: antes e depois</h3><p class="sub">Minutos por peça, nas melhorias mais recentes</p><div class="cbox" id="chCiclo"></div></section>
+        <section class="panel chart"><h3>Poupança acumulada</h3><p class="sub">Soma da poupança anual, pela data de cada melhoria</p><div class="cbox" id="chEvo"></div></section>
+        <section class="panel chart"><h3>Estado das melhorias</h3><p class="sub">Quantas estão validadas, em teste ou por validar</p><div class="cbox" id="chEst"></div></section>
+      </div>
+    </div>
+  </div>
+
+  <div id="vRegisto" hidden>
   <div class="bar">
     <button class="btn" id="bNew" type="button">Novo registo</button>
     <button class="btn ghost" id="bExample" type="button">Carregar exemplo</button>
@@ -328,9 +419,11 @@ td small{display:block;color:var(--muted);font-size:11.5px}
 
         <div class="bars" id="barsBox" hidden>
           <h3>Custo por peça boa</h3>
-          <div class="brow"><span class="t">Antes</span><div class="track" id="barA"></div><span class="num" id="barAv"></span></div>
-          <div class="brow"><span class="t">Depois</span><div class="track" id="barD"></div><span class="num" id="barDv"></span></div>
-          <div class="legend" id="legend"></div>
+          <div class="cbox" id="chCusto"></div>
+        </div>
+        <div class="bars" id="opsBox" hidden>
+          <h3>Tempo por operação</h3>
+          <div class="cbox" id="chOps"></div>
         </div>
 
         <div class="cmp" id="cmpBox" hidden>
@@ -383,7 +476,9 @@ td small{display:block;color:var(--muted);font-size:11.5px}
     <div class="hist-sum" id="histSum"></div>
     <div class="hist-list" id="histList"></div>
   </section>
+  </div>
 </div>
+<div class="ctip" id="ctip" hidden></div>
 <div class="login" id="login" hidden>
   <form id="fLogin" autocomplete="on">
     <div class="eyebrow" style="color:var(--accent)">EFAFLU · Parque de Máquinas</div>
@@ -493,9 +588,11 @@ function opTimes(o){const ps=(o.passos||[]).map(p=>tPair(p,"t")),tx=txPair(o);
   if(tx.a==null||tx.d==null||ps.some(t=>t.a==null||t.d==null))return {a:null,d:null};
   return {a:ps.reduce((s,t)=>s+t.a,0)+tx.a,d:ps.reduce((s,t)=>s+t.d,0)+tx.d}}
 
-function calc(){
-  const cop=num("c_op"),kwh=num("c_kwh")||0,incl=$("c_incl").checked;
-  const lote=num("lote"),anual=num("anual"),mat=num("c_mat")||0,L=lote&&lote>0?lote:null;
+function calc(){return calcF(read())}
+function calcF(f){
+  const N=k=>numv(f[k]),ops=opsOf(f);
+  const cop=N("c_op"),kwh=N("c_kwh")||0,incl=!!f.c_incl;
+  const lote=N("lote"),anual=N("anual"),mat=N("c_mat")||0,L=lote&&lote>0?lote:null;
   const per=ops.map(o=>{
     const cm=numv(o.c_maq),kw=numv(o.c_kw)||0;
     const H=(cop==null&&cm==null)?null:(cop||0)+(cm||0)+(incl?0:kw*kwh);
@@ -507,7 +604,7 @@ function calc(){
       return {t,ciclo:t/3600*H,ferr:steps.reduce((x,y)=>x+(side==="a"?y.fa:y.fd),0),setup:su,setupCost:su/60*H}};
     return {o,H,T,tx,steps,ok,A:s("a"),D:s("d")}});
   const side=(p,key)=>{
-    const r=Math.min(Math.max((num(p+"_ref")||0)/100,0),0.95);
+    const r=Math.min(Math.max((N(p+"_ref")||0)/100,0),0.95);
     const S={t:0,ciclo:0,ferr:0,setup:0,setupCost:0};
     per.forEach(x=>{const v=x[key];if(v)for(const k in S)S[k]+=v[k]});
     const prod=S.ciclo+S.ferr+mat,boa=prod/(1-r),setupP=L?S.setupCost/L:0;
@@ -517,7 +614,7 @@ function calc(){
   const ready=per.length>0&&per.every(x=>x.ok);
   const A=side("a","A"),D=side("d","D");
   const gab=ops.reduce((a,o)=>a+(numv(o.c_gab)||0),0);
-  const inv=Havg==null?(gab||null):(num("i_h")||0)*Havg+(num("i_pe")||0)*(ready?D.prod:0)+(num("i_out")||0)+gab;
+  const inv=Havg==null?(gab||null):(N("i_h")||0)*Havg+(N("i_pe")||0)*(ready?D.prod:0)+(N("i_out")||0)+gab;
   const res={per,Havg,lote,anual,A,D,inv,gab,ready};
   if(ready){
     res.poupPeca=A.total-D.total;
@@ -636,7 +733,7 @@ function render(){
     R.per.forEach((x,i)=>{if(x.T.a==null||x.T.d==null)miss.push("tempo de ciclo da Op. "+(i+1))});
     if(!R.lote)miss.push("quantidade do lote");
     v.textContent="Falta preencher: "+miss.join(", ")+".";
-    $("tiles").innerHTML="";$("barsBox").hidden=true;$("cmpBox").hidden=true;return R;
+    $("tiles").innerHTML="";$("barsBox").hidden=true;$("opsBox").hidden=true;$("cmpBox").hidden=true;return R;
   }
   const good=R.poupPeca>0.00049, bad=R.poupPeca< -0.00049;
   v.className="verdict "+(good?"good":bad?"bad":"");
@@ -661,15 +758,11 @@ function render(){
   h+=tile("Retorno da alteração",payV,payS,R.payPecas!=null?"pos":(R.inv>0&&R.poupPeca<=0?"neg":""));
   $("tiles").innerHTML=h;
 
-  // Barras
-  const segs=[["ciclo","Máquina e operador","--s-ciclo"],["ferr","Ferramenta","--s-ferr"],["setupP","Preparação","--s-setup"],["refugo","Refugo","--s-ref"],["mat","Material","--s-mat"]];
-  const max=Math.max(R.A.total,R.D.total)||1;
-  const bar=(S)=>segs.map(([k,n,c])=>{const val=S[k];const w=Math.max(0,val)/max*100;return w>0?`<span style="width:${w}%;background:var(${c})" title="${n}: ${fe(val)}"></span>`:""}).join("");
-  // nota: refugo inclui o material perdido nas peças rejeitadas
-  $("barA").innerHTML=bar(R.A);$("barD").innerHTML=bar(R.D);
-  $("barAv").textContent=fe(R.A.total);$("barDv").textContent=fe(R.D.total);
-  $("legend").innerHTML=segs.filter(([k])=>k!=="mat"||R.A.mat>0).map(([k,n,c])=>`<span><i style="background:var(${c})"></i>${n}</span>`).join("");
-  $("barsBox").hidden=false;
+  // Gráficos do resultado
+  const segs=[["ciclo","Máquina e operador","--c1"],["ferr","Ferramenta","--c2"],["setupP","Preparação","--c3"],["refugo","Refugo","--c8"],["mat","Material","--c-antes"]].filter(([k])=>k!=="mat"||R.A.mat>0);
+  chStack($("chCusto"),[{label:"Antes",S:R.A},{label:"Depois",S:R.D}].map(r=>({label:r.label,total:r.S.total,parts:segs.map(([k,n,c])=>({name:n,color:c,value:r.S[k]}))})),fe);
+  chHGroup($("chOps"),R.per.map((x,i)=>x.o.nome||"OP "+(i+1)),[{name:"Antes",color:"--c-antes",values:R.per.map(x=>x.T.a/60)},{name:"Depois",color:"--c1",values:R.per.map(x=>x.T.d/60)}],v=>fmtDur(v*60),v=>nf(1).format(v)+" min");
+  $("barsBox").hidden=false;$("opsBox").hidden=false;
 
   // Tabela
   const row=(lab,a,d,f,inv,isTime,cl)=>{const diff=a-d;const dc=Math.abs(diff)<1e-9?"":((inv?-diff:diff)>0?"delta-pos":"delta-neg");
@@ -787,7 +880,7 @@ function fillLists(){
   for(const k in sets)$(k).innerHTML=[...sets[k]].sort((a,b)=>a.localeCompare(b,"pt")).map(v=>`<option value="${esc(v)}"></option>`).join("");
 }
 function renderHist(){
-  fillLists();
+  fillLists();if(!$("vPainel").hidden)renderDash();
   const q=$("q").value.trim(),est=$("fEstado").value;
   const list=records.filter(r=>matches(r,q,est));
   const tot=list.filter(r=>(r.f.estado||"")!=="Rejeitada").reduce((a,r)=>a+(r.res&&r.res.poupAno>0?r.res.poupAno:0),0);
@@ -823,7 +916,7 @@ $("histList").addEventListener("click",async e=>{
   if(e.target.closest("[data-stop]"))return;
   const it=e.target.closest(".hist-item");if(it)openRec(it.dataset.id)});
 $("histList").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.classList.contains("hist-item"))openRec(e.target.dataset.id)});
-function openRec(id){const r=records.find(x=>x.id===id);if(!r)return;if(travar())return;currentId=id;fill(r.f);setExample(false);onInput();setBase(r.f);setEditing();toast("Registo aberto. Altera e carrega em Guardar alterações.");window.scrollTo({top:0,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"})}
+function openRec(id){const r=records.find(x=>x.id===id);if(!r)return;if(travar())return;if(location.hash!=="#registo")history.replaceState(null,"","#registo"),vista();currentId=id;fill(r.f);setExample(false);onInput();setBase(r.f);setEditing();toast("Registo aberto. Altera e carrega em Guardar alterações.");window.scrollTo({top:0,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"})}
 
 // ---------- Exportar / importar ----------
 let downloads=null;
@@ -867,6 +960,188 @@ $("fImport").addEventListener("change",async e=>{
       ok++}catch(err){if(err&&err.code==="quota_exceeded")break}
   }
   renderHist();toast(ok+" registo"+(ok===1?"":"s")+" importado"+(ok===1?"":"s"))});
+
+// ---------- Gráficos (SVG desenhado aqui, sem bibliotecas) ----------
+const F=v=>`var(${v})`;
+function niceMax(v){if(!(v>0))return 1;const p=Math.pow(10,Math.floor(Math.log10(v))),n=v/p;return (n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10)*p}
+function axis(mx,n){n=n||4;if(!(mx>0))mx=1;const st=niceMax(mx/n),top=Math.ceil(mx/st-1e-9)*st,t=[];for(let v=0;v<=top+st/1e3;v+=st)t.push(v);return t}
+function W(el){return Math.max(240,Math.floor(el.getBoundingClientRect().width||el.parentNode.getBoundingClientRect().width||600))}
+const T=(t)=>` data-tip="${esc(t)}" tabindex="0"`;
+function cutTxt(t,px){const n=Math.max(4,Math.floor(px/6.6));t=String(t);return t.length>n?t.slice(0,n-1)+"…":t}
+function legend(items){return `<div class="lgd">${items.map(it=>`<span><i style="background:${F(it.color)}"></i>${esc(it.name)}</span>`).join("")}</div>`}
+// barras horizontais simples (uma série)
+function chHBar(el,items,fmt,axFmt){
+  if(!items.length){el.innerHTML='<p class="nochart">Sem dados para mostrar.</p>';return}
+  const w=W(el),lw=Math.min(200,Math.round(w*.36)),rh=36,top=4,ax=22,h=top+items.length*rh+ax,pr=78;
+  const mx=Math.max(0,...items.map(i=>i.value)),mn=Math.min(0,...items.map(i=>i.value));
+  const pos=axis(mx||Math.abs(mn)||1,(w-lw-pr)<260?2:4),st=pos[1]-pos[0],neg=[];if(mn<0)for(let v=-st;v>=mn-st+st/1e3;v-=st)neg.unshift(v);
+  const tks=neg.concat(pos),tmin=tks[0],tmax=tks[tks.length-1],pw=w-lw-pr,X=v=>lw+(v-tmin)/(tmax-tmin)*pw;
+  let g=tks.map(t=>`<line class="gl" x1="${X(t)}" x2="${X(t)}" y1="${top}" y2="${h-ax}"/><text class="num" x="${X(t)}" y="${h-6}" text-anchor="middle">${axFmt(t)}</text>`).join("");
+  g+=items.map((it,i)=>{const y=top+i*rh,x0=X(0),x1=X(it.value),bx=Math.min(x0,x1),bw=Math.max(2,Math.abs(x1-x0));
+    return `<text class="lab" x="${lw-10}" y="${y+rh/2+4}" text-anchor="end">${esc(cutTxt(it.label,lw-14))}</text>`+
+      `<rect x="${bx}" y="${y+8}" width="${bw}" height="${rh-16}" rx="4" style="fill:${F(it.color)}"${T(it.tip)}/>`+
+      `<text class="val" x="${it.value<0?bx-6:x1+6}" y="${y+rh/2+4}" text-anchor="${it.value<0?"end":"start"}">${fmt(it.value)}</text>`}).join("");
+  el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" role="img">${g}</svg>`}
+// barras horizontais agrupadas (antes / depois)
+function chHGroup(el,labels,series,tipFmt,axFmt){
+  if(!labels.length){el.innerHTML="";return}
+  const w=W(el),lw=Math.min(170,Math.round(w*.32)),n=series.length,bh=14,gap=4,rh=n*bh+(n-1)*gap+16,top=2,ax=20,h=top+labels.length*rh+ax,pr=60;
+  const tks=axis(Math.max(...series.flatMap(s=>s.values.map(v=>v||0))),(w-lw-pr)<260?2:4),tmax=tks[tks.length-1],pw=w-lw-pr,X=v=>lw+v/tmax*pw;
+  let g="";tks.forEach(t=>{g+=`<line class="gl" x1="${X(t)}" x2="${X(t)}" y1="${top}" y2="${h-ax}"/><text class="num" x="${X(t)}" y="${h-5}" text-anchor="middle">${axFmt(t)}</text>`});
+  labels.forEach((l,i)=>{const y=top+i*rh+8;g+=`<text class="lab" x="${lw-10}" y="${y+(rh-16)/2+4}" text-anchor="end">${esc(cutTxt(l,lw-14))}</text>`;
+    series.forEach((s,j)=>{const v=s.values[i]||0,yy=y+j*(bh+gap);g+=`<rect x="${lw}" y="${yy}" width="${Math.max(2,X(v)-lw)}" height="${bh}" rx="4" style="fill:${F(s.color)}"${T(l+"\n"+s.name+": "+tipFmt(v))}/>`+
+      `<text class="val" x="${X(v)+6}" y="${yy+bh-3}">${tipFmt(v)}</text>`})});
+  el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" role="img">${g}</svg>`+legend(series)}
+// barras verticais agrupadas
+function chVGroup(el,labels,series,tipFmt,axFmt){
+  if(!labels.length){el.innerHTML='<p class="nochart">Sem dados para mostrar.</p>';return}
+  const w=W(el),left=54,right=8,top=10,n=series.length,gw=(w-left-right)/labels.length,rot=gw<92,bottom=rot?70:34,h=260+bottom;
+  const tks=axis(Math.max(...series.flatMap(s=>s.values.map(v=>v||0)))),tmax=tks[tks.length-1],ph=h-top-bottom,Y=v=>top+ph-v/tmax*ph;
+  const bw=Math.min(30,(gw*.72)/n);
+  let g="";tks.forEach(t=>{g+=`<line class="gl" x1="${left}" x2="${w-right}" y1="${Y(t)}" y2="${Y(t)}"/><text class="num" x="${left-8}" y="${Y(t)+4}" text-anchor="end">${axFmt(t)}</text>`});
+  labels.forEach((l,i)=>{const cx=left+gw*i+gw/2,x0=cx-bw*n/2-(n-1);
+    series.forEach((s,j)=>{const v=s.values[i]||0,x=x0+j*(bw+2);g+=`<rect x="${x}" y="${Y(v)}" width="${bw}" height="${Math.max(1,Y(0)-Y(v))}" rx="4" style="fill:${F(s.color)}"${T(l+"\n"+s.name+": "+tipFmt(v))}/>`});
+    const ly=h-bottom+16;g+=rot?`<text class="lab" transform="translate(${cx+4},${ly}) rotate(-35)" text-anchor="end">${esc(cutTxt(l,w<520?72:110))}</text>`:`<text class="lab" x="${cx}" y="${ly}" text-anchor="middle">${esc(cutTxt(l,gw-6))}</text>`});
+  g+=`<line class="base" x1="${left}" x2="${w-right}" y1="${Y(0)}" y2="${Y(0)}"/>`;
+  el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" role="img">${g}</svg>`+legend(series)}
+// barra empilhada horizontal (composição do custo)
+function chStack(el,rows,fmt){
+  const w=W(el),lw=62,pr=74,rh=40,top=2,h=top+rows.length*rh+4;
+  const mx=Math.max(...rows.map(r=>r.total))||1,pw=w-lw-pr,sc=pw/mx;
+  let g="";rows.forEach((r,i)=>{const y=top+i*rh+6;let x=lw;g+=`<text class="lab" x="${lw-10}" y="${y+18}" text-anchor="end">${r.label}</text>`;
+    r.parts.forEach(pt=>{const bw=Math.max(0,pt.value*sc);if(bw<.5)return;g+=`<rect x="${x}" y="${y}" width="${Math.max(1,bw-2)}" height="26" rx="3" style="fill:${F(pt.color)}"${T(r.label+"\n"+pt.name+": "+fmt(pt.value))}/>`;x+=bw});
+    g+=`<text class="val" x="${x+6}" y="${y+18}">${fmt(r.total)}</text>`});
+  const used=[];rows[0].parts.forEach(pt=>{if(rows.some(r=>r.parts.find(q=>q.name===pt.name).value>0))used.push({name:pt.name,color:pt.color})});
+  el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" role="img">${g}</svg>`+legend(used)}
+// donut com legenda
+function chDonut(el,items,center,centerSub,fmt){
+  items=items.filter(i=>i.value>0);
+  if(!items.length){el.innerHTML='<p class="nochart">Sem dados para mostrar.</p>';return}
+  const tot=items.reduce((a,i)=>a+i.value,0),R=88,r=54,c=95;let a0=-Math.PI/2,g="";
+  items.forEach(it=>{const a1=a0+it.value/tot*Math.PI*2,big=(a1-a0)>Math.PI?1:0;
+    const p=(ang,rad)=>[c+rad*Math.cos(ang),c+rad*Math.sin(ang)];
+    let d;if(items.length===1){d=`M${c} ${c-R}A${R} ${R} 0 1 1 ${c-.01} ${c-R}L${c-.01} ${c-r}A${r} ${r} 0 1 0 ${c} ${c-r}Z`}
+    else{const [x1,y1]=p(a0,R),[x2,y2]=p(a1,R),[x3,y3]=p(a1,r),[x4,y4]=p(a0,r);d=`M${x1} ${y1}A${R} ${R} 0 ${big} 1 ${x2} ${y2}L${x3} ${y3}A${r} ${r} 0 ${big} 0 ${x4} ${y4}Z`}
+    g+=`<path d="${d}" style="fill:${F(it.color)};stroke:var(--surface);stroke-width:2"${T(it.label+": "+fmt(it.value)+" ("+nf(0).format(it.value/tot*100)+" %)")}/>`;a0=a1});
+  g+=`<text x="${c}" y="${c+2}" text-anchor="middle" style="font:500 ${center.length>7?15:20}px var(--f-num);fill:var(--ink)">${esc(center)}</text><text x="${c}" y="${c+20}" text-anchor="middle" style="font-size:11.5px">${esc(centerSub)}</text>`;
+  el.innerHTML=`<div class="donut"><svg viewBox="0 0 190 190" role="img">${g}</svg><div class="lgd">${items.map(it=>`<span><em><i style="background:${F(it.color)}"></i>${esc(it.label)}</em><b>${fmt(it.value)}</b></span>`).join("")}</div></div>`}
+// área (evolução)
+function chArea(el,labels,values,color,tips,axFmt){
+  if(!labels.length){el.innerHTML='<p class="nochart">Sem dados com data para mostrar.</p>';return}
+  const w=W(el),left=62,right=16,top=14,bottom=30,h=250,ph=h-top-bottom,pw=w-left-right;
+  const tks=axis(Math.max(...values)),tmax=tks[tks.length-1],X=i=>left+(labels.length===1?pw/2:i/(labels.length-1)*pw),Y=v=>top+ph-v/tmax*ph;
+  let g=`<defs><linearGradient id="gEvo" x1="0" x2="0" y1="0" y2="1"><stop offset="0" style="stop-color:${F(color)};stop-opacity:.32"/><stop offset="1" style="stop-color:${F(color)};stop-opacity:.02"/></linearGradient></defs>`;
+  tks.forEach(t=>{g+=`<line class="gl" x1="${left}" x2="${w-right}" y1="${Y(t)}" y2="${Y(t)}"/><text class="num" x="${left-8}" y="${Y(t)+4}" text-anchor="end">${axFmt(t)}</text>`});
+  const pts=values.map((v,i)=>[X(i),Y(v)]);
+  const line=pts.map((p,i)=>(i?"L":"M")+p[0]+" "+p[1]).join("");
+  g+=`<path d="${line}L${pts[pts.length-1][0]} ${Y(0)}L${pts[0][0]} ${Y(0)}Z" style="fill:url(#gEvo)"/>`;
+  g+=`<path d="${line}" style="fill:none;stroke:${F(color)};stroke-width:2.5;stroke-linejoin:round"/>`;
+  const step=Math.ceil(labels.length/Math.max(2,Math.floor(pw/70)));
+  pts.forEach((p,i)=>{g+=`<circle cx="${p[0]}" cy="${p[1]}" r="5" style="fill:${F(color)};stroke:var(--surface);stroke-width:2"${T(tips[i])}/>`;
+    if(i%step===0||i===labels.length-1)g+=`<text class="num" x="${p[0]}" y="${h-8}" text-anchor="middle">${labels[i]}</text>`});
+  g+=`<text class="val" x="${pts[pts.length-1][0]-4}" y="${pts[pts.length-1][1]-12}" text-anchor="end">${axFmt(values[values.length-1])}</text>`;
+  el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" role="img">${g}</svg>`}
+// dicas ao passar o rato / tocar
+(function(){const tip=$("ctip");let cur=null;
+  const show=(el,x,y)=>{cur=el;tip.textContent=el.getAttribute("data-tip");tip.hidden=false;const r=tip.getBoundingClientRect();
+    let L=x+14,Tp=y+14;if(L+r.width>innerWidth-8)L=x-r.width-14;if(Tp+r.height>innerHeight-8)Tp=y-r.height-14;tip.style.left=Math.max(8,L)+"px";tip.style.top=Math.max(8,Tp)+"px"};
+  document.addEventListener("pointermove",e=>{const el=e.target.closest&&e.target.closest(".cbox [data-tip]");if(el)show(el,e.clientX,e.clientY);else if(cur){cur=null;tip.hidden=true}});
+  document.addEventListener("focusin",e=>{const el=e.target.closest&&e.target.closest(".cbox [data-tip]");if(el){const r=el.getBoundingClientRect();show(el,r.right,r.top)}});
+  document.addEventListener("focusout",()=>{tip.hidden=true;cur=null});
+  addEventListener("scroll",()=>{tip.hidden=true;cur=null},{passive:true})})();
+let rzT;addEventListener("resize",()=>{clearTimeout(rzT);rzT=setTimeout(vista,150)});
+
+// ---------- Painel da direção ----------
+let demoOn=false;
+function demoRecs(){
+  const L=[["EF-2231 Corpo de válvula","Torno CNC 2","32","2:50","2:15","2026-02-12","Validada","6000"],
+    ["EF-1180 Veio motor","Torno CNC 1","30","4:10","3:20","2026-03-05","Validada","4000"],
+    ["EF-3302 Flange DN50","Centro de maquinação 1","40","6:30","5:05","2026-04-20","Validada","2500"],
+    ["EF-0907 Tampa de rolamento","Torno CNC 2","32","1:45","1:30","2026-06-15","Em teste","9000"],
+    ["EF-4410 Suporte de bomba","Centro de maquinação 2","45","8:00","6:10","2026-08-03","Validada","1200"],
+    ["EF-2250 Impulsor","Centro de maquinação 1","40","12:20","10:40","2026-09-22","Por validar","800"],
+    ["EF-1502 Casquilho","Torno CNC 1","30","0:55","0:58","2026-10-10","Rejeitada","15000"]];
+  return L.map((x,i)=>({id:"demo"+i,f:{ref:x[0],data:x[5],estado:x[6],lote:"500",anual:x[7],c_op:"18",c_kwh:"0,16",c_mat:"",i_h:"3",
+    ops:[{nome:"OP10",maquina:x[1],c_maq:x[2],c_kw:"10",a_setup:"40",d_setup:"30",passos:[{nome:"Maquinação",a_t:x[3],d_t:x[4],a_fp:"10",a_fv:"200",d_fp:"14",d_fv:"350"}]}]}}))}
+const EST_COR={"Validada":"--good","Em teste":"--warn","Por validar":"--c-antes","Rejeitada":"--bad"};
+const eur0=v=>eur.format(Math.round(v)).replace(/,00(?=\s*€)/,"");
+const eurK=v=>Math.abs(v)>=1000?nf(1).format(v/1000)+" mil €":eur0(v);
+function dashRows(){
+  const src=demoOn?demoRecs():records;
+  const per=$("dPer").value,est=$("dEst").value,maq=$("dMaq").value,now=new Date();
+  const lim=per==="ano"?now.getFullYear()+"-01-01":per==="12"?new Date(now.getFullYear()-1,now.getMonth(),now.getDate()).toISOString().slice(0,10):"";
+  return src.map(r=>{const f=r.f||{};return {r,f,R:calcF(f),est:f.estado||"Por validar",ops:opsOf(f)}}).filter(x=>{
+    if(est==="semrej"&&x.est==="Rejeitada")return false;
+    if(est==="val"&&x.est!=="Validada")return false;
+    if(lim&&(!x.f.data||x.f.data<lim))return false;
+    if(maq&&!x.ops.some(o=>String(o.maquina||"").trim()===maq))return false;
+    return true})}
+function maqSave(x){
+  const out={},R=x.R;if(!R.ready||!R.anual)return out;const L=R.lote&&R.lote>0?R.lote:null;
+  R.per.forEach(p=>{if(!p.ok)return;const m=String(p.o.maquina||"").trim()||"Sem máquina";
+    const c=S=>S.ciclo+S.ferr+(L?S.setupCost/L:0);out[m]=(out[m]||0)+(c(p.A)-c(p.D))*R.anual});
+  return out}
+function renderDash(){
+  if($("vPainel").hidden)return;
+  const all=(demoOn?demoRecs():records);const ms=new Set();all.forEach(r=>opsOf(r.f).forEach(o=>{const m=String(o.maquina||"").trim();if(m)ms.add(m)}));
+  const cur=$("dMaq").value;$("dMaq").innerHTML='<option value="">Todas as máquinas</option>'+[...ms].sort((a,b)=>a.localeCompare(b,"pt")).map(m=>`<option${m===cur?" selected":""}>${esc(m)}</option>`).join("");
+  $("dDemo").hidden=!demoOn;
+  const empty=!demoOn&&!records.length;$("dEmpty").hidden=!empty;$("dBody").hidden=empty;
+  if(empty)return;
+  const rows=dashRows(),ok=rows.filter(x=>x.R.ready);
+  const poup=ok.reduce((a,x)=>a+(x.R.poupAno||0),0);
+  const horas=ok.reduce((a,x)=>a+(x.R.tempoAno||0),0)/3600;
+  const semAnual=ok.filter(x=>x.R.poupAno==null).length;
+  const nVal=rows.filter(x=>x.est==="Validada").length;
+  const inv=rows.reduce((a,x)=>a+(x.R.inv>0?x.R.inv:0),0);
+  const reds=ok.filter(x=>x.R.redCiclo!=null).map(x=>x.R.redCiclo);
+  const redMed=reds.length?reds.reduce((a,b)=>a+b,0)/reds.length:null;
+  $("hPoup").textContent=eur0(poup);
+  $("hPoupS").textContent=rows.length+" melhoria"+(rows.length===1?"":"s")+" · "+nVal+" validada"+(nVal===1?"":"s")+(semAnual?" · "+semAnual+" sem quantidade anual não contam":"");
+  $("hHoras").textContent=nf(0).format(horas)+" h";
+  $("hHorasS").textContent="≈ "+nf(1).format(horas/8)+" dias de trabalho de 8 h";
+  const kpi=(t,k,v,sub)=>`<div class="kpi" style="--t:var(${t})"><div class="k"><i></i>${k}</div><div class="v">${v}</div><div class="s">${sub}</div></div>`;
+  $("dKpis").innerHTML=
+    kpi("--c1","Melhorias",String(rows.length),nVal+" validadas, "+rows.filter(x=>x.est==="Em teste").length+" em teste")+
+    kpi("--c3","Redução média do ciclo",redMed!=null?nf(1).format(redMed*100)+" %":"—","no tempo por peça")+
+    kpi("--c2","Investimento",eur0(inv),"programação, ensaios e gabaritos")+
+    kpi("--c7","Retorno do investimento",poup>0&&inv>0?nf(1).format(inv/(poup/12))+" meses":poup>0?"imediato":"—","tempo para pagar o investido");
+  // 1. top melhorias
+  const top=ok.filter(x=>x.R.poupAno!=null).sort((a,b)=>b.R.poupAno-a.R.poupAno).slice(0,8);
+  chHBar($("chTop"),top.map(x=>({label:x.f.ref||"Sem referência",value:x.R.poupAno,color:x.R.poupAno<0?"--c8":"--c1",
+    tip:(x.f.ref||"Sem referência")+"\nPoupa "+eur0(x.R.poupAno)+" por ano\n"+x.est+" · ciclo "+fmtDur(x.R.A.t)+" → "+fmtDur(x.R.D.t)})),eurK,eurK);
+  // 2. por máquina (cor fixa por máquina, por ordem alfabética)
+  const tot={};ok.forEach(x=>{const m=maqSave(x);for(const k in m)tot[k]=(tot[k]||0)+m[k]});
+  const ordem=[...ms].sort((a,b)=>a.localeCompare(b,"pt")),pal=["--c1","--c2","--c3","--c4","--c5","--c6","--c7","--c8"];
+  const maqs=Object.keys(tot).filter(k=>tot[k]>0).sort((a,b)=>a.localeCompare(b,"pt"));
+  const somaM=maqs.reduce((a,k)=>a+tot[k],0);
+  chDonut($("chMaq"),maqs.map(m=>{const i=ordem.indexOf(m);return {label:m,value:tot[m],color:i>=0&&i<8?pal[i]:"--c-antes"}}),eurK(somaM),"por ano",eur0);
+  // 3. ciclo antes/depois
+  const rec=ok.slice().sort((a,b)=>String(b.f.data).localeCompare(String(a.f.data))).slice(0,10).reverse();
+  chVGroup($("chCiclo"),rec.map(x=>x.f.ref||"Sem referência"),[{name:"Antes",color:"--c-antes",values:rec.map(x=>x.R.A.t/60)},{name:"Depois",color:"--c1",values:rec.map(x=>x.R.D.t/60)}],v=>fmtDur(v*60),v=>nf(1).format(v)+" min");
+  // 4. acumulada por mês
+  const porMes={};ok.filter(x=>x.R.poupAno!=null&&x.f.data).forEach(x=>{const m=x.f.data.slice(0,7);porMes[m]=(porMes[m]||0)+x.R.poupAno});
+  const meses=Object.keys(porMes).sort();let acc=0;const accs=meses.map(m=>acc+=porMes[m]);
+  const mLab=m=>{const [y,mm]=m.split("-");return ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"][+mm-1]+" "+y.slice(2)};
+  chArea($("chEvo"),meses.map(mLab),accs,"--c3",meses.map((m,i)=>mLab(m)+"\nAcumulado: "+eur0(accs[i])+" por ano\nNeste mês: +"+eur0(porMes[m])),eurK);
+  // 5. estado
+  const ests=["Validada","Em teste","Por validar","Rejeitada"];
+  chDonut($("chEst"),ests.map(e=>({label:e,value:rows.filter(x=>x.est===e).length,color:EST_COR[e]})),String(rows.length),"melhorias",v=>String(v));
+}
+["dPer","dEst","dMaq"].forEach(id=>$(id).addEventListener("change",renderDash));
+$("dDemoOn").onclick=()=>{demoOn=true;renderDash()};
+$("dDemoOff").onclick=()=>{demoOn=false;renderDash()};
+$("dGoReg").onclick=()=>{location.hash="registo"};
+$("dPrint").onclick=()=>window.print();
+
+// ---------- Separadores ----------
+function vista(){
+  const v=location.hash==="#registo"?"registo":"painel";
+  $("vPainel").hidden=v!=="painel";$("vRegisto").hidden=v!=="registo";
+  $("tabPainel").setAttribute("aria-selected",v==="painel");$("tabRegisto").setAttribute("aria-selected",v==="registo");
+  if(v==="painel")renderDash();else render()}
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{location.hash=b.dataset.v});
+window.addEventListener("hashchange",vista);
 
 // ---------- Arranque ----------
 function setSync(kind,txt){$("syncDot").className="dot "+kind;$("syncTxt").textContent=txt}
@@ -919,6 +1194,7 @@ function startFirebase(){
       if(err&&err.code==="permission-denied")toast("Esta conta não tem acesso. Confirma o email nas regras do Firebase.")});
   });
 }
+vista();
 startFirebase();
 })();
 </script>
