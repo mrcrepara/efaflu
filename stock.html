@@ -108,6 +108,15 @@
   .pick-list button:hover { border-color: var(--accent); }
   .pick-list small { color: var(--muted); }
 
+  .manual-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .result.manual { border-color: var(--accent); }
+  .nf-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
+  .nf-grid label { display: flex; flex-direction: column; gap: 4px; font-size: .8rem; color: var(--muted); font-weight: 500; min-width: 0; }
+  .nf-grid label.full { grid-column: 1 / -1; }
+  .nf-grid input { font: inherit; font-size: .95rem; width: 100%; min-width: 0; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--fg); }
+  .nf-grid input:focus-visible, .pick-search:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .nf-grid .req { color: var(--out); }
+  @media (max-width: 560px) { .nf-grid { grid-template-columns: 1fr; } }
   .status { min-height: 1.4em; font-weight: 500; font-size: .9rem; }
   .status.ok { color: var(--in); }
   .status.err { color: var(--out); }
@@ -188,6 +197,20 @@
   .cols svg { width: 100%; height: auto; display: block; }
   .cols text { font-size: 15px; fill: var(--muted); font-family: var(--font-ui); }
   .chart-empty { color: var(--muted); font-size: .88rem; padding: 18px 0; border: 1px dashed var(--line); border-radius: var(--r); text-align: center; }
+  .charts .card.wide { grid-column: 1 / -1; }
+  #ch-top .hbar, #ch-comp .hbar { grid-template-columns: minmax(7rem, 42%) 1fr 6.5rem; }
+  #ch-parado .hbar { grid-template-columns: minmax(8rem, 34%) 1fr 10rem; }
+  #ch-top .val, #ch-comp .val, #ch-parado .val { white-space: normal; }
+  #ch-top .val small, #ch-comp .val small, #ch-parado .val small { display: block; font-size: .75rem; }
+  @media (max-width: 560px) { #ch-parado .hbar, #ch-top .hbar, #ch-comp .hbar { grid-template-columns: minmax(5rem, 38%) 1fr 6.5rem; } }
+  .per-sel { display: inline-flex; align-items: center; gap: 8px; font-size: .85rem; color: var(--muted); font-weight: 500; }
+  .per-sel select { font: inherit; color: var(--fg); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px; }
+  .sum-tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .parado-head { display: flex; flex-wrap: wrap; gap: 10px 16px; justify-content: space-between; align-items: end; }
+  .parado-kpis { display: flex; flex-wrap: wrap; gap: 10px 26px; }
+  .parado-kpis div { display: grid; }
+  .parado-kpis b { font-family: var(--font-code); font-size: 1.5rem; font-weight: 600; color: var(--warn); }
+  .parado-kpis span { font-size: .8rem; color: var(--muted); }
   .dq { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
   .dq li { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 6px; font-size: .9rem; }
   .dq li:last-child { border-bottom: 0; }
@@ -255,7 +278,12 @@
       <h1>Resumo do stock de ferramentas</h1>
       <p id="sum-when">Atualizado em tempo real</p>
     </div>
-    <button class="btn" id="btn-print">🖨️ Imprimir / PDF</button>
+    <div class="sum-tools">
+      <label class="per-sel">Período de análise
+        <select id="sum-per"><option value="30">Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="180">Últimos 6 meses</option><option value="365">Último ano</option></select>
+      </label>
+      <button class="btn" id="btn-print">🖨️ Imprimir / PDF</button>
+    </div>
   </div>
   <p class="takeaway" id="takeaway">A calcular…</p>
 
@@ -297,9 +325,31 @@
       <div class="cols" id="ch-mov"></div>
     </section>
     <section class="card">
-      <h3>Mais consumidos (30 dias)</h3>
-      <p class="note">Artigos com mais unidades a sair do armazém.</p>
+      <h3 id="h-top">Mais consumidos (30 dias)</h3>
+      <p class="note">Artigos com mais unidades a sair do armazém, e quanto valem.</p>
       <div class="hbars" id="ch-top"></div>
+    </section>
+    <section class="card">
+      <h3 id="h-comp">Mais comprados (30 dias)</h3>
+      <p class="note">Artigos com mais unidades a entrar no armazém, e quanto custaram.</p>
+      <div class="hbars" id="ch-comp"></div>
+    </section>
+    <section class="card wide">
+      <div class="parado-head">
+        <div>
+          <h3>Stock parado</h3>
+          <p class="note">Artigos com stock que não tiveram nenhuma entrada nem saída há muito tempo. É dinheiro empatado em armazém.</p>
+        </div>
+        <div class="sum-tools">
+          <label class="per-sel">Sem movimento há mais de
+            <select id="par-dias"><option value="60">60 dias</option><option value="90" selected>90 dias</option><option value="180">6 meses</option><option value="365">1 ano</option></select>
+          </label>
+          <button class="btn small" id="btn-par-csv" type="button">Exportar CSV</button>
+        </div>
+      </div>
+      <div class="parado-kpis"><div><b id="par-n">—</b><span>artigos parados</span></div><div><b id="par-v">—</b><span>valor parado</span></div><div><b id="par-pct">—</b><span>do valor em stock</span></div></div>
+      <div class="hbars" id="ch-parado"></div>
+      <p class="note" id="par-nota"></p>
     </section>
     <section class="card">
       <h3>Valor em stock por marca</h3>
@@ -348,6 +398,10 @@
           <input id="scan" type="text" autocomplete="off" spellcheck="false" placeholder="Aponte a pistola e leia…">
         </div>
         <div class="scan-hint" id="scan-hint">A carregar artigos…</div>
+      </div>
+      <div class="manual-row">
+        <button class="btn" id="btn-manual" type="button">✍️ Movimento manual (sem código)</button>
+        <button class="btn" id="btn-novo" type="button">＋ Novo artigo</button>
       </div>
       <div class="opts">
         <label><input type="checkbox" id="opt-auto"> Registar logo ao ler</label>
@@ -475,7 +529,7 @@
   const when = (iso) => { const d = new Date(iso); return d.toLocaleDateString("pt-PT", { day: "2-digit", month: "2-digit" }) + " " + d.toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" }); };
   const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
 
-  const S = { email: null, artigos: new Map(), codigos: new Map(), movs: [], movs30: [], tab: "resumo", mode: "entrada", pending: null, tq: "", tsit: "", unsubs: [] };
+  const S = { email: null, artigos: new Map(), codigos: new Map(), movs: [], movs30: [], movsAno: [], dias: 30, tab: "resumo", mode: "entrada", pending: null, tq: "", tsit: "", unsubs: [] };
 
   // ---------- som ----------
   let actx = null;
@@ -559,7 +613,9 @@
   const renderResult = () => {
     const box = $("result"); box.replaceChildren();
     const p = S.pending;
-    if (!p) { box.className = "result idle"; box.textContent = "Nenhum código lido. Também pode escrever a referência interna (FE623…) e carregar em Enter."; return; }
+    if (!p) { box.className = "result idle"; box.textContent = "Nenhum código lido. Sem pistola? Escreva a referência ou parte da descrição e carregue em Enter, ou use \"Movimento manual\"."; return; }
+    if (p.kind === "manual") { renderManual(box, p); return; }
+    if (p.kind === "novo") { renderNovo(box, p); return; }
     if (p.kind === "unknown") {
       box.className = "result unknown";
       const h = el("div", "r-head"), t = el("div");
@@ -585,7 +641,9 @@
       };
       search.addEventListener("input", fill);
       search.addEventListener("keydown", (e) => { if (e.key === "Escape") cancel(); });
-      const acts = el("div", "r-actions"), bc = el("button", "btn", "Cancelar"); bc.addEventListener("click", cancel); acts.append(bc);
+      const acts = el("div", "r-actions"), bc = el("button", "btn", "Cancelar"); bc.addEventListener("click", cancel);
+      const bn = el("button", "btn", "Criar artigo novo com este código"); bn.addEventListener("click", () => { S.pending = { kind: "novo", codigo: p.codigo, f: {} }; renderResult(); });
+      acts.append(bn, bc);
       box.append(h, info, search, ul, acts);
       fill();
       return;
@@ -623,6 +681,98 @@
     box.append(h, flow, hint, w, acts);
   };
 
+
+  // ================= Movimento manual e artigo novo =================
+  const pesquisa = (q) => {
+    const words = norm(q).split(/\s+/).filter(Boolean), hits = [];
+    if (!words.length) return hits;
+    S.artigos.forEach((a) => { const hay = norm([a.ref, a.descricao, a.ferramenta, a.marca, a.maquina, a.tipo, a.fornecedor].join(" ")); if (words.every((w) => hay.includes(w))) hits.push(a); });
+    return hits.sort((x, y) => String(x.descricao).localeCompare(String(y.descricao), "pt"));
+  };
+  const renderManual = (box, p) => {
+    box.className = "result manual";
+    const h = el("div", "r-head"), t = el("div");
+    t.append(el("div", "r-title", (S.mode === "entrada" ? "Entrada" : "Saída") + " manual"), el("div", "r-meta", "Procure o artigo e clique nele. Depois indica a quantidade."));
+    h.append(t, el("span", "key", "Esc para cancelar"));
+    const search = el("input", "pick-search"); search.type = "search"; search.id = "pick-q"; search.placeholder = "Referência, medida, marca, máquina…"; search.autocomplete = "off"; search.value = p.q || "";
+    const ul = el("ul", "pick-list");
+    const fill = () => {
+      p.q = search.value; ul.replaceChildren();
+      if (!S.artigos.size) { ul.append(el("li", "empty", "Ainda não há artigos carregados. Importe a lista em Administração ou crie um artigo novo.")); return; }
+      const hits = pesquisa(search.value);
+      if (!norm(search.value).trim()) { ul.append(el("li", "empty", "Escreva parte da descrição ou da referência.")); return; }
+      hits.slice(0, 15).forEach((a) => {
+        const li = el("li"), b = el("button"); b.type = "button";
+        b.append(el("span", null, a.descricao || "(sem descrição)"), el("small", null, [a.ref, a.marca, a.maquina, "stock " + (stockOf(a) ?? "—")].filter(Boolean).join(" · ")));
+        b.addEventListener("click", () => { S.pending = { kind: "found", artigo: a, codigo: "", qtd: stepFor(a) }; renderResult(); setTimeout(() => { const q = $("qty"); if (q) { q.focus(); q.select(); } }, 0); });
+        li.append(b); ul.append(li);
+      });
+      if (!hits.length) ul.append(el("li", "empty", "Nenhum artigo encontrado. Pode criá-lo com \"Novo artigo\"."));
+    };
+    search.addEventListener("input", fill);
+    search.addEventListener("keydown", (e) => { if (e.key === "Escape") cancel(); if (e.key === "Enter") { e.preventDefault(); const f = ul.querySelector("button"); if (f) f.click(); } });
+    const acts = el("div", "r-actions");
+    const bn = el("button", "btn", "＋ Criar artigo novo"); bn.type = "button"; bn.addEventListener("click", () => { S.pending = { kind: "novo", codigo: "", f: { descricao: p.q || "" } }; renderResult(); });
+    const bc = el("button", "btn", "Cancelar"); bc.type = "button"; bc.addEventListener("click", cancel);
+    acts.append(bn, bc);
+    box.append(h, search, ul, acts); fill();
+    setTimeout(() => search.focus(), 0);
+  };
+  const NF = [["ref", "Referência interna", "Ex.: FE62310353", false], ["descricao", "Descrição", "Ex.: CNMG 120408 - GC4325", true], ["ferramenta", "Ferramenta / suporte", "", false],
+    ["maquina", "Máquina", "", false], ["tipo", "Tipo", "Pastilhas, Brocas, Fresas…", false], ["marca", "Marca", "", false], ["fornecedor", "Fornecedor", "", false],
+    ["stock", "Stock inicial (unidades)", "0", false, "num"], ["minimo", "Stock mínimo", "", false, "num"], ["un_caixa", "Unidades por caixa", "1", false, "num"], ["preco_un", "Preço por unidade (€)", "", false, "num"]];
+  const renderNovo = (box, p) => {
+    box.className = "result manual";
+    const h = el("div", "r-head"), t = el("div");
+    t.append(el("div", "r-title", "Novo artigo"), el("div", "r-meta", p.codigo ? "Fica associado ao código " + p.codigo : "Preencha pelo menos a descrição."));
+    h.append(t, el("span", "key", "Esc para cancelar"));
+    const g = el("div", "nf-grid");
+    const lists = {};
+    ["maquina", "tipo", "marca", "fornecedor"].forEach((k) => { const s2 = new Set(); S.artigos.forEach((a) => { if (a[k]) s2.add(String(a[k])); }); lists[k] = [...s2].sort((x, y) => x.localeCompare(y, "pt")); });
+    NF.forEach(([k, lab, ph, req, kind]) => {
+      const l = el("label", k === "descricao" || k === "ferramenta" ? "full" : null);
+      const lt = el("span", null, lab); if (req) lt.append(el("span", "req", " *")); l.append(lt);
+      const i = el("input"); i.id = "nf-" + k; i.autocomplete = "off"; i.placeholder = ph; i.value = p.f[k] ?? "";
+      if (kind === "num") { i.inputMode = "decimal"; }
+      if (lists[k] && lists[k].length) { const dl = el("datalist"); dl.id = "nf-dl-" + k; lists[k].forEach((v) => { const o = el("option"); o.value = v; dl.append(o); }); i.setAttribute("list", dl.id); l.append(dl); }
+      i.addEventListener("input", () => { p.f[k] = i.value; });
+      i.addEventListener("keydown", (e) => { if (e.key === "Escape") cancel(); if (e.key === "Enter") { e.preventDefault(); gravarNovo(p); } });
+      l.append(i); g.append(l);
+    });
+    const acts = el("div", "r-actions");
+    const bs = el("button", "btn primary", "Gravar artigo"); bs.type = "button"; bs.id = "nf-save"; bs.addEventListener("click", () => gravarNovo(p));
+    const bc = el("button", "btn", "Cancelar"); bc.type = "button"; bc.addEventListener("click", cancel);
+    acts.append(bs, bc);
+    box.append(h, g, acts);
+    setTimeout(() => { const f = $(p.f.descricao ? "nf-ref" : "nf-descricao"); if (f) f.focus(); }, 0);
+  };
+  const numPT = (v) => { const x = String(v ?? "").trim().replace(/\s/g, "").replace(",", "."); if (x === "") return null; const n = Number(x); return isFinite(n) ? n : NaN; };
+  let gravando = false;
+  const gravarNovo = async (p) => {
+    if (gravando) return;
+    const f = p.f, txt = (k) => String(f[k] ?? "").trim();
+    if (!txt("descricao")) { status("Falta a descrição do artigo.", "err"); $("nf-descricao")?.focus(); return; }
+    const nums = {};
+    for (const k of ["stock", "minimo", "un_caixa", "preco_un"]) { const n = numPT(f[k]); if (Number.isNaN(n) || (n != null && n < 0)) { status("Valor inválido em \"" + NF.find((x) => x[0] === k)[1] + "\".", "err"); $("nf-" + k)?.focus(); return; } nums[k] = n; }
+    const ref = txt("ref");
+    if (ref) { let dup = null; S.artigos.forEach((a) => { if (!dup && a.ref && a.ref.toUpperCase() === ref.toUpperCase()) dup = a; }); if (dup) { status("Já existe um artigo com a referência " + ref + ": " + dup.descricao + ".", "err"); $("nf-ref")?.focus(); return; } }
+    let max = 0; S.artigos.forEach((a) => { if (a.linha > max) max = a.linha; });
+    const linha = max + 1, now = new Date().toISOString(), st = nums.stock ?? 0;
+    const art = { linha, ref, descricao: txt("descricao"), ferramenta: txt("ferramenta"), maquina: txt("maquina"), tipo: txt("tipo"), marca: txt("marca"), fornecedor: txt("fornecedor"),
+      minimo: nums.minimo, un_caixa: nums.un_caixa ?? 1, preco_un: nums.preco_un, nao_encomendar: false, stock: st, stock_inicial: st, criado_em: now, criado_por: S.email, atualizado_em: now };
+    gravando = true; const bs = $("nf-save"); if (bs) bs.disabled = true;
+    try {
+      const b = writeBatch(db);
+      b.set(doc(db, C_ART, "L" + linha), art);
+      if (p.codigo) b.set(doc(db, C_COD, codeId(p.codigo)), { codigo: p.codigo, linha, ref, at: now, por: S.email });
+      if (st > 0) b.set(doc(collection(db, C_MOV)), { at: now, linha, ref, descricao: art.descricao, tipo: "entrada", qtd: st, codigo: p.codigo || "", por: S.email, anulado: false, nota: "Stock inicial do artigo novo" });
+      await b.commit();
+      S.artigos.set(linha, art); if (p.codigo) S.codigos.set(p.codigo, linha);
+      beep(true); status("Artigo criado: " + (ref || art.descricao) + (st > 0 ? " com " + fmt.format(st) + " unidades." : "."), "ok");
+      S.pending = null; renderResult(); renderStats(); renderTable();
+    } catch (e) { beep(false); status("Não foi possível gravar o artigo (" + (e.code || e.message) + ").", "err"); }
+    finally { gravando = false; const b2 = $("nf-save"); if (b2) b2.disabled = false; focusScan(); }
+  };
 
   // ================= Resumo para a direção =================
   const eur0 = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
@@ -741,15 +891,51 @@
     hbars($("ch-marca"), Array.from(porMarca, ([k, v]) => ({ label: k, v, value: eur0.format(v), sub: pct(v / valor), parts: [{ v, cls: "c-acc" }] })).sort((x, y) => y.v - x.v).slice(0, 8),
       { empty: "Sem artigos com preço em stock.", fmtPart: (v) => eur0.format(v) });
     // Mais consumidos
-    const cons = new Map();
-    S.movs30.forEach((m) => { if (!m.anulado && m.qtd < 0) cons.set(m.linha, (cons.get(m.linha) || 0) - m.qtd); });
-    hbars($("ch-top"), Array.from(cons, ([l, v]) => { const a = S.artigos.get(l) || {}; return { label: a.descricao || "Linha " + l, v, value: fmt.format(v) + " un.", parts: [{ v, cls: "c-rut" }] }; })
-      .sort((x, y) => y.v - x.v).slice(0, 8), { empty: "Ainda sem saídas registadas. O gráfico enche-se à medida que se lê com a pistola." });
+    const perTxt = { 30: "30 dias", 90: "90 dias", 180: "6 meses", 365: "1 ano" }[S.dias] || S.dias + " dias";
+    const limP = Date.now() - S.dias * 864e5, movsP = S.movsAno.filter((m) => !m.anulado && new Date(m.at).getTime() >= limP);
+    const somaPor = (filtro) => { const mp = new Map(); movsP.forEach((m) => { if (filtro(m)) mp.set(m.linha, (mp.get(m.linha) || 0) + Math.abs(m.qtd)); }); return mp; };
+    const topRows = (mp, cls) => Array.from(mp, ([l, v]) => { const a = S.artigos.get(l) || {}, pr = a.preco_un == null ? null : Number(a.preco_un);
+      return { label: (a.ref ? a.ref + " · " : "") + (a.descricao || "Linha " + l), v, value: fmt.format(v) + " un.", sub: pr != null ? eur0.format(v * pr) : "", parts: [{ v, cls }] }; }).sort((x, y) => y.v - x.v).slice(0, 10);
+    $("h-top").textContent = "Mais consumidos (" + perTxt + ")"; $("h-comp").textContent = "Mais comprados (" + perTxt + ")";
+    hbars($("ch-top"), topRows(somaPor((m) => m.qtd < 0), "c-rut"), { empty: "Sem saídas registadas neste período. O gráfico enche-se à medida que se lê com a pistola." });
+    hbars($("ch-comp"), topRows(somaPor((m) => m.qtd > 0), "c-ok"), { empty: "Sem entradas registadas neste período." });
+    renderParado(valor);
     renderCols();
 
     // Qualidade dos dados
     $("dq-cod").textContent = fmt.format(comCodigo.size) + " de " + fmt.format(total) + " (" + pct(comCodigo.size / total) + ")";
     $("dq-preco").textContent = fmt.format(semPreco); $("dq-forn").textContent = fmt.format(semForn); $("dq-regra").textContent = fmt.format(semRegra);
+  };
+
+  const ultimoMov = (a) => {
+    let t = a.ultimo_mov ? new Date(a.ultimo_mov).getTime() : 0;
+    const m = S.ultMov && S.ultMov.get(a.linha); if (m && m > t) t = m;
+    return t || null;
+  };
+  let paradoRows = [];
+  const renderParado = (valorTotal) => {
+    const dias = Number($("par-dias").value), lim = Date.now() - dias * 864e5, hoje = Date.now();
+    S.ultMov = new Map(); S.movsAno.forEach((m) => { if (m.anulado) return; const t = new Date(m.at).getTime(); if (t > (S.ultMov.get(m.linha) || 0)) S.ultMov.set(m.linha, t); });
+    paradoRows = [];
+    S.artigos.forEach((a) => {
+      const st = stockOf(a); if (!(st > 0)) return;
+      const ult = ultimoMov(a), base = ult || (a.criado_em || a.importado_em ? new Date(a.criado_em || a.importado_em).getTime() : null);
+      if (base == null || base > lim) return;
+      const pr = a.preco_un == null ? null : Number(a.preco_un);
+      paradoRows.push({ a, st, valor: pr == null ? null : st * pr, dias: Math.floor((hoje - base) / 864e5), nunca: !ult, desde: base });
+    });
+    paradoRows.sort((x, y) => (y.valor ?? -1) - (x.valor ?? -1) || y.dias - x.dias);
+    const vPar = paradoRows.reduce((s, r) => s + (r.valor || 0), 0);
+    $("par-n").textContent = fmt.format(paradoRows.length);
+    $("par-v").textContent = eur0.format(vPar);
+    $("par-pct").textContent = valorTotal > 0 ? pct(vPar / valorTotal) : "—";
+    const dt = (t) => new Date(t).toLocaleDateString("pt-PT");
+    hbars($("ch-parado"), paradoRows.slice(0, 12).map((r) => ({ label: (r.a.ref ? r.a.ref + " · " : "") + (r.a.descricao || ""), v: r.valor || 0,
+      value: r.valor == null ? fmt.format(r.st) + " un." : eur0.format(r.valor), sub: fmt.format(r.st) + " un. · " + fmt.format(r.dias) + " dias" + (r.nunca ? " *" : ""),
+      parts: [{ v: r.valor || 0, cls: "c-abx", name: "Valor parado" }] })), { empty: "Nenhum artigo parado há mais de " + $("par-dias").selectedOptions[0].text + ". Bom sinal!", fmtPart: (v) => eur0.format(v) });
+    const nunca = paradoRows.filter((r) => r.nunca).length;
+    $("par-nota").textContent = paradoRows.length > 12 ? "A mostrar os 12 com mais valor. O CSV tem a lista completa." : "";
+    if (nunca) $("par-nota").textContent += (paradoRows.length > 12 ? " " : "") + "* " + fmt.format(nunca) + " ainda não tiveram nenhum movimento desde que entraram na lista; os dias contam a partir daí.";
   };
 
   const renderCols = () => {
@@ -817,6 +1003,17 @@
     document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(link.href), 2000);
   });
   $("btn-print").addEventListener("click", () => window.print());
+  $("sum-per").addEventListener("change", (e) => { S.dias = Number(e.target.value); renderResumo(); });
+  $("par-dias").addEventListener("change", () => renderResumo());
+  $("btn-par-csv").addEventListener("click", () => {
+    const esc = (v) => { const s = String(v ?? ""); return /[;"\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    const n2 = (v) => v == null ? "" : String(Math.round(v * 100) / 100).replace(".", ",");
+    const lines = [["Ref. interna", "Descrição", "Máquina", "Marca", "Fornecedor", "Stock", "Preço un. (€)", "Valor parado (€)", "Dias sem movimento", "Último movimento"].join(";")];
+    paradoRows.forEach((r) => lines.push([r.a.ref, r.a.descricao, r.a.maquina, r.a.marca, r.a.fornecedor, r.st, n2(r.a.preco_un), n2(r.valor), r.dias, r.nunca ? "nenhum (desde " + new Date(r.desde).toLocaleDateString("pt-PT") + ")" : new Date(r.desde).toLocaleDateString("pt-PT")].map(esc).join(";")));
+    const blob = new Blob(["\ufeff" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
+    const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = "stock-parado-" + new Date().toISOString().slice(0, 10) + ".csv";
+    document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(link.href), 2000);
+  });
 
   // ================= Separadores =================
   const showTab = (name) => {
@@ -846,6 +1043,12 @@
     if (!code) { if (S.pending && S.pending.kind === "found") confirmar(); return; }
     if (!S.artigos.size) { status("Os artigos ainda estão a carregar.", "err"); return; }
     const a = findByCode(code);
+    if (!a && !/^[0-9A-Za-z\-\.]{6,}$/.test(code) || (!a && /\s/.test(code))) {
+      S.pending = { kind: "manual", q: code }; renderResult(); status("", ""); return;
+    }
+    if (!a && !/\d{6,}/.test(code) && pesquisa(code).length) {
+      S.pending = { kind: "manual", q: code }; renderResult(); status("Não é um código conhecido. Escolha o artigo na lista.", ""); return;
+    }
     if (!a) {
       beep(false);
       S.pending = { kind: "unknown", codigo: code, q: "" };
@@ -885,7 +1088,7 @@
     try {
       const b = writeBatch(db);
       b.set(doc(collection(db, C_MOV)), { at: now, linha: a.linha, ref: a.ref || "", descricao: a.descricao || "", tipo: S.mode, qtd, codigo: p.codigo || "", por: S.email, anulado: false });
-      b.update(doc(db, C_ART, "L" + a.linha), { stock: increment(qtd), atualizado_em: now });
+      b.update(doc(db, C_ART, "L" + a.linha), { stock: increment(qtd), atualizado_em: now, ultimo_mov: now });
       await b.commit();
       beep(true);
       status((sign > 0 ? "Entrada" : "Saída") + " registada: " + (sign > 0 ? "+" : "−") + fmt.format(p.qtd) + " · " + (a.ref || a.descricao), "ok");
@@ -911,9 +1114,9 @@
     S.mode = m;
     document.querySelectorAll(".mode").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.mode === m)));
     if (S.pending && S.pending.kind === "found") S.pending.qtd = stepFor(S.pending.artigo);
-    renderResult(); focusScan();
+    if (!(S.pending && S.pending.kind === "novo")) renderResult(); focusScan();
   };
-  const focusScan = () => { const s = $("scan"); if (s && !$("view-app").hidden && S.tab === "leitura" && document.activeElement !== s) s.focus({ preventScroll: true }); };
+  const focusScan = () => { const s = $("scan"); if (S.pending && (S.pending.kind === "manual" || S.pending.kind === "novo")) return; if (s && !$("view-app").hidden && S.tab === "leitura" && document.activeElement !== s) s.focus({ preventScroll: true }); };
 
   // ---------- ligações ----------
   $("scan").addEventListener("keydown", (e) => {
@@ -921,12 +1124,14 @@
     else if (e.key === "Escape") cancel();
   });
   document.querySelectorAll(".mode").forEach((b) => b.addEventListener("click", () => setMode(b.dataset.mode)));
+  $("btn-manual").addEventListener("click", () => { S.pending = { kind: "manual", q: "" }; renderResult(); status("", ""); });
+  $("btn-novo").addEventListener("click", () => { S.pending = { kind: "novo", codigo: "", f: {} }; renderResult(); status("", ""); });
   document.addEventListener("keydown", (e) => {
     if ($("view-app").hidden || S.tab !== "leitura") return;
     if (e.key === "F2") { e.preventDefault(); setMode("entrada"); }
     if (e.key === "F4") { e.preventDefault(); setMode("saida"); }
   });
-  document.addEventListener("click", (e) => { if (!e.target.closest("input, button, select, textarea, a, label, table, .log")) focusScan(); });
+  document.addEventListener("click", (e) => { if (!e.target.closest("input, button, select, textarea, a, label, table, .log, .result")) focusScan(); });
   $("tbl-q").addEventListener("input", (e) => { S.tq = e.target.value; renderTable(); });
   document.querySelectorAll(".chip").forEach((c) => c.addEventListener("click", () => {
     S.tsit = c.dataset.sit;
@@ -1005,9 +1210,10 @@
       S.codigos = new Map(snap.docs.map((d) => { const v = d.data(); return [v.codigo, v.linha]; }));
       renderStats(); renderTable(); renderResumo();
     }, () => {}));
-    const desde = new Date(); desde.setDate(desde.getDate() - 30); desde.setHours(0, 0, 0, 0);
+    const desde = new Date(); desde.setDate(desde.getDate() - 366); desde.setHours(0, 0, 0, 0);
     S.unsubs.push(onSnapshot(query(collection(db, C_MOV), where("at", ">=", desde.toISOString()), orderBy("at", "desc")), (snap) => {
-      S.movs30 = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      S.movsAno = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const d30 = Date.now() - 30 * 864e5; S.movs30 = S.movsAno.filter((m) => new Date(m.at).getTime() >= d30);
       renderResumo();
     }, () => {}));
     S.unsubs.push(onSnapshot(query(collection(db, C_MOV), orderBy("at", "desc"), limit(60)), (snap) => {
