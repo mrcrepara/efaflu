@@ -204,7 +204,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
   <button class="btn sec hide" id="lkCancel">Cancelar</button>
   <p id="lkErr"></p>
   <a href="#" id="lkEsq" class="small hide" style="color:var(--pri)">Esqueci-me da palavra-passe</a>
-  <div class="small" style="margin-top:14px;opacity:.6">versão 06/11b · jornada 8h</div>
+  <div class="small" style="margin-top:14px;opacity:.6">versão 10/11 · jornada 8h</div>
 </div></div>
 <header>
   <span class="logo"><img src="" data-logo alt="EFAFLU"></span>
@@ -2184,6 +2184,22 @@ document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>mostrar(b.dat
 $('rTipo').addEventListener('change',ajustarForm);
 $('rData').addEventListener('change',recalcDias);
 $('rFim').addEventListener('change',recalcDias);
+// Datas "De / Até": o calendário do "Até" abre no mês da data inicial e não aceita datas anteriores nem anos impossíveis (ex.: 0001)
+function ligarAte(deId,ateId,cb){
+  const de=$(deId), ate=$(ateId); if(!de||!ate) return;
+  const sync=()=>{ ate.min=de.value||''; if(de.value&&ate.value&&ate.value<de.value){ ate.value=de.value; cb&&cb(); } };
+  de.addEventListener('change',sync); de.addEventListener('input',sync);
+  ate.addEventListener('pointerdown',()=>{ ate.min=de.value||''; if(!ate.value&&de.value){ ate.value=de.value; cb&&cb(); } });
+  sync();
+}
+ligarAte('rData','rFim',recalcDias);
+ligarAte('euDe','euAte',calcEuDias);
+ligarAte('foEm','foVal');
+document.addEventListener('change',e=>{
+  const t=e.target; if(!t||t.type!=='date'||!t.value) return;
+  const ano=+t.value.slice(0,4);
+  if(ano<1900||ano>2100){ t.value=''; t.dispatchEvent(new Event('change',{bubbles:false})); aviso('Essa data tem um ano impossível ('+ano+'). Escolhe a data outra vez no calendário.'); }
+},true);
 $('rHIni').addEventListener('change',calcHoras);
 $('rHFim').addEventListener('change',calcHoras);
 $('rData').addEventListener('change',rotulosDia);

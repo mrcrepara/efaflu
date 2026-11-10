@@ -203,6 +203,22 @@ details.params .ab{margin-top:10px}
 tr.sub td{font-size:12.5px;color:var(--muted)}
 tr.sub td:first-child{padding-left:18px}
 tr.opr td{font-weight:600}
+.lados{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.lado{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:10px 14px;border-radius:10px;border:2px solid var(--line);background:var(--surface-2);cursor:pointer;font:inherit;color:var(--muted);text-align:left;min-width:0}
+.lado b{font:700 16px var(--f-display);letter-spacing:.08em;color:var(--ink)}
+.lado span{font-size:12.5px;font-family:var(--f-num)}
+.lado:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.lado.l-antes[aria-selected="true"]{border-color:var(--c-antes);background:color-mix(in srgb,var(--c-antes) 22%,var(--surface))}
+.lado.l-depois[aria-selected="true"]{border-color:var(--c1);background:color-mix(in srgb,var(--c1) 14%,var(--surface))}
+.lado-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:10px}
+.lado-bar .hint{margin:0}
+.ops[data-lado="depois"] .op{border-color:color-mix(in srgb,var(--c1) 45%,var(--line))}
+.ops[data-lado="antes"] .op{border-color:color-mix(in srgb,var(--c-antes) 70%,var(--line))}
+.vazio-proc{padding:18px;border:1px dashed var(--line);border-radius:8px;color:var(--muted);font-size:14px;text-align:center}
+.pgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px 12px;margin-bottom:10px}
+.pgrid .wide{grid-column:span 2}
+.pgrid label small{font-weight:400}
+@media (max-width:620px){.pgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .add-op{margin-top:12px;width:100%;border-style:dashed}
 .ref-row{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
 td small{display:block;color:var(--muted);font-size:11.5px}
@@ -310,8 +326,9 @@ td small{display:block;color:var(--muted);font-size:11.5px}
       <p>Medir. Comparar. Melhorar.</p>
     </div>
     <div class="who">
+      <a href="index.html">🏠 Início</a>
       <div class="sync"><span class="dot" id="syncDot"></span><span id="syncTxt">A ligar ao histórico…</span></div>
-      <button type="button" id="bSair" hidden>Sair</button>
+      <button type="button" id="bSair" hidden title="Terminar a sessão">Sair da conta</button>
     </div>
   </div>
 </header>
@@ -328,6 +345,7 @@ td small{display:block;color:var(--muted);font-size:11.5px}
       <label class="f">Estado<select id="dEst"><option value="semrej">Sem as rejeitadas</option><option value="val">Só validadas</option><option value="todas">Todas</option></select></label>
       <label class="f">Máquina<select id="dMaq"><option value="">Todas as máquinas</option></select></label>
       <span class="grow"></span>
+      <button class="btn" id="dOpen" type="button">📂 Abrir uma melhoria guardada</button>
       <button class="btn ghost" id="dPrint" type="button">Imprimir / PDF</button>
     </div>
     <div class="banner" id="dDemo" hidden>A mostrar dados de exemplo, só para veres o painel. Não estão guardados. <button type="button" id="dDemoOff">Ver os meus dados</button></div>
@@ -355,6 +373,7 @@ td small{display:block;color:var(--muted);font-size:11.5px}
   <div id="vRegisto" hidden>
   <div class="bar">
     <button class="btn" id="bNew" type="button">Novo registo</button>
+    <button class="btn" id="bOpen" type="button">📂 Abrir trabalho guardado</button>
     <button class="btn ghost" id="bExample" type="button">Carregar exemplo</button>
     <button class="btn ghost" id="bPrint" type="button">Imprimir / PDF</button>
     <span class="spacer"></span>
@@ -388,15 +407,20 @@ td small{display:block;color:var(--muted);font-size:11.5px}
       </section>
 
       <section class="panel" aria-labelledby="s3">
-        <h2 id="s3"><span class="n">03</span>Operações da peça <span class="opt" id="opsCount"></span></h2>
-        <div class="ops" id="ops"></div>
+        <h2 id="s3"><span class="n">03</span>Processo de fabrico</h2>
+        <div class="lados" role="tablist" aria-label="Processo">
+          <button class="lado l-antes" data-lado="antes" role="tab" type="button" aria-selected="true"><b>ANTES</b><span id="ladoA">—</span></button>
+          <button class="lado l-depois" data-lado="depois" role="tab" type="button" aria-selected="false"><b>DEPOIS</b><span id="ladoD">—</span></button>
+        </div>
+        <div class="lado-bar"><p class="hint" id="ladoTxt"></p><button class="btn sm" id="bCopyProc" type="button" hidden>Copiar o processo de Antes para Depois</button></div>
+        <div class="ops" id="ops" data-lado="antes"></div>
         <button class="btn add-op" id="bAddOp" type="button">+ Adicionar operação</button>
         <div class="ab ref-row">
           <span class="h l"></span><span class="h">Antes</span><span class="h d">Depois</span>
           <span class="lab">Refugo da peça<small>% de peças rejeitadas no fim</small></span>
           <input id="a_ref" class="num-in" inputmode="decimal" aria-label="Refugo antes (%)"><input id="d_ref" class="num-in" inputmode="decimal" aria-label="Refugo depois (%)">
         </div>
-        <p class="hint">Cada operação (OP10, OP20…) tem os seus passos: desbaste, acabamento, furação, roscagem… O tempo da operação é a soma dos passos mais a carga, descarga e trocas. Mete todas as operações e passos, mesmo os que não mudaram, para o custo por peça ficar completo. No "Depois", deixa em branco o que ficou igual. Tempo 0 no "Depois" quer dizer eliminado; "Antes" em branco quer dizer novo.</p>
+        <p class="hint">Preenche o processo como era (Antes) e como ficou (Depois). Cada lado pode ter um número diferente de operações: por exemplo 3 maquinações antes e 2 depois. Usa os mesmos nomes de operação e de passo nos dois lados para a comparação aparecer lado a lado.</p>
       </section>
 
       <section class="panel" aria-labelledby="s4">
@@ -422,7 +446,7 @@ td small{display:block;color:var(--muted);font-size:11.5px}
           <div class="cbox" id="chCusto"></div>
         </div>
         <div class="bars" id="opsBox" hidden>
-          <h3>Tempo por operação</h3>
+          <h3>Tempo por peça, por operação</h3>
           <div class="cbox" id="chOps"></div>
         </div>
 
@@ -434,7 +458,7 @@ td small{display:block;color:var(--muted);font-size:11.5px}
           </table></div>
         </div>
         <div class="cmp" id="parBox" hidden>
-          <h3>Parâmetros alterados</h3>
+          <h3>O que mudou</h3>
           <ul class="params-list" id="parList"></ul>
         </div>
         <p class="foot">Poupança calculada de capacidade e custos variáveis. Tempo libertado só vira dinheiro se a máquina tiver outro trabalho para fazer nesse tempo.</p>
@@ -499,24 +523,33 @@ td small{display:block;color:var(--muted);font-size:11.5px}
 const $=id=>document.getElementById(id);
 const FIELDS=["ref","data","responsavel","lote","anual","c_op","c_kwh","c_mat","a_ref","d_ref","i_h","i_pe","i_out","estado","obs"];
 const CHECKS=["c_incl"];
-const OPK=["nome","maquina","c_maq","c_kw","a_prog","d_prog","a_fix","d_fix","c_gab","a_setup","d_setup","a_tx","d_tx"];
+const OPK=["nome","maquina","c_maq","c_kw","prog","fix","c_gab","setup","tx"];
 const FIX_BASE=["Bucha de 3 grampos","Bucha de pinças","Bucha hidráulica","Entre pontos","Morsa","Morsa dupla","Placa de fixação","Grampos e calços","Gabarito","Gabarito múltiplo","Cubo de fixação (torre)"];
-const PK=["nome","a_ferr","d_ferr","a_t","d_t","a_fp","d_fp","a_fv","d_fv",
-  "a_dia","d_dia","a_s","d_s","a_vc","d_vc","a_f","d_f","a_ap","d_ap","a_np","d_np","a_cool","d_cool","a_ra","d_ra","notas"];
+const PK=["nome","ferr","t","fp","fv","dia","s","vc","f","ap","np","cool","ra","notas"];
 const PARAMK=["dia","s","vc","f","ap","np","cool","ra"];
 const COOL_BASE=["Externa","Interna (pela ferramenta)","Alta pressão","Ar comprimido","MQL (micro-lubrificação)","A seco"];
 let paramsOpen=new Set();
 const PASSOS_BASE=["Facejamento","Desbaste","Semi-acabamento","Acabamento","Pré-furação","Furação","Roscagem","Mandrilagem","Alargamento","Ranhura","Sangramento","Chanfro","Fresagem de contorno","Fresagem de caixa","Rebarbagem"];
 const EXEMPLO={ref:"EF-2231 Corpo de válvula",data:"",responsavel:"",lote:"500",anual:"6000",
 c_op:"18",c_kwh:"0,16",c_mat:"2,40",c_incl:false,a_ref:"3",d_ref:"1,5",i_h:"4",i_pe:"5",i_out:"",estado:"Em teste",
-obs:"Op. 10: velocidade de corte de 180 para 220 m/min e um só passe de acabamento. Op. 20: fresa de metal duro com menos passes.",
-ops:[{nome:"OP10 · Torneamento",maquina:"Torno CNC 2",c_maq:"32",c_kw:"9",a_prog:"O1234 rev. B",d_prog:"O1234 rev. C",a_fix:"Bucha de 3 grampos",d_fix:"",c_gab:"",a_setup:"45",d_setup:"40",a_tx:"0:20",d_tx:"0:15",
- passos:[{nome:"Desbaste exterior",a_ferr:"CNMG 120408 sem revestimento",d_ferr:"CNMG 120408 revestida PVD",a_t:"1:20",d_t:"1:05",a_fp:"9,80",d_fp:"14,50",a_fv:"180",d_fv:"320",a_dia:"60",a_vc:"180",d_vc:"220",a_f:"0,25",d_f:"0,30",a_ap:"2",d_ap:"2,5",a_np:"3",d_np:"2",a_cool:"Externa",d_cool:"",notas:"Com a pastilha PVD deixou de fazer aresta postiça."},
-  {nome:"Acabamento",a_ferr:"VNMG 160404",d_ferr:"",a_t:"0:50",d_t:"0:45",a_fp:"11",d_fp:"",a_fv:"250",d_fv:""},
-  {nome:"Furação Ø10",a_ferr:"Broca HSS Ø10",d_ferr:"Broca metal duro Ø10",a_t:"0:20",d_t:"0:10",a_fp:"6",d_fp:"45",a_fv:"300",d_fv:"2000",a_dia:"10",a_s:"800",d_s:"2550",a_f:"0,15",d_f:"0,25",a_cool:"Externa",d_cool:"Interna (pela ferramenta)",notas:"Furação de uma vez, sem picar."}]},
- {nome:"OP20 · Fresagem",maquina:"Centro de maquinação 1",c_maq:"40",c_kw:"12",a_prog:"O2210 rev. A",d_prog:"O2210 rev. B",a_fix:"Morsa",d_fix:"Gabarito para 2 peças",c_gab:"350",a_setup:"30",d_setup:"20",a_tx:"0:25",d_tx:"0:15",
- passos:[{nome:"Desbaste de caixa",a_ferr:"Fresa Ø16 HSS",d_ferr:"Fresa Ø16 metal duro",a_t:"1:50",d_t:"1:15",a_fp:"18",d_fp:"65",a_fv:"400",d_fv:"1500"},
-  {nome:"Furação e roscagem M8",a_ferr:"Broca Ø6,8 + macho M8",d_ferr:"",a_t:"0:55",d_t:"0:50",a_fp:"12",d_fp:"",a_fv:"600",d_fv:""}]}]};
+obs:"Antes em 3 maquinações (torno, centro e engenho). Depois em 2: a furação e a roscagem passaram para o centro, com gabarito de 2 peças.",
+antes:[
+ {nome:"OP10 · Torneamento",maquina:"Torno CNC 2",c_maq:"32",c_kw:"9",prog:"O1234 rev. B",fix:"Bucha de 3 grampos",setup:"45",tx:"0:20",passos:[
+  {nome:"Desbaste exterior",ferr:"CNMG 120408 sem revestimento",t:"1:20",fp:"9,80",fv:"180",dia:"60",vc:"180",f:"0,25",ap:"2",np:"3",cool:"Externa"},
+  {nome:"Acabamento",ferr:"VNMG 160404",t:"0:50",fp:"11",fv:"250"}]},
+ {nome:"OP20 · Fresagem",maquina:"Centro de maquinação 1",c_maq:"40",c_kw:"12",prog:"O2210 rev. A",fix:"Morsa",setup:"30",tx:"0:25",passos:[
+  {nome:"Desbaste de caixa",ferr:"Fresa Ø16 HSS",t:"1:50",fp:"18",fv:"400",dia:"16",s:"600",f:"120",cool:"Externa"}]},
+ {nome:"OP30 · Furação e roscagem",maquina:"Engenho de furar",c_maq:"12",c_kw:"2",prog:"",fix:"Morsa",setup:"15",tx:"0:30",passos:[
+  {nome:"Furação Ø6,8",ferr:"Broca HSS Ø6,8",t:"0:40",fp:"5",fv:"300",dia:"6,8",s:"900",f:"0,10",cool:"Externa"},
+  {nome:"Roscagem M8",ferr:"Macho M8 HSS",t:"0:35",fp:"14",fv:"500"}]}],
+depois:[
+ {nome:"OP10 · Torneamento",maquina:"Torno CNC 2",c_maq:"32",c_kw:"9",prog:"O1234 rev. C",fix:"Bucha de 3 grampos",setup:"40",tx:"0:15",passos:[
+  {nome:"Desbaste exterior",ferr:"CNMG 120408 revestida PVD",t:"1:05",fp:"14,50",fv:"320",dia:"60",vc:"220",f:"0,30",ap:"2,5",np:"2",cool:"Externa",notas:"Com a pastilha PVD deixou de fazer aresta postiça."},
+  {nome:"Acabamento",ferr:"VNMG 160404",t:"0:45",fp:"11",fv:"250"}]},
+ {nome:"OP20 · Fresagem",maquina:"Centro de maquinação 1",c_maq:"40",c_kw:"12",prog:"O2210 rev. B",fix:"Gabarito para 2 peças",c_gab:"350",setup:"20",tx:"0:15",passos:[
+  {nome:"Desbaste de caixa",ferr:"Fresa Ø16 metal duro",t:"1:15",fp:"65",fv:"1500",dia:"16",s:"2400",f:"600",cool:"Externa"},
+  {nome:"Furação Ø6,8",ferr:"Broca metal duro Ø6,8",t:"0:12",fp:"42",fv:"2000",dia:"6,8",s:"4200",f:"0,15",cool:"Interna (pela ferramenta)",notas:"Passou do engenho para o centro, na mesma fixação."},
+  {nome:"Roscagem M8",ferr:"Macho M8 HSS-E",t:"0:20",fp:"22",fv:"900"}]}]};
 
 const eur=new Intl.NumberFormat("pt-PT",{style:"currency",currency:"EUR",minimumFractionDigits:2,maximumFractionDigits:2});
 const eur3=new Intl.NumberFormat("pt-PT",{style:"currency",currency:"EUR",minimumFractionDigits:3,maximumFractionDigits:3});
@@ -541,81 +574,91 @@ function fmtDur(sec){
   else out=nf(1).format(sec)+" s";
   return (neg?"−":"")+out.trim()}
 
-let ops=[],pendingOpDel=null;
+let proc={antes:[],depois:[]},lado="antes",pendingOpDel=null,copyArm=false;
 function blankPasso(){const o={};PK.forEach(k=>o[k]="");return o}
 function blankOp(){const o={};OPK.forEach(k=>o[k]="");o.passos=[blankPasso()];return o}
+function normOp1(op){const o=Object.assign(blankOp(),op||{});o.passos=(Array.isArray(op&&op.passos)&&op.passos.length?op.passos:[{}]).map(x=>Object.assign(blankPasso(),x));return o}
+const nk=x=>String(x||"").trim().toLowerCase();
+// ---- registos antigos (antes e depois emparelhados na mesma operação) ----
 const VELHOS=["a_ferr","d_ferr","a_t","d_t","a_fp","d_fp","a_fv","d_fv"];
-// Uma operação antiga (sem passos) passa a ter um passo "Maquinação" com o tempo e a ferramenta que tinha
-function normOp(op){
-  const o=Object.assign(blankOp(),op);
-  if(Array.isArray(op.passos)&&op.passos.length)o.passos=op.passos.map(x=>Object.assign(blankPasso(),x));
-  else if(VELHOS.some(k=>!blank(op[k]))){const p=blankPasso();p.nome="Maquinação";VELHOS.forEach(k=>p[k]=op[k]==null?"":op[k]);o.passos=[p]}
-  else o.passos=[blankPasso()];
-  VELHOS.forEach(k=>delete o[k]);return o}
-// Registos antigos (uma só operação em campos soltos) passam a lista de operações
-function opsOf(f){
-  if(!f)return [blankOp()];
-  if(Array.isArray(f.ops)&&f.ops.length)return f.ops.map(normOp);
+function normOpOld(op){
+  const o=Object.assign({},op);
+  if(Array.isArray(op.passos)&&op.passos.length)o.passos=op.passos.map(x=>Object.assign({},x));
+  else if(VELHOS.some(k=>!blank(op[k]))){const p={nome:"Maquinação"};VELHOS.forEach(k=>p[k]=op[k]==null?"":op[k]);o.passos=[p]}
+  else o.passos=[];
+  return o}
+function opsOldOf(f){
+  if(Array.isArray(f.ops)&&f.ops.length)return f.ops.map(normOpOld);
   const o={nome:f.operacao||"",maquina:f.maquina||""};
   ["c_maq","c_kw","a_prog","d_prog","a_fix","d_fix","c_gab","a_setup","d_setup"].concat(VELHOS).forEach(k=>{if(f[k]!=null)o[k]=f[k]});
-  return [normOp(o)]}
-// Parâmetros de corte de um lado (a/d); calcula Vc ou rotação a partir do diâmetro quando falta um deles
-function parSide(p,side){
-  const g=k=>side==="a"?p["a_"+k]:dv(p,k);
-  const o={dia:numv(g("dia")),s:numv(g("s")),vc:numv(g("vc")),f:numv(g("f")),ap:numv(g("ap")),np:numv(g("np")),ra:numv(g("ra")),cool:String(g("cool")||"").trim(),fT:String(g("f")||"").trim(),calc:""};
+  return [normOpOld(o)]}
+const dvOld=(o,k)=>blank(o["d_"+k])?(o["a_"+k]||""):o["d_"+k];
+// Converte qualquer registo para dois processos independentes: antes e depois
+function procOf(f){
+  if(!f)return {antes:[blankOp()],depois:[]};
+  if(Array.isArray(f.antes)||Array.isArray(f.depois))return {antes:(f.antes||[]).map(normOp1),depois:(f.depois||[]).map(normOp1)};
+  const PKL=["ferr","t","fp","fv","dia","s","vc","f","ap","np","cool","ra"],antes=[],depois=[];
+  opsOldOf(f).forEach(o=>{
+    const base={nome:o.nome||"",maquina:o.maquina||"",c_maq:o.c_maq||"",c_kw:o.c_kw||""};
+    const pa=o.passos.filter(p=>!blank(p.a_t)).map(p=>{const x={nome:p.nome||"",notas:""};PKL.forEach(k=>x[k]=p["a_"+k]||"");return x});
+    if(pa.length||!blank(o.a_tx))antes.push(normOp1(Object.assign({},base,{prog:o.a_prog||"",fix:o.a_fix||"",setup:o.a_setup||"",tx:o.a_tx||"",passos:pa})));
+    const pd=o.passos.filter(p=>{const v=dvOld(p,"t");return !blank(v)&&parseTime(v)!==0}).map(p=>{const x={nome:p.nome||"",notas:p.notas||""};PKL.forEach(k=>x[k]=dvOld(p,k));return x});
+    const txd=dvOld(o,"tx");
+    if(pd.length||(!blank(txd)&&parseTime(txd)>0))depois.push(normOp1(Object.assign({},base,{prog:dvOld(o,"prog"),fix:dvOld(o,"fix"),setup:dvOld(o,"setup"),tx:txd,c_gab:o.c_gab||"",passos:pd})));
+  });
+  if(!antes.length&&!depois.length)antes.push(blankOp());
+  return {antes,depois}}
+// Parâmetros de corte de um passo; calcula Vc ou rotação a partir do diâmetro quando falta um deles
+function parOf(p){
+  const o={dia:numv(p.dia),s:numv(p.s),vc:numv(p.vc),f:numv(p.f),ap:numv(p.ap),np:numv(p.np),ra:numv(p.ra),cool:String(p.cool||"").trim(),calc:""};
   if(o.vc==null&&o.dia&&o.s){o.vc=Math.PI*o.dia*o.s/1000;o.calc="vc"}
   else if(o.s==null&&o.dia&&o.vc){o.s=o.vc*1000/(Math.PI*o.dia);o.calc="s"}
   return o}
 const PLAB={s:["S","rpm",0],vc:["Vc","m/min",0],f:["F","",3],ap:["ap","mm",2],np:["Passes","",0],ra:["Ra","µm",2]};
-function parChanges(p){
-  const A=parSide(p,"a"),D=parSide(p,"d"),out=[];
+function parDiff(pa,pd){
+  const A=parOf(pa),D=parOf(pd),out=[];
+  if(nk(pa.ferr)!==nk(pd.ferr)&&(pa.ferr||pd.ferr))out.push("Ferramenta "+(pa.ferr||"?")+" → "+(pd.ferr||"?"));
   for(const k of ["vc","s","f","ap","np","ra"]){const a=A[k],d=D[k];if(a==null&&d==null)continue;
     const [l,u,dec]=PLAB[k],f=x=>x==null?"?":nf(dec).format(x);
     if(a!=null&&d!=null&&Math.abs(a-d)<1e-9)continue;
     let t=l+" "+f(a)+" → "+f(d)+(u?" "+u:"");if(a&&d)t+=" ("+(d>a?"+":"−")+nf(0).format(Math.abs(d-a)/a*100)+" %)";out.push(t)}
   if(A.cool!==D.cool&&(A.cool||D.cool))out.push("Refrigeração "+(A.cool||"?")+" → "+(D.cool||"?"));
   return out}
-function temParams(p){return PARAMK.some(k=>!blank(p["a_"+k])||!blank(p["d_"+k]))||!blank(p.notas)}
-function cloneOps(){return ops.map(x=>Object.assign({},x,{passos:x.passos.map(p=>Object.assign({},p))}))}
-function read(){const o={};FIELDS.forEach(k=>o[k]=$(k).value);CHECKS.forEach(k=>o[k]=$(k).checked);o.ops=cloneOps();return o}
+function temParams(p){return PARAMK.some(k=>!blank(p[k]))||!blank(p.notas)}
+const cl1=o=>Object.assign({},o,{passos:o.passos.map(p=>Object.assign({},p))});
+function read(){const o={};FIELDS.forEach(k=>o[k]=$(k).value);CHECKS.forEach(k=>o[k]=$(k).checked);o.antes=proc.antes.map(cl1);o.depois=proc.depois.map(cl1);return o}
 function fill(o){FIELDS.forEach(k=>{$(k).value=(o&&o[k]!=null)?o[k]:(k==="estado"?"Por validar":"")});CHECKS.forEach(k=>$(k).checked=!!(o&&o[k]));
-  ops=opsOf(o);pendingOpDel=null;renderOps()}
-function dv(o,k){return blank(o["d_"+k])?o["a_"+k]:o["d_"+k]}
-function tPair(o,k){let a=parseTime(o["a_"+k]);const d=blank(o["d_"+k])?a:parseTime(o["d_"+k]);if(a==null&&d!=null&&blank(o["a_"+k]))a=0;return {a,d}}
-function badTime(o,k){return (!blank(o["a_"+k])&&parseTime(o["a_"+k])==null)||(!blank(o["d_"+k])&&parseTime(o["d_"+k])==null)}
-function txPair(o){if(blank(o.a_tx)&&blank(o.d_tx))return {a:0,d:0};const t=tPair(o,"tx");return {a:t.a==null&&blank(o.a_tx)?0:t.a,d:t.d}}
-function opTimes(o){const ps=(o.passos||[]).map(p=>tPair(p,"t")),tx=txPair(o);
-  if(tx.a==null||tx.d==null||ps.some(t=>t.a==null||t.d==null))return {a:null,d:null};
-  return {a:ps.reduce((s,t)=>s+t.a,0)+tx.a,d:ps.reduce((s,t)=>s+t.d,0)+tx.d}}
+  proc=procOf(o);pendingOpDel=null;copyArm=false;paramsOpen.clear();if(!proc.antes.length&&proc.depois.length)lado="depois";else lado="antes";renderProc()}
+function opTimes(o){const ts=o.passos.map(p=>parseTime(p.t)),tx=blank(o.tx)?0:parseTime(o.tx);return (tx==null||ts.some(t=>t==null))?null:ts.reduce((a,b)=>a+b,0)+tx}
+const somaT=list=>{const ts=list.map(opTimes);return ts.length&&ts.every(t=>t!=null)?ts.reduce((a,b)=>a+b,0):null};
 
 function calc(){return calcF(read())}
 function calcF(f){
-  const N=k=>numv(f[k]),ops=opsOf(f);
+  const N=k=>numv(f[k]),pr=procOf(f);
   const cop=N("c_op"),kwh=N("c_kwh")||0,incl=!!f.c_incl;
   const lote=N("lote"),anual=N("anual"),mat=N("c_mat")||0,L=lote&&lote>0?lote:null;
-  const per=ops.map(o=>{
+  const opc=o=>{
     const cm=numv(o.c_maq),kw=numv(o.c_kw)||0;
     const H=(cop==null&&cm==null)?null:(cop||0)+(cm||0)+(incl?0:kw*kwh);
-    const T=opTimes(o),tx=txPair(o);
-    const steps=o.passos.map(p=>{const t=tPair(p,"t");const fer=side=>{const fp=numv(side==="a"?p.a_fp:dv(p,"fp")),fv=numv(side==="a"?p.a_fv:dv(p,"fv"));return fp&&fv?fp/fv:0};
-      return {p,T:t,fa:fer("a"),fd:fer("d")}});
-    const ok=H!=null&&T.a!=null&&T.d!=null;
-    const s=side=>{if(!ok)return null;const t=T[side],su=numv(side==="a"?o.a_setup:dv(o,"setup"))||0;
-      return {t,ciclo:t/3600*H,ferr:steps.reduce((x,y)=>x+(side==="a"?y.fa:y.fd),0),setup:su,setupCost:su/60*H}};
-    return {o,H,T,tx,steps,ok,A:s("a"),D:s("d")}});
-  const side=(p,key)=>{
+    const steps=o.passos.map(p=>{const t=parseTime(p.t),fp=numv(p.fp),fv=numv(p.fv);return {p,t,bad:!blank(p.t)&&t==null,fe:fp&&fv?fp/fv:0}});
+    const tx=blank(o.tx)?0:parseTime(o.tx);
+    const T=(tx==null||steps.some(x=>x.t==null))?null:steps.reduce((a,x)=>a+x.t,0)+tx;
+    const ok=H!=null&&T!=null,su=numv(o.setup)||0;
+    return {o,H,T,tx,steps,ok,ciclo:ok?T/3600*H:0,ferr:steps.reduce((a,x)=>a+x.fe,0),setup:su,setupCost:H!=null?su/60*H:0}};
+  const AL=pr.antes.map(opc),DL=pr.depois.map(opc);
+  const side=(p,list)=>{
     const r=Math.min(Math.max((N(p+"_ref")||0)/100,0),0.95);
     const S={t:0,ciclo:0,ferr:0,setup:0,setupCost:0};
-    per.forEach(x=>{const v=x[key];if(v)for(const k in S)S[k]+=v[k]});
+    list.forEach(x=>{S.t+=x.T||0;S.ciclo+=x.ciclo;S.ferr+=x.ferr;S.setup+=x.setup;S.setupCost+=x.setupCost});
     const prod=S.ciclo+S.ferr+mat,boa=prod/(1-r),setupP=L?S.setupCost/L:0;
     return Object.assign(S,{r,mat,prod,refugo:boa-prod,setupP,total:boa+setupP,
       tBoa:S.t/(1-r)+(L?S.setup*60/L:0),loteTempo:L?L*S.t/(1-r)+S.setup*60:null})};
-  const Hs=per.map(x=>x.H).filter(h=>h!=null),Havg=Hs.length?Hs.reduce((a,b)=>a+b,0)/Hs.length:null;
-  const ready=per.length>0&&per.every(x=>x.ok);
-  const A=side("a","A"),D=side("d","D");
-  const gab=ops.reduce((a,o)=>a+(numv(o.c_gab)||0),0);
+  const Hs=AL.concat(DL).map(x=>x.H).filter(h=>h!=null),Havg=Hs.length?Hs.reduce((a,b)=>a+b,0)/Hs.length:null;
+  const ready=AL.length>0&&DL.length>0&&AL.concat(DL).every(x=>x.ok);
+  const A=side("a",AL),D=side("d",DL);
+  const gab=pr.depois.reduce((a,o)=>a+(numv(o.c_gab)||0),0);
   const inv=Havg==null?(gab||null):(N("i_h")||0)*Havg+(N("i_pe")||0)*(ready?D.prod:0)+(N("i_out")||0)+gab;
-  const res={per,Havg,lote,anual,A,D,inv,gab,ready};
+  const res={antes:AL,depois:DL,Havg,lote,anual,A,D,inv,gab,ready};
   if(ready){
     res.poupPeca=A.total-D.total;
     res.poupLote=lote?res.poupPeca*lote:null;
@@ -627,110 +670,129 @@ function calcF(f){
   }
   return res;
 }
+// Emparelha operações e passos pelo nome, para comparar antes e depois
+const keyOp=(o,i)=>nk(o.nome)||("#"+i);
+const keyPa=(p,j)=>nk(p.nome)||("#"+j);
+function pares(R){
+  const nomes=[];const add=(x,i)=>{const k=keyOp(x.o,i);if(!nomes.some(n=>n.k===k))nomes.push({k,name:x.o.nome||"Operação "+(i+1)})};
+  R.antes.forEach(add);R.depois.forEach(add);
+  return nomes.map(n=>({k:n.k,name:n.name,a:R.antes.find((y,i)=>keyOp(y.o,i)===n.k)||null,d:R.depois.find((y,i)=>keyOp(y.o,i)===n.k)||null}))}
+function paresPassos(a,d){
+  const ns=[];[a,d].forEach(x=>x&&x.steps.forEach((s,j)=>{const k=keyPa(s.p,j);if(!ns.some(z=>z.k===k))ns.push({k,name:s.p.nome||"Passo "+(j+1)})}));
+  return ns.map(z=>({name:z.name,a:a?a.steps.find((s,j)=>keyPa(s.p,j)===z.k)||null:null,d:d?d.steps.find((s,j)=>keyPa(s.p,j)===z.k)||null:null}))}
+// Lista do que mudou (máquina, fixação, programa, preparação, passos, ferramentas, parâmetros)
+function mudancas(R){
+  const out=[];
+  pares(R).forEach(pr=>{const {a,d}=pr;
+    if(a&&!d){out.push({t:pr.name,txt:"operação eliminada (era "+fmtDur(a.T)+(a.o.maquina?" no "+a.o.maquina:"")+")"});return}
+    if(!a&&d){out.push({t:pr.name,txt:"operação nova ("+fmtDur(d.T)+(d.o.maquina?" no "+d.o.maquina:"")+")"});return}
+    const ch=[];
+    if(nk(a.o.maquina)!==nk(d.o.maquina))ch.push("Máquina "+(a.o.maquina||"?")+" → "+(d.o.maquina||"?"));
+    if(nk(a.o.fix)!==nk(d.o.fix)&&(a.o.fix||d.o.fix))ch.push("Fixação "+(a.o.fix||"?")+" → "+(d.o.fix||"?")+(numv(d.o.c_gab)?" (gabarito "+eur.format(numv(d.o.c_gab))+")":""));
+    if(nk(a.o.prog)!==nk(d.o.prog)&&(a.o.prog||d.o.prog))ch.push("Programa "+(a.o.prog||"?")+" → "+(d.o.prog||"?"));
+    if((numv(a.o.setup)||0)!==(numv(d.o.setup)||0))ch.push("Preparação "+nf(1).format(numv(a.o.setup)||0)+" → "+nf(1).format(numv(d.o.setup)||0)+" min");
+    if(ch.length)out.push({t:pr.name,txt:ch.join(", ")});
+    paresPassos(a,d).forEach(z=>{const t=pr.name+" · "+z.name;
+      if(z.a&&!z.d){out.push({t,txt:"passo eliminado (era "+fmtDur(z.a.t)+")",nota:z.a.p.notas});return}
+      if(!z.a&&z.d){out.push({t,txt:"passo novo ("+fmtDur(z.d.t)+")"+(z.d.p.ferr?", "+z.d.p.ferr:""),nota:z.d.p.notas});return}
+      const c=parDiff(z.a.p,z.d.p),nota=z.d.p.notas||z.a.p.notas;
+      if(c.length||!blank(nota))out.push({t,txt:c.join(", "),nota})})});
+  return out}
 
 function tile(k,v,s,cls){return `<div class="tile ${cls||""}"><div class="k">${k}</div><div class="v">${v}</div>${s?`<div class="s">${s}</div>`:""}</div>`}
 function opCard(o,i){
-  const v=(x,k)=>esc(x[k]==null?"":x[k]);
-  const I=(k,cls,extra,aria)=>`<input id="op${i}_${k}" data-i="${i}" data-k="${k}" value="${v(o,k)}" class="${cls||""}" ${extra||""} aria-label="${aria}" autocomplete="off">`;
-  const ab=(lab,small,k,cls,extra,ph)=>`<span class="lab">${lab}${small?`<small>${small}</small>`:""}</span>`+
-    I("a_"+k,cls,(extra||"")+(ph?` placeholder="${ph}"`:""),lab+" antes")+I("d_"+k,cls,(extra||"")+' placeholder="igual"',lab+" depois");
+  const l=lado,pre=l+i,v=(x,k)=>esc(x[k]==null?"":x[k]);
+  const I=(k,cls,extra,aria)=>`<input id="${pre}_${k}" data-i="${i}" data-k="${k}" value="${v(o,k)}" class="${cls||""}" ${extra||""} aria-label="${aria}" autocomplete="off">`;
   const passo=(p,j)=>{
-    const P=(k,cls,extra,aria)=>`<input id="op${i}_p${j}_${k}" data-i="${i}" data-j="${j}" data-k="${k}" value="${v(p,k)}" class="${cls||""}" ${extra||""} aria-label="${aria}" autocomplete="off">`;
-    const pab=(lab,small,k,cls,extra,ph)=>`<span class="lab">${lab}${small?`<small>${small}</small>`:""}</span>`+
-      P("a_"+k,cls,(extra||"")+(ph?` placeholder="${ph}"`:""),lab+" antes")+P("d_"+k,cls,(extra||"")+' placeholder="igual"',lab+" depois");
+    const P=(k,cls,extra,aria)=>`<input id="${pre}_p${j}_${k}" data-i="${i}" data-j="${j}" data-k="${k}" value="${v(p,k)}" class="${cls||""}" ${extra||""} aria-label="${aria}" autocomplete="off">`;
+    const key=l+"_"+i+"_"+j;
     return `<div class="passo">
       <div class="passo-head"><span class="passo-n">${i+1}.${j+1}</span>${P("nome","",'list="dl_passo" placeholder="Ex.: Desbaste, Furação Ø8, Acabamento"',"Nome do passo")}
-        ${o.passos.length>1?`<button class="btn sm ghost danger" type="button" data-act="delp" data-i="${i}" data-j="${j}" aria-label="Remover passo">Remover</button>`:""}</div>
-      <div class="ab">
-        <span class="h l"></span><span class="h">Antes</span><span class="h d">Depois</span>
-        ${pab("Ferramenta","","ferr","",'list="dl_ferr"')}
-        ${pab("Tempo","mm:ss ou segundos","t","num-in","","1:20")}
-        ${pab("Preço da ferramenta","€ por aresta","fp","num-in",'inputmode="decimal"')}
-        ${pab("Vida da ferramenta","peças por aresta","fv","num-in",'inputmode="numeric"')}
+        ${o.passos.length>1?`<button class="btn sm ghost danger" type="button" data-act="delp" data-i="${i}" data-j="${j}">Remover</button>`:""}</div>
+      <div class="pgrid">
+        <label class="f wide">Ferramenta${P("ferr","",'list="dl_ferr"',"Ferramenta")}</label>
+        <label class="f"><span>Tempo <small>mm:ss</small></span>${P("t","num-in",'placeholder="1:20"',"Tempo do passo")}</label>
+        <label class="f">Preço ferr. (€)${P("fp","num-in",'inputmode="decimal" placeholder="por aresta"',"Preço da ferramenta por aresta")}</label>
+        <label class="f">Vida (peças)${P("fv","num-in",'inputmode="numeric" placeholder="por aresta"',"Peças por aresta")}</label>
       </div>
-      <div class="passo-res" id="op${i}_p${j}_res"></div>
-      <details class="params" data-key="${i}_${j}" ${temParams(p)||paramsOpen.has(i+"_"+j)?"open":""}>
+      <div class="passo-res" id="${pre}_p${j}_res"></div>
+      <details class="params" data-key="${key}" ${temParams(p)||paramsOpen.has(key)?"open":""}>
         <summary>Parâmetros de corte e notas<small>avanços, rotações, refrigeração…</small></summary>
-        <div class="ab">
-          <span class="h l"></span><span class="h">Antes</span><span class="h d">Depois</span>
-          ${pab("Diâmetro","mm · da peça no torno, da ferramenta na fresa/broca","dia","num-in",'inputmode="decimal"')}
-          ${pab("Rotação S","rpm","s","num-in",'inputmode="numeric"')}
-          ${pab("Velocidade de corte Vc","m/min","vc","num-in",'inputmode="decimal"')}
-          ${pab("Avanço F","mm/rot no torno, mm/min na fresa","f","num-in",'inputmode="decimal"')}
-          ${pab("Profundidade de passe ap","mm","ap","num-in",'inputmode="decimal"')}
-          ${pab("Nº de passes","","np","num-in",'inputmode="numeric"')}
-          ${pab("Refrigeração","","cool","",'list="dl_cool"')}
-          ${pab("Rugosidade Ra","µm, resultado medido","ra","num-in",'inputmode="decimal"')}
+        <div class="pgrid">
+          <label class="f">Diâmetro (mm)${P("dia","num-in",'inputmode="decimal"',"Diâmetro da peça ou da ferramenta")}</label>
+          <label class="f">Rotação S (rpm)${P("s","num-in",'inputmode="numeric"',"Rotação")}</label>
+          <label class="f">Vc (m/min)${P("vc","num-in",'inputmode="decimal"',"Velocidade de corte")}</label>
+          <label class="f">Avanço F${P("f","num-in",'inputmode="decimal" placeholder="mm/rot ou mm/min"',"Avanço")}</label>
+          <label class="f">Prof. de passe ap (mm)${P("ap","num-in",'inputmode="decimal"',"Profundidade de passe")}</label>
+          <label class="f">Nº de passes${P("np","num-in",'inputmode="numeric"',"Número de passes")}</label>
+          <label class="f">Refrigeração${P("cool","",'list="dl_cool"',"Refrigeração")}</label>
+          <label class="f">Rugosidade Ra (µm)${P("ra","num-in",'inputmode="decimal"',"Rugosidade medida")}</label>
         </div>
-        <div class="param-calc" id="op${i}_p${j}_calc"></div>
-        <label class="f notas">Notas do passo<textarea id="op${i}_p${j}_notas" data-i="${i}" data-j="${j}" data-k="notas" placeholder="Vibração, aresta postiça, apara longa, desgaste…">${v(p,"notas")}</textarea></label>
+        <div class="param-calc" id="${pre}_p${j}_calc"></div>
+        <label class="f notas">Notas do passo<textarea id="${pre}_p${j}_notas" data-i="${i}" data-j="${j}" data-k="notas" placeholder="Vibração, aresta postiça, apara longa, desgaste…">${v(p,"notas")}</textarea></label>
       </details>
     </div>`};
-  const del=ops.length<2?"":pendingOpDel===i
+  const del=proc[l].length<2?"":pendingOpDel===i
     ?`<span class="confirm">Remover? <button class="btn sm danger" type="button" data-act="delyes" data-i="${i}">Sim</button><button class="btn sm" type="button" data-act="delno" data-i="${i}">Não</button></span>`
-    :`<button class="btn sm ghost danger" type="button" data-act="del" data-i="${i}">Remover</button>`;
+    :`<button class="btn sm ghost danger" type="button" data-act="del" data-i="${i}">Remover operação</button>`;
   return `<div class="op">
     <div class="op-head"><span class="op-n">${String(i+1).padStart(2,"0")}</span>${I("nome","op-name",'list="dl_operacao" placeholder="Ex.: OP10 · Torneamento"',"Nome da operação "+(i+1))}
-      <div class="op-actions"><button class="btn sm ghost" type="button" data-act="copy" data-i="${i}">Copiar Antes → Depois</button>${del}</div></div>
+      <div class="op-actions">${del}</div></div>
     <div class="grid3">
       <label class="f">Máquina${I("maquina","",'list="dl_maquina"',"Máquina da operação "+(i+1))}</label>
       <label class="f">Máquina (€/h)${I("c_maq","num-in",'inputmode="decimal"',"Custo da máquina por hora")}</label>
       <label class="f">Consumo (kW)${I("c_kw","num-in",'inputmode="decimal"',"Consumo médio em kW")}</label>
     </div>
-    <div class="ab">
-      <span class="h l"></span><span class="h">Antes</span><span class="h d">Depois</span>
-      ${ab("Programa / revisão","","prog","",'list="dl_prog"')}
-      ${ab("Fixação / gabarito","como a peça é presa","fix","",'list="dl_fix"')}
-      ${ab("Preparação (setup)","em minutos, por lote","setup","num-in",'inputmode="decimal"')}
+    <div class="pgrid">
+      <label class="f wide">Programa / revisão${I("prog","",'list="dl_prog"',"Programa")}</label>
+      <label class="f wide">Fixação / gabarito${I("fix","",'list="dl_fix"',"Fixação")}</label>
+      <label class="f">Preparação (min)${I("setup","num-in",'inputmode="decimal" placeholder="por lote"',"Preparação em minutos")}</label>
+      <label class="f"><span>Carga e trocas <small>por peça</small></span>${I("tx","num-in",'placeholder="0:20"',"Carga, descarga e trocas")}</label>
+      ${l==="depois"?`<label class="f wide">Gabarito ou fixação nova (€)${I("c_gab","num-in",'inputmode="decimal" placeholder="Opcional, entra no custo da alteração"',"Custo do gabarito novo")}</label>`:""}
     </div>
-    <div class="grid2 gab-row"><label class="f full">Custo de gabarito ou fixação nova (€)${I("c_gab","num-in",'inputmode="decimal" placeholder="Opcional, entra no custo da alteração"',"Custo do gabarito novo")}</label></div>
     <div class="passos-t"><span>Passos de maquinação</span><span>${o.passos.length} passo${o.passos.length===1?"":"s"}</span></div>
     <div class="passos">${o.passos.map(passo).join("")}</div>
     <button class="btn sm add-passo" type="button" data-act="addp" data-i="${i}">+ Adicionar passo</button>
-    <div class="ab tx-row">
-      ${ab("Carga, descarga e trocas","por peça, fora dos passos","tx","num-in","","0:20")}
-    </div>
-    <div class="op-res" id="op${i}_res"></div>
+    <div class="op-res" id="${pre}_res"></div>
   </div>`}
-function renderOps(){
-  $("ops").innerHTML=ops.map(opCard).join("");
-  $("opsCount").textContent=ops.length===1?"1 operação":ops.length+" operações"}
+function renderProc(){
+  document.querySelectorAll(".lado").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.lado===lado)));
+  const list=proc[lado];$("ops").dataset.lado=lado;
+  $("ops").innerHTML=list.length?list.map(opCard).join(""):`<div class="vazio-proc">Ainda não há operações no ${lado==="depois"?"Depois":"Antes"}. ${lado==="depois"&&proc.antes.length?'Carrega em "Copiar o processo de Antes para Depois" para começar igual e depois alteras só o que mudou.':'Carrega em "+ Adicionar operação".'}</div>`;
+  $("ladoTxt").textContent=lado==="antes"?"Como a peça era feita antes da alteração.":"Como a peça passa a ser feita.";
+  $("bCopyProc").hidden=lado!=="depois";
+  $("bCopyProc").textContent=copyArm?"Confirmar: substituir o Depois pelo Antes":"Copiar o processo de Antes para Depois";
+  $("bCopyProc").classList.toggle("danger",copyArm)}
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 
 function render(){
   const R=calc();
   $("dInv").textContent=R.inv!=null&&R.inv>0?eur.format(R.inv)+(R.gab>0?" (inclui "+eur.format(R.gab)+" de gabaritos)":""):"—";
-  const pctD=(a,d)=>a>0&&d!==a?" ("+(d<a?"−":"+")+nf(1).format(Math.abs(a-d)/a*100)+" %)":"";
-  const tTxt=(T,aBlank)=>aBlank&&T.d!=null?"novo · "+fmtDur(T.d):(T.d===0&&T.a>0?"eliminado · era "+fmtDur(T.a):fmtDur(T.a)+" → "+fmtDur(T.d)+pctD(T.a,T.d));
-  R.per.forEach((x,i)=>{
+  const sumL=list=>{const t=list.length&&list.every(x=>x.T!=null)?list.reduce((a,x)=>a+x.T,0):null;return list.length+" "+(list.length===1?"operação":"operações")+(t!=null?" · "+fmtDur(t)+" por peça":"")};
+  $("ladoA").textContent=R.antes.length?sumL(R.antes):"por preencher";$("ladoD").textContent=R.depois.length?sumL(R.depois):"por preencher";
+  (lado==="antes"?R.antes:R.depois).forEach((x,i)=>{const pre=lado+i;
     x.steps.forEach((st,j)=>{
-      const cEl=$("op"+i+"_p"+j+"_calc");if(cEl){const t=[];["a","d"].forEach(sd=>{const P=parSide(st.p,sd);
-        if(P.calc==="vc")t.push((sd==="a"?"Antes":"Depois")+": Vc calculada = "+nf(0).format(P.vc)+" m/min");
-        if(P.calc==="s")t.push((sd==="a"?"Antes":"Depois")+": rotação calculada = "+nf(0).format(P.s)+" rpm")});
-        cEl.textContent=t.length?t.join(" · "):"Com o diâmetro e a rotação, a Vc é calculada (e ao contrário)."}
-      const el=$("op"+i+"_p"+j+"_res");if(!el)return;
-      if(badTime(st.p,"t")){el.className="passo-res warn";el.textContent="Tempo com formato não reconhecido. Escreve 1:20 ou 80.";return}
+      const cEl=$(pre+"_p"+j+"_calc");if(cEl){const P=parOf(st.p);
+        cEl.textContent=P.calc==="vc"?"Vc calculada = "+nf(0).format(P.vc)+" m/min":P.calc==="s"?"Rotação calculada = "+nf(0).format(P.s)+" rpm":"Com o diâmetro e a rotação, a Vc é calculada (e ao contrário)."}
+      const el=$(pre+"_p"+j+"_res");if(!el)return;
+      if(st.bad){el.className="passo-res warn";el.textContent="Tempo com formato não reconhecido. Escreve 1:20 ou 80.";return}
       el.className="passo-res";
-      if(st.T.a==null){el.textContent="Falta o tempo.";return}
-      let s=tTxt(st.T,blank(st.p.a_t));
-      if(st.fa||st.fd)s+=" · ferramenta "+fe(st.fa)+" → "+fe(st.fd)+" por peça";
-      const ch=parChanges(st.p);if(ch.length)s+=" · "+ch.join(" · ");
-      el.textContent=s});
-    const el=$("op"+i+"_res");if(!el)return;const o=x.o;
-    if(badTime(o,"tx")){el.className="op-res warn";el.textContent="Tempo de carga e trocas com formato não reconhecido.";return}
+      el.textContent=st.t==null?"Falta o tempo.":fmtDur(st.t)+(st.fe?" · ferramenta "+fe(st.fe)+" por peça":"")});
+    const el=$(pre+"_res");if(!el)return;
+    if(x.tx==null){el.className="op-res warn";el.textContent="Tempo de carga e trocas com formato não reconhecido.";return}
     el.className="op-res";
-    if(x.T.a==null){el.textContent="Total da operação: falta o tempo de algum passo.";return}
-    let s="Total "+(o.nome||"da operação")+": "+fmtDur(x.T.a)+" → "+fmtDur(x.T.d)+pctD(x.T.a,x.T.d);
-    s+=x.H!=null?" · "+eur.format(x.H)+"/h":" · falta o custo hora";
-    if(x.ok)s+=" · "+fe(x.A.ciclo+x.A.ferr)+" → "+fe(x.D.ciclo+x.D.ferr)+" por peça";
-    el.textContent=s});
+    if(x.T==null){el.textContent="Total da operação: falta o tempo de algum passo.";return}
+    el.textContent="Total "+(x.o.nome||"da operação")+": "+fmtDur(x.T)+" por peça"+(x.H!=null?" · "+eur.format(x.H)+"/h":" · falta o custo hora")+(x.ok?" · "+fe(x.ciclo+x.ferr)+" por peça (máquina, operador e ferramenta)":"")});
   const v=$("verdict");
   if(!R.ready)$("parBox").hidden=true;
   if(!R.ready){
     v.className="verdict";
-    const miss=[],noH=R.per.filter(x=>x.H==null);
-    if(noH.length)miss.push(noH.length===R.per.length?"custos por hora":"custo hora da máquina em "+R.per.map((x,i)=>x.H==null?"Op. "+(i+1):null).filter(Boolean).join(", "));
-    R.per.forEach((x,i)=>{if(x.T.a==null||x.T.d==null)miss.push("tempo de ciclo da Op. "+(i+1))});
+    const miss=[],todas=R.antes.map((x,i)=>["Antes",i,x]).concat(R.depois.map((x,i)=>["Depois",i,x]));
+    if(!R.antes.length)miss.push("as operações do Antes");
+    if(!R.depois.length)miss.push("as operações do Depois (podes copiar o Antes e alterar)");
+    const semH=todas.filter(y=>y[2].H==null);
+    if(semH.length)miss.push(semH.length===todas.length?"custos por hora":"custo hora da máquina ("+semH.map(y=>y[0]+" Op. "+(y[1]+1)).join(", ")+")");
+    todas.forEach(y=>{if(y[2].T==null)miss.push("tempos da Op. "+(y[1]+1)+" do "+y[0])});
     if(!R.lote)miss.push("quantidade do lote");
     v.textContent="Falta preencher: "+miss.join(", ")+".";
     $("tiles").innerHTML="";$("barsBox").hidden=true;$("opsBox").hidden=true;$("cmpBox").hidden=true;return R;
@@ -761,7 +823,9 @@ function render(){
   // Gráficos do resultado
   const segs=[["ciclo","Máquina e operador","--c1"],["ferr","Ferramenta","--c2"],["setupP","Preparação","--c3"],["refugo","Refugo","--c8"],["mat","Material","--c-antes"]].filter(([k])=>k!=="mat"||R.A.mat>0);
   chStack($("chCusto"),[{label:"Antes",S:R.A},{label:"Depois",S:R.D}].map(r=>({label:r.label,total:r.S.total,parts:segs.map(([k,n,c])=>({name:n,color:c,value:r.S[k]}))})),fe);
-  chHGroup($("chOps"),R.per.map((x,i)=>x.o.nome||"OP "+(i+1)),[{name:"Antes",color:"--c-antes",values:R.per.map(x=>x.T.a/60)},{name:"Depois",color:"--c1",values:R.per.map(x=>x.T.d/60)}],v=>fmtDur(v*60),v=>nf(1).format(v)+" min");
+  const prs=pares(R),pal=["--c1","--c2","--c3","--c4","--c5","--c6","--c7","--c8"];
+  const rowOf=(label,key)=>({label,total:prs.reduce((a,pr)=>a+((pr[key]&&pr[key].T)||0),0)/60,parts:prs.map((pr,i)=>({name:pr.name,color:i<8?pal[i]:"--c-antes",value:((pr[key]&&pr[key].T)||0)/60}))});
+  chStack($("chOps"),[rowOf("Antes","a"),rowOf("Depois","d")],v=>fmtDur(v*60));
   $("barsBox").hidden=false;$("opsBox").hidden=false;
 
   // Tabela
@@ -770,12 +834,16 @@ function render(){
     return `<tr class="${cl||""}"><td>${lab}</td><td class="num">${isTime?fmtDur(a):f(a)}</td><td class="num">${isTime?fmtDur(d):f(d)}</td><td class="num ${dc}">${fd}</td></tr>`};
   const pct=x=>nf(1).format(x*100)+" %";
   let t="";
-  const detalhe=R.per.length>1||R.per.some(x=>x.steps.length>1||x.tx.a>0||x.tx.d>0);
-  if(detalhe)R.per.forEach((x,i)=>{
-    t+=row(esc(x.o.nome||("Operação "+(i+1)))+(x.o.maquina?"<small>"+esc(x.o.maquina)+"</small>":""),x.A.t,x.D.t,null,false,true,"opr");
-    x.steps.forEach((st,j)=>{t+=row(esc(st.p.nome||("Passo "+(i+1)+"."+(j+1))),st.T.a,st.T.d,null,false,true,"sub")});
-    if(x.tx.a>0||x.tx.d>0)t+=row("Carga, descarga e trocas",x.tx.a,x.tx.d,null,false,true,"sub")});
-  t+=row(R.per.length>1?"Tempo de ciclo total":"Tempo de ciclo",R.A.t,R.D.t,null,false,true);
+  const rowT=(lab,a,d,cl)=>{let fd,dc="";
+    if(a==null&&d==null)fd="—";else if(a==null){fd="novo";dc="delta-neg"}else if(d==null){fd="eliminado";dc="delta-pos"}
+    else{const df=a-d;fd=Math.abs(df)<1e-9?"—":(df>0?"−":"+")+fmtDur(Math.abs(df));dc=Math.abs(df)<1e-9?"":df>0?"delta-pos":"delta-neg"}
+    return `<tr class="${cl||""}"><td>${lab}</td><td class="num">${a==null?"—":fmtDur(a)}</td><td class="num">${d==null?"—":fmtDur(d)}</td><td class="num ${dc}">${fd}</td></tr>`};
+  prs.forEach(pr=>{const {a,d}=pr,ma=a&&a.o.maquina,md=d&&d.o.maquina;
+    const mq=ma&&md&&nk(ma)!==nk(md)?ma+" → "+md:(md||ma||"");
+    t+=rowT(esc(pr.name)+(mq?"<small>"+esc(mq)+"</small>":""),a?a.T:null,d?d.T:null,"opr");
+    paresPassos(a,d).forEach(z=>{t+=rowT(esc(z.name),z.a?z.a.t:null,z.d?z.d.t:null,"sub")});
+    const ta=a?a.tx:null,td=d?d.tx:null;if((ta||0)>0||(td||0)>0)t+=rowT("Carga, descarga e trocas",a?ta:null,d?td:null,"sub")});
+  t+=row("Tempo de ciclo total <small>"+R.antes.length+" → "+R.depois.length+" operações</small>",R.A.t,R.D.t,null,false,true);
   t+=row("Tempo por peça boa <small>com preparação e refugo</small>",R.A.tBoa,R.D.tBoa,null,false,true);
   t+=row("Máquina e operador",R.A.ciclo,R.D.ciclo,fe);
   t+=row("Ferramenta",R.A.ferr,R.D.ferr,fe);
@@ -784,8 +852,7 @@ function render(){
   if(R.A.mat>0)t+=row("Material",R.A.mat,R.D.mat,fe);
   t+=row("Custo por peça boa",R.A.total,R.D.total,fe,false,false,"total");
   $("cmpBody").innerHTML=t;$("cmpBox").hidden=false;
-  const pl=[];R.per.forEach((x,i)=>x.steps.forEach((st,j)=>{const ch=parChanges(st.p);
-    if(ch.length||!blank(st.p.notas))pl.push(`<li><b>${esc((x.o.nome||"OP "+(i+1))+" · "+(st.p.nome||"passo "+(j+1)))}:</b> ${esc(ch.join(", "))}${!blank(st.p.notas)?`<br><span class="r2">${esc(st.p.notas)}</span>`:""}</li>`)}));
+  const pl=mudancas(R).map(m=>`<li><b>${esc(m.t)}:</b> ${esc(m.txt)}${!blank(m.nota)?`<br><span class="r2">${esc(m.nota)}</span>`:""}</li>`);
   $("parList").innerHTML=pl.join("");$("parBox").hidden=!pl.length;
   return R;
 }
@@ -797,20 +864,27 @@ function loadDraft(){try{return JSON.parse(localStorage.getItem(DKEY)||"null")}c
 let dT;function onInput(){render();if(baseline)updBar();clearTimeout(dT);dT=setTimeout(saveDraft,400)}
 document.querySelectorAll(".main input,.main select,.main textarea").forEach(el=>{el.addEventListener("input",onInput);el.addEventListener("change",onInput)});
 
-$("ops").addEventListener("input",e=>{const el=e.target;if(el.dataset.k==null)return;const o=ops[+el.dataset.i];
+$("ops").addEventListener("input",e=>{const el=e.target;if(el.dataset.k==null)return;const o=proc[lado][+el.dataset.i];if(!o)return;
   if(el.dataset.j!=null)o.passos[+el.dataset.j][el.dataset.k]=el.value;else o[el.dataset.k]=el.value;onInput()});
 $("ops").addEventListener("toggle",e=>{const d=e.target;if(!d.dataset||!d.dataset.key)return;if(d.open)paramsOpen.add(d.dataset.key);else paramsOpen.delete(d.dataset.key)},true);
-$("ops").addEventListener("click",e=>{const b=e.target.closest("button[data-act]");if(!b)return;const i=+b.dataset.i,a=b.dataset.act;
-  if(a==="copy"){const o=ops[i];["prog","fix","setup","tx"].forEach(k=>o["d_"+k]=o["a_"+k]);o.passos.forEach(p=>["ferr","t","fp","fv"].concat(PARAMK).forEach(k=>p["d_"+k]=p["a_"+k]));renderOps();onInput();toast("Valores do Antes copiados para o Depois")}
-  else if(a==="addp"){ops[i].passos.push(blankPasso());renderOps();onInput();const el=$("op"+i+"_p"+(ops[i].passos.length-1)+"_nome");if(el)el.focus()}
-  else if(a==="delp"){paramsOpen.clear();ops[i].passos.splice(+b.dataset.j,1);renderOps();onInput();toast("Passo removido")}
-  else if(a==="del"){pendingOpDel=i;renderOps();render()}
-  else if(a==="delno"){pendingOpDel=null;renderOps();render()}
-  else if(a==="delyes"){ops.splice(i,1);pendingOpDel=null;renderOps();onInput();toast("Operação removida")}});
-$("bAddOp").onclick=()=>{ops.push(blankOp());pendingOpDel=null;renderOps();onInput();const el=$("op"+(ops.length-1)+"_nome");if(el)el.focus()};
+$("ops").addEventListener("click",e=>{const b=e.target.closest("button[data-act]");if(!b)return;const i=+b.dataset.i,a=b.dataset.act,list=proc[lado];
+  if(a==="addp"){list[i].passos.push(blankPasso());renderProc();onInput();const el=$(lado+i+"_p"+(list[i].passos.length-1)+"_nome");if(el)el.focus()}
+  else if(a==="delp"){paramsOpen.clear();list[i].passos.splice(+b.dataset.j,1);renderProc();onInput();toast("Passo removido")}
+  else if(a==="del"){pendingOpDel=i;renderProc();render()}
+  else if(a==="delno"){pendingOpDel=null;renderProc();render()}
+  else if(a==="delyes"){list.splice(i,1);pendingOpDel=null;paramsOpen.clear();renderProc();onInput();toast("Operação removida")}});
+$("bAddOp").onclick=()=>{proc[lado].push(blankOp());pendingOpDel=null;renderProc();onInput();const el=$(lado+(proc[lado].length-1)+"_nome");if(el)el.focus()};
+document.querySelectorAll(".lado").forEach(b=>b.onclick=()=>{lado=b.dataset.lado;pendingOpDel=null;copyArm=false;renderProc();render()});
+$("bCopyProc").onclick=()=>{
+  if(!proc.antes.length){toast("O Antes ainda está vazio.");return}
+  if(proc.depois.length&&!copyArm){copyArm=true;renderProc();toast("Isto substitui o que está no Depois. Carrega outra vez para confirmar.");return}
+  proc.depois=JSON.parse(JSON.stringify(proc.antes)).map(normOp1);copyArm=false;lado="depois";paramsOpen.clear();renderProc();onInput();toast("Processo do Antes copiado. Agora altera só o que mudou.")};
+$("bOpen").onclick=()=>{const h=document.querySelector(".hist");if(h)h.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});
+  if(!records.length)toast("Ainda não há trabalhos guardados.");else setTimeout(()=>$("q").focus({preventScroll:true}),450)};
+$("dOpen").onclick=()=>{location.hash="registo";setTimeout(()=>$("bOpen").click(),60)};
 function setExample(on){isExample=on;$("exBanner").hidden=!on}
 let baseline="",baseF=null,baselinePending=false;
-function normF(f){f=f||{};return JSON.stringify({a:FIELDS.map(k=>f[k]!=null?String(f[k]):(k==="estado"?"Por validar":"")),c:CHECKS.map(k=>!!f[k]),o:opsOf(f)})}
+function normF(f){f=f||{};return JSON.stringify({a:FIELDS.map(k=>f[k]!=null?String(f[k]):(k==="estado"?"Por validar":"")),c:CHECKS.map(k=>!!f[k]),o:procOf(f)})}
 function isDirty(){return baseline!==""&&normF(read())!==baseline}
 function setBase(f){f=f||read();baseF=JSON.parse(JSON.stringify(f));baseline=normF(f);updBar()}
 function updBar(){
@@ -838,7 +912,7 @@ const LKEY="cnc_tc_registos_v2";
 function localAll(){try{return JSON.parse(localStorage.getItem(LKEY)||"[]")}catch(e){return []}}
 function localPut(arr){try{localStorage.setItem(LKEY,JSON.stringify(arr));return true}catch(e){return false}}
 
-function summary(R){return {tA:R.ready?R.A.t:null,tD:R.ready?R.D.t:null,nOps:ops.length,poupPeca:R.ready?R.poupPeca:null,poupAno:R.ready?R.poupAno:null,redCiclo:R.ready?R.redCiclo:null,poupLote:R.ready?R.poupLote:null}}
+function summary(R){return {tA:R.ready?R.A.t:null,tD:R.ready?R.D.t:null,nA:proc.antes.length,nD:proc.depois.length,poupPeca:R.ready?R.poupPeca:null,poupAno:R.ready?R.poupAno:null,redCiclo:R.ready?R.redCiclo:null,poupLote:R.ready?R.poupLote:null}}
 
 let readOnly=false,userEmail="";
 function setReadOnly(on){readOnly=on;$("roBanner").hidden=!on;$("bSave").disabled=on;$("bSave").hidden=on;$("fImport").disabled=on;
@@ -847,7 +921,7 @@ async function save(){
   if(readOnly){toast("A tua conta é só de consulta.");return}
   if(window.firebase&&!store){toast("Entra com a tua conta para guardar.");$("login").hidden=false;return}
   const f=read(), R=calc();
-  if(!f.ref.trim()&&!ops.some(o=>String(o.maquina||"").trim())){toast("Indica pelo menos a referência ou a máquina.");$("ref").focus();return}
+  if(!f.ref.trim()&&!proc.antes.concat(proc.depois).some(o=>String(o.maquina||"").trim())){toast("Indica pelo menos a referência ou a máquina.");$("ref").focus();return}
   const now=new Date().toISOString();
   const prev=records.find(x=>x.id===currentId);
   const rec={f,res:summary(R),criadoEm:prev?prev.criadoEm:now,atualizadoEm:now,autor:userEmail||""};
@@ -867,7 +941,7 @@ $("bPrint").onclick=()=>window.print();
 
 function matches(r,q,est){
   if(est&&(r.f.estado||"Por validar")!==est)return false;if(!q)return true;
-  const hay=[r.f.ref,r.f.responsavel,r.f.obs].concat(opsOf(r.f).flatMap(o=>[o.nome,o.maquina,o.a_prog,o.d_prog,o.a_fix,o.d_fix].concat(o.passos.flatMap(p=>[p.nome,p.a_ferr,p.d_ferr,p.notas,p.a_cool,p.d_cool])))).join(" ").toLowerCase();
+  const hay=[r.f.ref,r.f.responsavel,r.f.obs].concat((pr=>pr.antes.concat(pr.depois))(procOf(r.f)).flatMap(o=>[o.nome,o.maquina,o.prog,o.fix].concat(o.passos.flatMap(p=>[p.nome,p.ferr,p.notas,p.cool])))).join(" ").toLowerCase();
   return q.toLowerCase().split(/\s+/).every(w=>hay.includes(w))}
 function fdate(s){if(!s)return "";const [y,m,d]=s.split("-");return d&&m?`${d}/${m}/${y}`:s}
 
@@ -875,8 +949,8 @@ function fillLists(){
   const sets={dl_ref:new Set(),dl_responsavel:new Set(),dl_maquina:new Set(),dl_operacao:new Set(),dl_prog:new Set(),dl_ferr:new Set(),dl_passo:new Set(PASSOS_BASE),dl_fix:new Set(FIX_BASE),dl_cool:new Set(COOL_BASE)};
   const add=(k,v)=>{v=String(v||"").trim();if(v)sets[k].add(v)};
   records.forEach(r=>{const f=r.f||{};add("dl_ref",f.ref);add("dl_responsavel",f.responsavel);
-    opsOf(f).forEach(o=>{add("dl_maquina",o.maquina);add("dl_operacao",o.nome);add("dl_prog",o.a_prog);add("dl_prog",o.d_prog);add("dl_fix",o.a_fix);add("dl_fix",o.d_fix);
-      o.passos.forEach(p=>{add("dl_passo",p.nome);add("dl_ferr",p.a_ferr);add("dl_ferr",p.d_ferr);add("dl_cool",p.a_cool);add("dl_cool",p.d_cool)})})});
+    const pr=procOf(f);pr.antes.concat(pr.depois).forEach(o=>{add("dl_maquina",o.maquina);add("dl_operacao",o.nome);add("dl_prog",o.prog);add("dl_fix",o.fix);
+      o.passos.forEach(p=>{add("dl_passo",p.nome);add("dl_ferr",p.ferr);add("dl_cool",p.cool)})})});
   for(const k in sets)$(k).innerHTML=[...sets[k]].sort((a,b)=>a.localeCompare(b,"pt")).map(v=>`<option value="${esc(v)}"></option>`).join("");
 }
 function renderHist(){
@@ -889,18 +963,18 @@ function renderHist(){
   if(!records.length){$("histList").innerHTML=`<div class="empty">Ainda não há melhorias guardadas. Preenche o formulário acima e carrega em <b>Guardar registo</b>. Cada registo fica aqui, com a poupança e o estado de validação.</div>`;return}
   if(!list.length){$("histList").innerHTML=`<div class="empty">Nenhum registo corresponde à pesquisa.</div>`;return}
   $("histList").innerHTML=list.map(r=>{
-    const f=r.f,s=r.res||{},st=f.estado||"Por validar",os=opsOf(f);
+    const f=r.f,s=r.res||{},st=f.estado||"Por validar",pr=procOf(f),os=pr.antes.concat(pr.depois);
     const maqs=[...new Set(os.map(o=>String(o.maquina||"").trim()).filter(Boolean))].join(" · ");
     const pp=s.poupPeca,pa=s.poupAno;
     const c=v=>v==null?"":v>0?"delta-pos":v<0?"delta-neg":"";
     const del=readOnly?"":pendingDelete===r.id?`<span class="confirm" data-stop>Apagar? <button class="btn danger" data-del="${r.id}" type="button">Sim, apagar</button><button class="btn" data-cancel type="button">Não</button></span>`
       :`<button class="btn ghost danger" data-ask="${r.id}" type="button" aria-label="Apagar registo">Apagar</button>`;
     return `<div class="hist-item ${r.id===currentId?"on":""}" tabindex="0" data-id="${r.id}">
-      <div><div class="r1">${esc(f.ref||"Sem referência")}</div><div class="r2">${esc([fdate(f.data),os.length>1?os.length+" operações":os[0].nome,os.length===1&&(os[0].a_prog||os[0].d_prog)?(os[0].a_prog||"?")+" → "+(os[0].d_prog||os[0].a_prog||"?"):""].filter(Boolean).join(" · "))}</div></div>
+      <div><div class="r1">${esc(f.ref||"Sem referência")}</div><div class="r2">${esc([fdate(f.data),pr.antes.length+" → "+pr.depois.length+" operações"].filter(Boolean).join(" · "))}</div></div>
       <div class="c-maq r2">${esc(maqs)}<br><span class="pill ${st.replace(" ","-")}">${esc(st)}</span></div>
       <div class="num c-red">${s.redCiclo!=null?nf(1).format(s.redCiclo*100)+" %":"—"}<small>ciclo</small></div>
       <div class="num ${c(pa!=null?pa:pp)}">${pa!=null?eur.format(pa):pp!=null?fe(pp):"—"}<small>${pa!=null?"por ano":"por peça"}</small></div>
-      <div class="hist-btns">${r.id===currentId?"":`<button class="btn sm" data-open="${r.id}" type="button">Alterar</button>`}${del}</div></div>`}).join("");
+      <div class="hist-btns">${r.id===currentId?"":`<button class="btn sm" data-open="${r.id}" type="button">Abrir</button>`}${del}</div></div>`}).join("");
 }
 $("q").addEventListener("input",renderHist);$("fEstado").addEventListener("change",renderHist);
 $("histList").addEventListener("click",async e=>{
@@ -934,16 +1008,14 @@ $("bJson").onclick=()=>{if(!records.length){toast("Não há registos para export
 $("bCsv").onclick=()=>{if(!records.length){toast("Não há registos para exportar.");return}
   const q=v=>'"'+String(v==null?"":v).replace(/"/g,'""')+'"';
   const n=v=>v==null?"":String(Math.round(v*1000)/1000).replace(".",",");
-  const head=["Data","Referência","Responsável","Estado","Nº operações","Máquinas","Operações (antes → depois)","Parâmetros alterados e notas","Ciclo antes (s)","Ciclo depois (s)","Lote","Qtd anual","Observações","Poupança/peça (€)","Poupança/lote (€)","Poupança/ano (€)","Redução ciclo (%)"].map(q).join(";");
-  const rows=records.map(r=>{const f=r.f||{},s=r.res||{},os=opsOf(f);
-    let tA=s.tA,tD=s.tD;if(tA==null){const ts=os.map(opTimes);if(ts.every(t=>t.a!=null&&t.d!=null)){tA=ts.reduce((a,t)=>a+t.a,0);tD=ts.reduce((a,t)=>a+t.d,0)}}
-    const tt=(x,k)=>(x["a_"+k]||"novo")+"→"+(blank(x["d_"+k])?(x["a_"+k]||"?"):x["d_"+k]);
-    const desc=os.map((o,i)=>(o.nome||"Op. "+(i+1))+(o.maquina?" ("+o.maquina+")":"")+": "+
-      (blank(o.a_fix)&&blank(o.d_fix)?"":"fixação "+(o.a_fix||"?")+(blank(o.d_fix)||o.d_fix===o.a_fix?"":"→"+o.d_fix)+(numv(o.c_gab)?" (gabarito "+o.c_gab+" €)":"")+"; ")+
-      o.passos.map((p,j)=>(p.nome||"passo "+(j+1))+" "+tt(p,"t")).concat(blank(o.a_tx)&&blank(o.d_tx)?[]:["carga/trocas "+tt(o,"tx")]).join(", ")).join(" | ");
+  const head=["Data","Referência","Responsável","Estado","Operações (antes → depois)","Máquinas","Processo antes e depois","O que mudou","Ciclo antes (s)","Ciclo depois (s)","Lote","Qtd anual","Observações","Poupança/peça (€)","Poupança/lote (€)","Poupança/ano (€)","Redução ciclo (%)"].map(q).join(";");
+  const rows=records.map(r=>{const f=r.f||{},s=r.res||{},pr=procOf(f),os=pr.antes.concat(pr.depois),R=calcF(f);
+    const tA=R.ready?R.A.t:s.tA,tD=R.ready?R.D.t:s.tD;
+    const lst=(list)=>list.map((o,i)=>(o.nome||"Op. "+(i+1))+(o.maquina?" ("+o.maquina+")":"")+": "+o.passos.map((p,j)=>(p.nome||"passo "+(j+1))+" "+(p.t||"?")).join(", ")+(blank(o.tx)?"":", carga/trocas "+o.tx)).join(" | ");
+    const desc="ANTES: "+lst(pr.antes)+" || DEPOIS: "+lst(pr.depois);
     const maqs=[...new Set(os.map(o=>String(o.maquina||"").trim()).filter(Boolean))].join(", ");
-    const pars=os.flatMap((o,i)=>o.passos.map((p,j)=>{const ch=parChanges(p);return ch.length||!blank(p.notas)?(o.nome||"Op. "+(i+1))+" · "+(p.nome||"passo "+(j+1))+": "+ch.join(", ")+(blank(p.notas)?"":" ["+p.notas+"]"):""}).filter(Boolean)).join(" | ");
-    return [q(f.data),q(f.ref),q(f.responsavel),q(f.estado),q(os.length),q(maqs),q(desc),q(pars),n(tA),n(tD),q(f.lote),q(f.anual),q(f.obs),
+    const pars=mudancas(R).map(m=>m.t+": "+m.txt+(blank(m.nota)?"":" ["+m.nota+"]")).join(" | ");
+    return [q(f.data),q(f.ref),q(f.responsavel),q(f.estado),q(pr.antes.length+" → "+pr.depois.length),q(maqs),q(desc),q(pars),n(tA),n(tD),q(f.lote),q(f.anual),q(f.obs),
       n(s.poupPeca),n(s.poupLote),n(s.poupAno),n(s.redCiclo!=null?s.redCiclo*100:null)].join(";")});
   offer("cnc-melhorias-"+today()+".csv","﻿"+[head].concat(rows).join("\r\n"))};
 $("fImport").addEventListener("change",async e=>{
@@ -1070,20 +1142,21 @@ function dashRows(){
   const src=demoOn?demoRecs():records;
   const per=$("dPer").value,est=$("dEst").value,maq=$("dMaq").value,now=new Date();
   const lim=per==="ano"?now.getFullYear()+"-01-01":per==="12"?new Date(now.getFullYear()-1,now.getMonth(),now.getDate()).toISOString().slice(0,10):"";
-  return src.map(r=>{const f=r.f||{};return {r,f,R:calcF(f),est:f.estado||"Por validar",ops:opsOf(f)}}).filter(x=>{
+  return src.map(r=>{const f=r.f||{};const pr=procOf(f);return {r,f,R:calcF(f),est:f.estado||"Por validar",maqs:pr.antes.concat(pr.depois).map(o=>String(o.maquina||"").trim())}}).filter(x=>{
     if(est==="semrej"&&x.est==="Rejeitada")return false;
     if(est==="val"&&x.est!=="Validada")return false;
     if(lim&&(!x.f.data||x.f.data<lim))return false;
-    if(maq&&!x.ops.some(o=>String(o.maquina||"").trim()===maq))return false;
+    if(maq&&!x.maqs.includes(maq))return false;
     return true})}
 function maqSave(x){
   const out={},R=x.R;if(!R.ready||!R.anual)return out;const L=R.lote&&R.lote>0?R.lote:null;
-  R.per.forEach(p=>{if(!p.ok)return;const m=String(p.o.maquina||"").trim()||"Sem máquina";
-    const c=S=>S.ciclo+S.ferr+(L?S.setupCost/L:0);out[m]=(out[m]||0)+(c(p.A)-c(p.D))*R.anual});
+  const c=y=>y.ciclo+y.ferr+(L?y.setupCost/L:0),m=y=>String(y.o.maquina||"").trim()||"Sem máquina";
+  R.antes.forEach(y=>{out[m(y)]=(out[m(y)]||0)+c(y)*R.anual});
+  R.depois.forEach(y=>{out[m(y)]=(out[m(y)]||0)-c(y)*R.anual});
   return out}
 function renderDash(){
   if($("vPainel").hidden)return;
-  const all=(demoOn?demoRecs():records);const ms=new Set();all.forEach(r=>opsOf(r.f).forEach(o=>{const m=String(o.maquina||"").trim();if(m)ms.add(m)}));
+  const all=(demoOn?demoRecs():records);const ms=new Set();all.forEach(r=>{const pr=procOf(r.f);pr.antes.concat(pr.depois).forEach(o=>{const m=String(o.maquina||"").trim();if(m)ms.add(m)})});
   const cur=$("dMaq").value;$("dMaq").innerHTML='<option value="">Todas as máquinas</option>'+[...ms].sort((a,b)=>a.localeCompare(b,"pt")).map(m=>`<option${m===cur?" selected":""}>${esc(m)}</option>`).join("");
   $("dDemo").hidden=!demoOn;
   const empty=!demoOn&&!records.length;$("dEmpty").hidden=!empty;$("dBody").hidden=empty;
