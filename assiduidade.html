@@ -204,7 +204,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
   <button class="btn sec hide" id="lkCancel">Cancelar</button>
   <p id="lkErr"></p>
   <a href="#" id="lkEsq" class="small hide" style="color:var(--pri)">Esqueci-me da palavra-passe</a>
-  <div class="small" style="margin-top:14px;opacity:.6">versão 10/11 · jornada 8h</div>
+  <div class="small" style="margin-top:14px;opacity:.6">versão 10/11b · jornada 8h</div>
 </div></div>
 <header>
   <span class="logo"><img src="" data-logo alt="EFAFLU"></span>
@@ -394,9 +394,9 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
               <option value="aus:Outro">• Outra ausência</option></optgroup>
             <option value="sabado">Sábado trabalhado</option>
           </select></div>
-        <div id="boxComp" class="hide"><label>Como fica este dia de aniversário?</label>
+        <div id="boxComp" class="hide"><label id="rCompLab">Como fica este dia de aniversário?</label>
           <select id="rComp" onchange="ajustarForm()">
-            <option value="folga">🎁 Folga oferecida (não desconta)</option>
+            <option value="folga" id="rCompFolga">🎁 Folga oferecida (não desconta)</option>
             <option value="banco">🏦 Descontar no banco de horas</option>
             <option value="ferias">🏖️ Descontar nas férias</option>
           </select></div>
@@ -757,8 +757,12 @@ const AUS = {'Férias':{k:'fer',curto:'Férias',sig:'F',cor:'#d98a1c',ic:'🏖�
 const motAus = r => AUS[r.motivo] ? r.motivo : 'Outro';
 const COMP_TXT={folga:'folga',banco:'banco de horas',ferias:'férias'};
 const ehAni = r => r.tipo==='ausencia' && motAus(r)==='Aniversário';
-const horasAniBanco = r => ehAni(r) && r.compensa==='banco' ? (r.horas || 8*(r.dias||1)) : 0;
-const nomeTipo = r => r.tipo==='ausencia' ? AUS[motAus(r)].curto+(ehAni(r)&&r.compensa&&r.compensa!=='folga'?' → '+COMP_TXT[r.compensa]:'') : TIPOS[r.tipo]+(r.tipo==='banco'?(r.mov==='-'?' −':' +'):'');
+// Ausências e faltas que podem ficar justificadas ou ser descontadas no banco de horas / nas férias
+const COMPENSAVEIS = ['aus:Aniversário','aus:Assistência à família','aus:Outro','falta_j'];
+const temComp = r => (r.tipo==='ausencia' && ['Aniversário','Assistência à família','Outro'].includes(motAus(r))) || r.tipo==='falta_j';
+const horasAniBanco = r => temComp(r) && r.compensa==='banco' ? (r.horas || 8*(r.dias||1)) : 0;
+const sufComp = r => temComp(r) && r.compensa && r.compensa!=='folga' ? ' → '+COMP_TXT[r.compensa] : '';
+const nomeTipo = r => r.tipo==='ausencia' ? AUS[motAus(r)].curto+sufComp(r) : TIPOS[r.tipo]+(r.tipo==='banco'?(r.mov==='-'?' −':' +'):'')+(r.tipo==='falta_j'?sufComp(r):'');
 const tagReg = r => r.tipo==='ausencia' ? `<span class="tag" style="background:${AUS[motAus(r)].cor}">${AUS[motAus(r)].curto}</span>` : `<span class="tag t-${r.tipo}">${nomeTipo(r)}</span>`;
 const valTipo = () => { const v=$('rTipo').value; return v.startsWith('aus:') ? 'ausencia' : v; };
 let colabs = [], regs = [], relogios = [], planos = [], logs = [], formacoes = [], epis = [], maquinas = [], usos = [], avarias = [], pedidos = [], meuColabId = '', cfg = {geral:{}, acessos:null, fechos:{meses:{}}}, papel = 'editor', db = null, editReg = null, editCol = null;
@@ -967,7 +971,7 @@ function aniHTML(c){
 }
 function parabens(id){ const c=colabs.find(x=>x.id===id); abrirWa(`Parabéns ${primeiroNome(c.nome)}! 🎉🎂\nQue tenhas um excelente dia, com muita saúde e alegria.\nUm abraço de toda a equipa do Parque de Máquinas!\n${assinatura()}`, c.tel); }
 const direitoFerias = colId => { const c=colabs.find(x=>x.id===colId); return c && c.diasFerias!=null ? +c.diasFerias : 22; };
-const feriasGozadas = (colId, ano, excl) => regs.filter(r=>r.colId===colId && r.id!==excl && r.tipo==='ausencia' && (motAus(r)==='Férias' || (ehAni(r) && r.compensa==='ferias')) && r.data.slice(0,4)===ano).reduce((s,r)=>s+(r.dias||0),0);
+const feriasGozadas = (colId, ano, excl) => regs.filter(r=>r.colId===colId && r.id!==excl && ((r.tipo==='ausencia' && motAus(r)==='Férias') || (temComp(r) && r.compensa==='ferias')) && r.data.slice(0,4)===ano).reduce((s,r)=>s+(r.dias||0),0);
 function feriasHTML(colId, ano){
   const d=direitoFerias(colId), g=feriasGozadas(colId,ano), f=d-g;
   return `<span title="Gozou ${fmt(g)} de ${fmt(d)} dias em ${ano}">${fmt(g)}/${fmt(d)} · <b class="${f<0?'neg':f<=3?'':'pos'}">${f<0?'excedeu '+fmt(-f):'faltam '+fmt(f)}</b></span>`;
@@ -1087,16 +1091,18 @@ function ajustarForm(){
   $('boxFimH').classList.toggle('hide', !temHoras);
   $('boxMotivo').classList.add('hide');
   $('boxMov').classList.toggle('hide', t!=='banco');
-  const ani=$('rTipo').value==='aus:Aniversário';
-  $('boxComp').classList.toggle('hide', !ani);
-  if(ani && $('rComp').value==='banco'){ $('boxHoras').classList.remove('hide'); if(!$('rHoras').value) $('rHoras').value=8; }
+  const tv=$('rTipo').value, ani=tv==='aus:Aniversário', comp=COMPENSAVEIS.includes(tv);
+  $('boxComp').classList.toggle('hide', !comp);
+  $('rCompLab').textContent = ani ? 'Como fica este dia de aniversário?' : tv==='falta_j' ? 'Como fica esta falta?' : 'Como fica esta ausência?';
+  $('rCompFolga').textContent = ani ? '🎁 Folga oferecida (não desconta)' : '✅ Justificada (não desconta)';
+  if(comp && $('rComp').value==='banco'){ $('boxHoras').classList.remove('hide'); if(!$('rHoras').value) $('rHoras').value=8*(parseFloat($('rDias').value)||1); }
   if(['extra','banco','sabado'].includes(t)) $('rDias').value = t==='sabado'?1:0;
   $('dica').textContent = {
     falta_i:'Falta de dia inteiro: Dias = 1. Falta parcial (ex.: chegou tarde): Dias = 0 e indica as horas.',
-    falta_j:'Indica o motivo nas observações (ex.: consulta, tribunal…). Falta parcial: Dias = 0 e indica as horas.',
+    falta_j:'Indica o motivo nas observações (ex.: consulta, tribunal…). Falta parcial: Dias = 0 e indica as horas. Em "Como fica esta falta?" escolhes se fica só justificada ou se desconta no banco de horas ou nas férias.',
     extra:'Horas para além do horário normal, a pagar. Preenche início e fim (ou carrega em "Agora") e as horas são calculadas sozinhas.',
     banco:'Crédito: horas a mais que ficam no banco. Débito: horas que o colaborador gozou (saiu mais cedo, folga…) e são descontadas do saldo.',
-    ausencia: $('rTipo').value==='aus:Aniversário' ? 'Escolhe se o dia de aniversário é folga oferecida, se desconta no banco de horas (indica as horas, normalmente 8) ou se desconta nas férias.' : 'Para vários dias seguidos (ex.: férias de 15 dias) preenche "Até": os dias úteis (seg–sex) são contados sozinhos.',
+    ausencia: $('rTipo').value==='aus:Aniversário' ? 'Escolhe se o dia de aniversário é folga oferecida, se desconta no banco de horas (indica as horas, normalmente 8) ou se desconta nas férias.' : COMPENSAVEIS.includes($('rTipo').value) ? 'Escolhe se a ausência fica só justificada, se desconta no banco de horas (indica as horas: 8 por dia) ou se desconta nas férias (indica os dias). Para vários dias seguidos preenche "Até".' : 'Para vários dias seguidos (ex.: férias de 15 dias) preenche "Até": os dias úteis (seg–sex) são contados sozinhos.',
     sabado:'Regista cada sábado trabalhado. As horas são opcionais, mas úteis para pagar.'
   }[t];
 }
@@ -1116,22 +1122,24 @@ async function guardarRegisto(){
   if(['falta_i','falta_j','ausencia'].includes(tipo) && !dias && !horas) return aviso('Indica dias ou horas.');
   if(horas>12 && !await perguntar(`São ${hm(horas)} – mais de 12 horas.${hIni&&hFim&&hFim<hIni?'\nA hora de fim é mais cedo que a de início, por isso contou como se passasse para o dia seguinte.':''}\n\nEstá certo?`,'Sim, gravar','Corrigir')) return;
   if(tipo==='sabado' && new Date(data+'T12:00').getDay()!==6 && !await perguntar('Essa data não é um sábado. Guardar mesmo assim?')) return;
-  const compensa = $('rTipo').value==='aus:Aniversário' ? $('rComp').value : '';
+  const compensa = COMPENSAVEIS.includes($('rTipo').value) ? $('rComp').value : '';
+  if(compensa==='ferias' && !dias) return aviso('Para descontar nas férias indica os dias (ex.: 1 ou 0,5).');
   if(tipo==='ausencia' && ($('rTipo').value==='aus:Férias' || compensa==='ferias')){
     const ano=data.slice(0,4), d=direitoFerias(colId), g=feriasGozadas(colId,ano,editReg);
     if(g+dias>d && !await perguntar(`Com estes ${fmtD(dias)}, ${nomeCol(colId).nome} fica com ${fmt(g+dias)} dias de férias em ${ano}, mais do que os ${fmt(d)} a que tem direito.\n\nGuardar mesmo assim?`,'Sim, guardar','Corrigir')) return;
   }
+  const hBanco = compensa==='banco' ? (horas || 8*(dias||0)) : 0;
   if(compensa==='banco'){
-    if(!horas) return aviso('Indica quantas horas descontar do banco (normalmente 8).');
+    if(!hBanco) return aviso('Indica quantas horas descontar do banco (normalmente 8 por dia).');
     const s=saldoBanco(colId, r=>r.id!==editReg);
-    if(horas>s && !await perguntar(`O saldo do banco de horas é ${hm(s)}. Ao descontar ${hm(horas)} fica negativo (${hm(s-horas)}). Guardar mesmo assim?`)) return;
+    if(hBanco>s && !await perguntar(`O saldo do banco de horas é ${hm(s)}. Ao descontar ${hm(hBanco)} fica negativo (${hm(s-hBanco)}). Guardar mesmo assim?`)) return;
   }
   if(tipo==='banco' && $('rMov').value==='-'){
     const s=saldoBanco(colId, r=>r.id!==editReg);
     if(horas>s && !await perguntar(`O saldo atual é ${hm(s)}. Com este débito fica negativo (${hm(s-horas)}). Guardar mesmo assim?`)) return;
   }
   const obs=$('rObs').value.trim(), motivo = tipo==='ausencia' ? $('rTipo').value.slice(4) : '';
-  const r = {id: editReg||uid(), colId, tipo, mov: tipo==='banco'?$('rMov').value:'', data, fim, dias, horas: compensa==='banco'?horas:(tipo==='ausencia'?0:horas), hIni, hFim, motivo, compensa, obs,
+  const r = {id: editReg||uid(), colId, tipo, mov: tipo==='banco'?$('rMov').value:'', data, fim, dias, horas: compensa==='banco'?hBanco:(tipo==='ausencia'?0:horas), hIni, hFim, motivo, compensa, obs,
              criado: new Date().toISOString()};
   await salvar(COL_REG, r);
   const eraEdit = !!editReg;
@@ -1179,7 +1187,9 @@ function rotulosDia(){
 const FD_OP = [['','—'],['falta_i','Falta injust. (dia)'],['falta_j','Falta just. (dia)'],['extra','Horas extra'],
                ['banco+','Banco de horas +'],['banco-','Banco de horas − (gozou)'],['sabado','Sábado trabalhado'],
                ...Object.keys(AUS).filter(m=>m!=='Aniversário').map(m=>['aus:'+m, AUS[m].ic+' '+AUS[m].curto+' (dia)']),
-               ['ani:folga','🎂 Aniversário – folga'],['ani:banco','🎂 Aniversário – desconta banco (8h)'],['ani:ferias','🎂 Aniversário – desconta férias']];
+               ['ani:folga','🎂 Aniversário – folga'],['ani:banco','🎂 Aniversário – desconta banco (8h)'],['ani:ferias','🎂 Aniversário – desconta férias'],
+               ['comp:Assistência à família:banco','👨‍👩‍👧 Assist. família – desconta banco (8h)'],['comp:Assistência à família:ferias','👨‍👩‍👧 Assist. família – desconta férias'],
+               ['fjc:banco','Falta just. – desconta banco'],['fjc:ferias','Falta just. – desconta férias']];
 let fdChave=null;
 function lerFolha(){
   const v={};
@@ -1226,6 +1236,9 @@ async function guardarFolha(){
     let compensa='';
     if(tipo.startsWith('aus:')){ motivo=tipo.slice(4); tipo='ausencia'; }
     if(tipo.startsWith('ani:')){ compensa=tipo.slice(4); motivo='Aniversário'; tipo='ausencia'; }
+    if(tipo.startsWith('comp:')){ const pz=tipo.split(':'); motivo=pz[1]; compensa=pz[2]; tipo='ausencia'; }
+    if(tipo.startsWith('fjc:')){ compensa=tipo.slice(4); tipo='falta_j'; }
+    if(compensa==='ferias' && tipo==='falta_j' && horas){ erros.push(c.nome+': para descontar nas férias deixa as horas em branco (conta 1 dia)'); continue; }
     if((tipo==='extra'||tipo==='banco') && !horas){ erros.push(c.nome+': faltam as horas'); continue; }
     const dias = tipo==='sabado'||tipo==='ausencia' ? 1 : (tipo==='falta_i'||tipo==='falta_j') ? (horas?0:1) : 0;
     if(regs.some(r=>r.colId===colId && cobre(r,data) && r.tipo===tipo && (r.mov||'')===mov)) dup.push(c.nome);
@@ -1972,9 +1985,9 @@ function cobre(r, d){ return r.data<=d && d<=(r.fim||r.data); }
 function ausente(colId, d){ return regs.find(r=>r.colId===colId && cobre(r,d) && (r.tipo==='ausencia' || ((r.tipo==='falta_i'||r.tipo==='falta_j') && r.dias>0))); }
 function celula(colId, d){
   const rs=regs.filter(r=>r.colId===colId && cobre(r,d));
-  const a=rs.find(r=>r.tipo==='ausencia'); if(a){ const m=AUS[motAus(a)]; return {sig:m.sig, cor:m.cor, txt:m.curto+(a.fim?' ('+dataPT(a.data)+' a '+dataPT(a.fim)+')':''), id:a.id}; }
+  const a=rs.find(r=>r.tipo==='ausencia'); if(a){ const m=AUS[motAus(a)]; return {sig:m.sig, cor:m.cor, txt:m.curto+sufComp(a)+(a.fim?' ('+dataPT(a.data)+' a '+dataPT(a.fim)+')':''), id:a.id}; }
   const fi=rs.find(r=>r.tipo==='falta_i'); if(fi) return {sig:fi.dias?'FI':'fi', cor:'var(--falta)', txt:'Falta injustificada'+(fi.horas?' ('+hm(fi.horas)+')':''), id:fi.id};
-  const fj=rs.find(r=>r.tipo==='falta_j'); if(fj) return {sig:fj.dias?'FJ':'fj', cor:'#e48a8a', txt:'Falta justificada'+(fj.horas?' ('+hm(fj.horas)+')':''), id:fj.id};
+  const fj=rs.find(r=>r.tipo==='falta_j'); if(fj) return {sig:fj.dias?'FJ':'fj', cor:'#e48a8a', txt:'Falta justificada'+(fj.horas?' ('+hm(fj.horas)+')':'')+sufComp(fj), id:fj.id};
   const sb=rs.find(r=>r.tipo==='sabado'); if(sb) return {sig:'S', cor:'var(--sab)', txt:'Sábado trabalhado'+(sb.horas?' ('+hm(sb.horas)+')':''), id:sb.id};
   const ex=rs.filter(r=>r.tipo==='extra'); if(ex.length) return {sig:'HE', cor:'var(--extra)', txt:'Horas extra: '+hm(ex.reduce((s,r)=>s+(r.horas||0),0)), id:ex[0].id};
   const bk=rs.find(r=>r.tipo==='banco'); if(bk) return {sig:bk.mov==='-'?'B−':'B+', cor:'var(--banco)', txt:'Banco de horas '+(bk.mov==='-'?'−':'+')+hm(bk.horas), id:bk.id};
