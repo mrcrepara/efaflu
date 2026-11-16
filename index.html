@@ -78,6 +78,16 @@
   .mod .row b{font-variant-numeric:tabular-nums}
   .big{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
 
+  .hoje-sum{font-size:15px;line-height:1.5}
+  .hoje-sum b{font-variant-numeric:tabular-nums}
+  .hl{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+  .hl li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .hl li:last-child{border-bottom:0}
+  .hl .ic{width:1.6rem;text-align:center;flex:none}
+  .hl .tx{flex:1;min-width:0}
+  .hl .tx small{display:block;color:var(--muted);font-size:12.5px}
+  .hl a{color:inherit;text-decoration:none}
+  .hl a:hover b{color:var(--pri)}
   /* Login */
   .login{position:fixed;inset:0;z-index:950;background:var(--pri);display:flex;align-items:center;justify-content:center;padding:16px}
   .login form{background:#fff;border-radius:14px;padding:26px;width:100%;max-width:380px;display:grid;gap:12px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
@@ -104,8 +114,15 @@
 </div></div>
 
 <main id="app" hidden>
+  <section class="card">
+    <div class="card-h"><h2>📋 Hoje</h2><a href="assiduidade.html#folha">Folha do dia →</a></div>
+    <div class="hoje-sum" id="hoje-sum">—</div>
+    <ul class="hl" id="hoje-lista"></ul>
+  </section>
+
   <div class="kpis">
     <a class="kpi" href="assiduidade.html#dash" id="k-eq"><span class="k">Equipa hoje</span><span class="v" id="kv-eq">—</span><span class="s" id="ks-eq">—</span></a>
+    <a class="kpi" href="assiduidade.html#dash" id="k-abs" title="Faltas, baixas e outras ausências não planeadas ÷ horas a trabalhar. Não conta férias, formação, aniversários nem banco de horas."><span class="k">Absentismo este mês</span><span class="v" id="kv-abs">—</span><span class="s" id="ks-abs">—</span></a>
     <a class="kpi" href="assiduidade.html#dash" id="k-mes"><span class="k">Faltas este mês</span><span class="v" id="kv-mes">—</span><span class="s" id="ks-mes">—</span></a>
     <a class="kpi" href="stock.html#resumo" id="k-st"><span class="k">Cobertura de stock</span><span class="v" id="kv-st">—</span><div class="meter" id="km-st"></div><span class="s" id="ks-st">—</span></a>
     <a class="kpi" href="cnc-custos.html" id="k-cnc"><span class="k">Poupança CNC prevista</span><span class="v" id="kv-cnc">—</span><span class="s" id="ks-cnc">—</span></a>
@@ -202,13 +219,36 @@ const cobre=(r,d)=>r.data<=d&&d<=(r.fim||r.data);
 const el=(tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e;};
 const hm=h=>{h=Math.round((h||0)*60);return Math.floor(h/60)+"h"+(h%60?pad(h%60):"");};
 const AUS={"Férias":"#d98a1c","Baixa médica":"#a8551c","Assistência à família":"#be185d","Formação":"#2563eb","Licença":"#64748b"};
+// Feriados (iguais à assiduidade) e absentismo
+const pascoa=y=>{const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mes=Math.floor((h+l-7*m+114)/31),dia=((h+l-7*m+114)%31)+1;return new Date(y,mes-1,dia,12);};
+let ferCache={};
+const feriados=y=>{if(ferCache[y])return ferCache[y];const F={},fx=md=>F[y+"-"+md]=1,rel=k=>{const d=pascoa(y);d.setDate(d.getDate()+k);F[dLocal(d)]=1;};
+  ["01-01","04-25","05-01","06-10","08-15","10-05","11-01","12-01","12-08","12-25"].forEach(fx);rel(-2);rel(0);rel(60);
+  const g=(D.cfg.find(x=>x.id==="geral")||{});if(g.carnaval)rel(-47);if(g.municipal)fx(g.municipal);return ferCache[y]=F;};
+const DIA=8, ABS_MOT=["Baixa médica","Assistência à família","Licença","Outro"];
+const motAus=r=>["Férias","Baixa médica","Assistência à família","Formação","Licença","Aniversário","Outro"].includes(r.motivo)?r.motivo:"Outro";
+// Ausente o dia todo: ausência, falta de dia inteiro (Dias=1 ou 8h+) ou "Banco −" de 8h+
+const ausenteDia=(c,d)=>D.regs.find(r=>r.colId===c.id&&cobre(r,d)&&(r.tipo==="ausencia"||((r.tipo==="falta_i"||r.tipo==="falta_j")&&(r.dias>0||(r.horas||0)>=DIA))||(r.tipo==="banco"&&r.mov==="-"&&(r.horas||0)>=DIA)));
+function absentismo(cols,de,ate){
+  const fim=ate<HOJE?ate:HOJE;const ini=D.regs.reduce((m,r)=>r.data&&r.data<m?r.data:m,"9999");if(ini>de)de=ini;if(!cols.length||fim<de)return null;
+  const ids=new Set(cols.map(c=>c.id));
+  const rel=D.regs.filter(r=>ids.has(r.colId)&&r.data<=fim&&(r.fim||r.data)>=de&&(r.tipo==="falta_i"||r.tipo==="falta_j"||(r.tipo==="ausencia"&&ABS_MOT.includes(motAus(r)))));
+  let teo=0,aus=0,fi=0;
+  for(let d=new Date(de+"T12:00"),f=new Date(fim+"T12:00");d<=f;d.setDate(d.getDate()+1)){
+    const w=d.getDay(),ds=dLocal(d);if(w===0||w===6||feriados(d.getFullYear())[ds])continue;
+    cols.forEach(c=>{let h=0,hi=0;rel.forEach(r=>{if(r.colId!==c.id||!cobre(r,ds))return;
+      const x=r.tipo==="ausencia"||r.dias>0?DIA:(r.data===ds?(r.horas||0):0);h+=x;if(r.tipo==="falta_i")hi+=x;});
+      if(h>DIA){hi*=DIA/h;h=DIA;}teo+=DIA;aus+=h;fi+=hi;});
+  }
+  return {teo,aus,fi,pct:teo?aus/teo:null};
+}
 const maisMeses=(d,m)=>{const x=new Date(d+"T12:00");x.setMonth(x.getMonth()+Number(m));return dLocal(x);};
 
 $("hoje").textContent=new Date().toLocaleDateString("pt-PT",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
 const h=new Date().getHours();
 const saud=h<13?"Bom dia":h<20?"Boa tarde":"Boa noite";
 
-const D={colabs:[],regs:[],pedidos:[],formacoes:[],epis:[],avarias:[],planos:[],maquinas:[],usos:[],artigos:[],cnc:[],compras:[],afiar:[]};
+const D={cfg:[],colabs:[],regs:[],pedidos:[],formacoes:[],epis:[],avarias:[],planos:[],maquinas:[],usos:[],artigos:[],cnc:[],compras:[],afiar:[]};
 let carregou=new Set();
 
 if(!window.firebase){$("sync").textContent="Sem ligação ao Firebase. Verifica a internet.";return;}
@@ -242,25 +282,26 @@ auth.onAuthStateChanged(async u=>{
   const ouvir=(col,key)=>unsubs.push(db.collection(col).onSnapshot(s=>{D[key]=s.docs.map(d=>({id:d.id,...d.data()}));carregou.add(key);render();},e=>{carregou.add(key);console.warn(col,e.code);render();}));
   ouvir("assid_colaboradores","colabs");ouvir("assid_registos","regs");ouvir("assid_pedidos_ferias","pedidos");
   ouvir("assid_formacoes","formacoes");ouvir("assid_epis","epis");ouvir("assid_avarias","avarias");ouvir("assid_planos","planos");
-  ouvir("assid_maquinas","maquinas");ouvir("assid_maq_uso","usos");ouvir("stock_artigos","artigos");ouvir("cnc_registos","cnc");ouvir("ped_compras","compras");ouvir("ped_afiar","afiar");
+  ouvir("assid_maquinas","maquinas");ouvir("assid_maq_uso","usos");ouvir("stock_artigos","artigos");ouvir("cnc_registos","cnc");ouvir("ped_compras","compras");ouvir("ped_afiar","afiar");ouvir("assid_config","cfg");
 });
 
 function render(){
-  $("sync").textContent=carregou.size>=13?"Atualizado em tempo real · "+new Date().toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"}):"A carregar dados…";
+  $("sync").textContent=carregou.size>=14?"Atualizado em tempo real · "+new Date().toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"}):"A carregar dados…";
   const nome=id=>{const c=D.colabs.find(x=>x.id===id);return c?c.nome:"(colaborador)";};
 
   // ---------- Equipa hoje ----------
   const ativos=D.colabs.filter(c=>c.ativo!==false);
   const ausHoje=[];
-  ativos.forEach(c=>{const r=D.regs.find(r=>r.colId===c.id&&cobre(r,HOJE)&&(r.tipo==="ausencia"||((r.tipo==="falta_i"||r.tipo==="falta_j")&&r.dias>0)));if(r)ausHoje.push({c,r});});
+  ferCache={};
+  ativos.forEach(c=>{const r=ausenteDia(c,HOJE);if(r)ausHoje.push({c,r});});
   const pres=ativos.length-ausHoje.length;
   $("kv-eq").textContent=ativos.length?nf.format(pres)+" / "+nf.format(ativos.length):"—";
   $("k-eq").className="kpi "+(!ativos.length?"":pres/ativos.length>=0.85?"ok":pres/ativos.length>=0.7?"warn":"bad");
   $("ks-eq").textContent=ativos.length?(ausHoje.length?nf.format(ausHoje.length)+" ausente"+(ausHoje.length>1?"s":"")+" hoje":"Toda a equipa presente"):"Sem colaboradores registados";
   const ul=$("aus");ul.replaceChildren();
   if(!ausHoje.length)ul.append(el("li","muted","Toda a equipa está presente hoje. 👍"));
-  ausHoje.forEach(({c,r})=>{const li=el("li");const mot=r.tipo==="ausencia"?(r.motivo||"Ausência"):(r.tipo==="falta_i"?"Falta injustificada":"Falta justificada");
-    const tg=el("span","tag",mot);tg.style.background=r.tipo==="ausencia"?(AUS[r.motivo]||"#8a7a2a"):"#d64545";
+  ausHoje.forEach(({c,r})=>{const li=el("li");const mot=r.tipo==="ausencia"?(r.motivo||"Ausência"):r.tipo==="banco"?"Banco de horas":(r.tipo==="falta_i"?"Falta injustificada":"Falta justificada");
+    const tg=el("span","tag",mot);tg.style.background=r.tipo==="ausencia"?(AUS[r.motivo]||"#8a7a2a"):r.tipo==="banco"?"#0f8a9c":"#d64545";
     const nm=el("span",null,c.nome);if(r.fim&&r.fim!==r.data){nm.append(el("span","muted small"," · até "+r.fim.split("-").reverse().slice(0,2).join("/")));}
     li.append(nm,tg);ul.append(li);});
   // próximos 7 dias
@@ -276,6 +317,14 @@ function render(){
   $("kv-mes").textContent=nf.format(faltas.length);
   $("k-mes").className="kpi "+(faltas.length===0?"ok":fi?"bad":"warn");
   $("ks-mes").textContent=(fi?nf.format(fi)+" injustificada"+(fi>1?"s":"")+" · ":"")+hm(extraMes)+" de horas extra";
+
+  // ---------- Absentismo este mês ----------
+  const ultDia=MES+"-"+pad(new Date(+MES.slice(0,4),+MES.slice(5,7),0).getDate());
+  const ab=absentismo(ativos,MES+"-01",ultDia);
+  const pt1=x=>x==null?"—":new Intl.NumberFormat("pt-PT",{maximumFractionDigits:1}).format(x*100)+"%";
+  $("kv-abs").textContent=ab?pt1(ab.pct):"—";
+  $("k-abs").className="kpi "+(!ab||ab.pct==null?"":ab.pct<=0.03?"ok":ab.pct<=0.06?"warn":"bad");
+  $("ks-abs").textContent=ab?nf.format(Math.round(ab.aus/DIA*10)/10)+" dias perdidos"+(ab.fi?" · injust. "+pt1(ab.fi/ab.teo):""):"Sem dados";
 
   // ---------- Stock ----------
   const sit=a=>{if(a.nao_encomendar)return"x";const s=a.stock==null?null:Number(a.stock),m=a.minimo;if(m==null||s==null)return"x";if(s<=0&&m>0)return"rut";if(s<m)return"abx";return"ok";};
@@ -315,6 +364,39 @@ function render(){
   $("pd-af").textContent=nf.format(D.afiar.filter(x=>x.estado==="enviado").reduce((s,x)=>s+(Number(x.qtd)||0),0));
   const nAtr=D.afiar.filter(x=>x.estado==="enviado"&&x.previsto&&x.previsto<HOJE).length;
   $("pd-atr").textContent=nf.format(nAtr);$("pd-atr").style.color=nAtr?"var(--bad)":"";
+
+  // ---------- Hoje ----------
+  {
+    const fds=[0,6].includes(new Date().getDay()), fer=feriados(new Date().getFullYear())[HOJE];
+    const planHoje=D.planos.filter(p=>p.data===HOJE);
+    const vemPlan=planHoje.reduce((s,p)=>s+Object.values(p.pessoas||{}).filter(v=>v.estado==="sim").length,0);
+    const avAbL=D.avarias.filter(a=>a.estado!=="resolvida");
+    const nomeMaq=id=>{const m=D.maquinas.find(x=>x.id===id);return m?(m.codigo?m.codigo+" – ":"")+m.nome:"(máquina)";};
+    const rutL=D.artigos.filter(a=>sit(a)==="rut");
+    const partes=[];
+    if(fer)partes.push("🎉 Hoje é feriado.");else if(fds)partes.push("Hoje é fim de semana"+(planHoje.length?" · <b>"+nf.format(vemPlan)+"</b> chamado"+(vemPlan===1?"":"s")+" para trabalhar":"")+".");
+    else partes.push("<b>"+nf.format(pres)+"</b> de <b>"+nf.format(ativos.length)+"</b> na equipa"+(ausHoje.length?" ("+nf.format(ausHoje.length)+" fora)":"")+".");
+    partes.push(avAbL.length?"<b>"+nf.format(avAbL.length)+"</b> máquina"+(avAbL.length>1?"s":"")+" com avaria.":"Máquinas sem avarias.");
+    partes.push(rutL.length?"<b>"+nf.format(rutL.length)+"</b> artigo"+(rutL.length>1?"s":"")+" em rutura.":"Stock sem ruturas.");
+    $("hoje-sum").innerHTML=partes.join(" ");
+    const L=$("hoje-lista");L.replaceChildren();
+    const item=(ic,t,sub,href)=>{const li=el("li");li.append(el("span","ic",ic));const tx=el("span","tx");const b=el("b",null,t);
+      if(href){const a=el("a");a.href=href;a.append(b);tx.append(a);}else tx.append(b);if(sub)tx.append(el("small",null,sub));li.append(tx);L.append(li);};
+    ativos.filter(c=>c.aniversario&&c.aniversario.slice(5)===HOJE.slice(5)).forEach(c=>item("🎂","Hoje é o aniversário de "+c.nome,null,null));
+    planHoje.forEach(p=>{const sim=Object.entries(p.pessoas||{}).filter(([,v])=>v.estado==="sim").map(([id])=>nome(id).split(" ")[0]);
+      item("📅","Trabalho planeado"+(p.hIni?" · "+p.hIni+(p.hFim?"–"+p.hFim:""):""),sim.length?"Vêm: "+sim.join(", "):"Ainda ninguém confirmou","assiduidade.html#plan");});
+    const regHoje=D.regs.filter(r=>r.data===HOJE&&["extra","sabado","banco"].includes(r.tipo)&&!(r.tipo==="banco"&&r.mov==="-"));
+    if(regHoje.length)item("⏱️","Horas registadas hoje",regHoje.map(r=>nome(r.colId).split(" ")[0]+" "+hm(r.horas)+(r.tipo==="extra"?" extra":r.tipo==="sabado"?" sábado":" banco")).join(" · "),"assiduidade.html#hist");
+    const parciais=D.regs.filter(r=>r.data===HOJE&&(r.tipo==="falta_i"||r.tipo==="falta_j"||(r.tipo==="banco"&&r.mov==="-"))&&!ausHoje.some(x=>x.r.id===r.id)&&(r.horas||0)>0);
+    if(parciais.length)item("🕐","Saídas / faltas parciais",parciais.map(r=>nome(r.colId).split(" ")[0]+" "+hm(r.horas)).join(" · "),"assiduidade.html#hist");
+    avAbL.slice().sort((a,b)=>(a.data||"").localeCompare(b.data||"")).slice(0,5).forEach(a=>{const d=a.data?-diasAte(a.data):0;
+      item("🔧",nomeMaq(a.maqId),(a.descricao||"Avaria")+" · "+(d<=0?"desde hoje":"há "+d+" dia"+(d>1?"s":"")),"assiduidade.html#maq");});
+    if(rutL.length)item("📦","Em rutura",rutL.slice(0,5).map(a=>a.descricao||a.ref).join(" · ")+(rutL.length>5?" · +"+(rutL.length-5):""),"stock.html#encomendar");
+    const amanha=new Date();amanha.setDate(amanha.getDate()+1);const dA=dLocal(amanha);
+    const ausAm=ativos.filter(c=>ausenteDia(c,dA)&&!ausenteDia(c,HOJE));
+    if(ausAm.length)item("➡️","Amanhã ficam fora",ausAm.map(c=>c.nome.split(" ")[0]).join(", "),"assiduidade.html#mapa");
+    if(!L.children.length)L.append(el("li","muted","Nada de especial para hoje."));
+  }
 
   // ---------- Alertas ----------
   const A=[];
