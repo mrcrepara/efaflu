@@ -205,7 +205,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
   <button class="btn sec hide" id="lkCancel">Cancelar</button>
   <p id="lkErr"></p>
   <a href="#" id="lkEsq" class="small hide" style="color:var(--pri)">Esqueci-me da palavra-passe</a>
-  <div class="small" style="margin-top:14px;opacity:.6">versão 18/11c · jornada 8h</div>
+  <div class="small" style="margin-top:14px;opacity:.6">versão 18/11d · jornada 8h</div>
 </div></div>
 <header>
   <span class="logo"><img src="" data-logo alt="EFAFLU"></span>
@@ -599,7 +599,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
         <span><i style="border:2px dashed var(--aus);background:#fff"></i>F? pedido de férias por aprovar</span>
         <span><i style="background:var(--falta)"></i>Falta injust.</span><span><i style="background:#e48a8a"></i>Falta just.</span>
         <span><i style="background:var(--sab)"></i>S sábado</span><span><i style="background:var(--extra)"></i>HE horas extra</span>
-        <span><i style="background:var(--banco)"></i>Banco</span><span><i style="border:2px dashed var(--sab);background:#fff"></i>✓ chamado, disse que vem</span>
+        <span><i style="background:var(--banco)"></i>Banco (B± = + e − no mesmo dia)</span><span><i style="border:2px dashed var(--sab);background:#fff"></i>✓ chamado, disse que vem</span>
       </div>
     </div>
     <div class="card hide" id="pedCard" style="border-left:5px solid var(--aus)">
@@ -2162,7 +2162,7 @@ function ausente(colId, d){ return regs.find(r=>r.colId===colId && cobre(r,d) &&
 // Se a pessoa tiver mais do que um registo no dia (ex.: falta de manhã + horas à noite), o quadrado mostra "+" e a dica lista tudo
 function celula(colId, d){
   const o=celula1(colId,d), rs=regs.filter(r=>r.colId===colId && cobre(r,d));
-  if(o && rs.length>1 && o.id){
+  if(o && rs.length>1 && o.id && !(o.banco && rs.every(r=>r.tipo==='banco'))){
     o.sig+='+';
     o.txt=rs.map(r=>'• '+nomeTipo(r)+(r.horas?' '+hm(r.horas):'')+(perTxt(r)?' ('+perTxt(r)+')':'')).join('\n');
   }
@@ -2175,7 +2175,14 @@ function celula1(colId, d){
   const fj=rs.find(r=>r.tipo==='falta_j'); if(fj) return {sig:fj.dias?'FJ':'fj', cor:'#e48a8a', txt:'Falta justificada'+(fj.horas?' ('+hm(fj.horas)+')':'')+sufComp(fj), id:fj.id};
   const sb=rs.find(r=>r.tipo==='sabado'); if(sb) return {sig:'S', cor:'var(--sab)', txt:'Sábado trabalhado'+(sb.horas?' ('+hm(sb.horas)+')':''), id:sb.id};
   const ex=rs.filter(r=>r.tipo==='extra'); if(ex.length) return {sig:'HE', cor:'var(--extra)', txt:'Horas extra: '+hm(ex.reduce((s,r)=>s+(r.horas||0),0)), id:ex[0].id};
-  const bk=rs.find(r=>r.tipo==='banco'); if(bk) return {sig:bk.mov==='-'?'B−':'B+', cor:'var(--banco)', txt:'Banco de horas '+(bk.mov==='-'?'−':'+')+hm(bk.horas)+(bk.origem==='ant'?' (do banco anterior)':''), id:bk.id};
+  const bks=rs.filter(r=>r.tipo==='banco');
+  if(bks.length){
+    // Junta todos os movimentos do banco no dia: só +, só −, ou os dois (B±) com o resultado do dia
+    const mais=bks.filter(r=>r.mov!=='-').reduce((s,r)=>s+(r.horas||0),0), menos=bks.filter(r=>r.mov==='-').reduce((s,r)=>s+(r.horas||0),0);
+    const liq=mais-menos, sig = mais&&menos ? 'B±' : menos ? 'B−' : 'B+';
+    const linhas=bks.map(r=>'• Banco '+(r.mov==='-'?'−':'+')+hm(r.horas||0)+(perTxt(r)?' ('+perTxt(r)+')':'')+(r.origem==='ant'?' do banco anterior':''));
+    return {sig, cor:'var(--banco)', banco:true, txt:'Banco de horas'+(bks.length>1?' – resultado do dia: '+(liq<0?'−':'+')+hm(Math.abs(liq)):'')+'\n'+linhas.join('\n'), id:bks[0].id};
+  }
   const pf=pedidos.find(x=>x.colId===colId && x.estado==='pendente' && x.data<=d && d<=(x.fim||x.data));
   if(pf) return {sig:'F?', cor:'', txt:'Pedido de férias por aprovar ('+dataPT(pf.data)+' a '+dataPT(pf.fim||pf.data)+')', ped:true};
   const pl=planos.find(p=>!p.fechado && p.data===d && p.pessoas[colId] && p.pessoas[colId].estado==='sim');
