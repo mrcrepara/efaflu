@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EFAFLU · Painel da Direção</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#b82d36">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<style>
+  /* Painel da Direção: os números principais do mês, comparados com o mês anterior. */
+  :root{
+    --pri:#b82d36; --pri2:#8e1f27; --bg:#f3f5f8; --card:#fff; --txt:#1d2433; --muted:#6b7385; --line:#e2e6ee; --soft:#f7f8fb;
+    --ok:#1e9e5a; --ok-soft:#e5f5ec; --warn:#c27712; --warn-soft:#fbf1e1; --bad:#d64545; --bad-soft:#fbe7e7; --info:#0f8a9c; --info-soft:#e2f3f5;
+    --sab:#7a4fd6; --r:12px;
+    color-scheme:light;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--txt);font-size:15px;line-height:1.45}
+  [hidden]{display:none!important}
+  .band{background:linear-gradient(90deg,var(--pri2),var(--pri));color:#fff}
+  .band .in{max-width:1180px;margin:0 auto;padding:20px 16px 18px;display:flex;flex-wrap:wrap;gap:8px 20px;align-items:flex-end;justify-content:space-between}
+  .band h1{margin:0;font-size:24px;font-weight:700;letter-spacing:-.01em}
+  .band p{margin:2px 0 0;opacity:.85}
+  .band .sync{font-size:13px;opacity:.85}
+  main{max-width:1180px;margin:0 auto;padding:18px 16px 40px;display:grid;gap:18px}
+  h2{font-size:16px;margin:0}
+  .muted{color:var(--muted)}
+  .small{font-size:13px}
+  .num{font-variant-numeric:tabular-nums}
+
+  .kpis{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,13rem),1fr))}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:grid;gap:4px;text-decoration:none;color:inherit;transition:border-color .15s}
+  a.kpi:hover{border-color:var(--pri)}
+  .kpi .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+  .kpi .v{font-size:30px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+  .kpi .s{font-size:13px;color:var(--muted)}
+  .kpi.ok .v{color:var(--ok)} .kpi.warn .v{color:var(--warn)} .kpi.bad .v{color:var(--bad)}
+  .meter{height:8px;border-radius:99px;background:var(--line);overflow:hidden;display:flex;margin-top:2px}
+  .meter i{display:block;height:100%}
+
+  .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,22rem),1fr));align-items:start}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;display:grid;gap:12px;min-width:0}
+  .card-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+  .card-h a{font-size:13px;color:var(--pri);text-decoration:none;font-weight:600;white-space:nowrap}
+  .card-h a:hover{text-decoration:underline}
+
+  .alerts{display:grid;gap:8px}
+  .al{display:flex;gap:12px;align-items:center;padding:10px 12px;border-radius:10px;text-decoration:none;color:inherit;border:1px solid transparent}
+  .al:hover{border-color:currentColor}
+  .al .n{font-size:20px;font-weight:700;min-width:2.2rem;text-align:center;font-variant-numeric:tabular-nums}
+  .al .t{flex:1;min-width:0}
+  .al .t b{display:block;font-size:14px}
+  .al .t small{color:var(--muted);font-size:12.5px}
+  .al .go{font-size:13px;opacity:.7}
+  .al.bad{background:var(--bad-soft);color:var(--bad)} .al.warn{background:var(--warn-soft);color:var(--warn)} .al.info{background:var(--info-soft);color:var(--info)}
+  .al .t b, .al .t small{color:var(--txt)}
+  .allgood{padding:14px;border-radius:10px;background:var(--ok-soft);color:var(--ok);font-weight:600}
+
+  .who{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+  .who li{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .who li:last-child{border-bottom:0}
+  .tag{display:inline-block;color:#fff;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:99px;white-space:nowrap}
+
+  .legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .sw{width:10px;height:10px;border-radius:2px;display:inline-block}
+  .cols svg{width:100%;height:auto;display:block}
+  .cols text{font-size:13px;fill:var(--muted);font-family:inherit}
+
+  .mod{display:grid;gap:10px}
+  .mod .row{display:flex;justify-content:space-between;gap:10px;font-size:14px;border-bottom:1px solid var(--line);padding-bottom:6px}
+  .mod .row:last-child{border-bottom:0}
+  .mod .row b{font-variant-numeric:tabular-nums}
+  .big{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+
+  .hoje-sum{font-size:15px;line-height:1.5}
+  .hoje-sum b{font-variant-numeric:tabular-nums}
+  .hl{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+  .hl li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .hl li:last-child{border-bottom:0}
+  .hl .ic{width:1.6rem;text-align:center;flex:none}
+  .hl .tx{flex:1;min-width:0}
+  .hl .tx small{display:block;color:var(--muted);font-size:12.5px}
+  .hl a{color:inherit;text-decoration:none}
+  .hl a:hover b{color:var(--pri)}
+  /* Login */
+  .login{position:fixed;inset:0;z-index:950;background:var(--pri);display:flex;align-items:center;justify-content:center;padding:16px}
+  .login form{background:#fff;border-radius:14px;padding:26px;width:100%;max-width:380px;display:grid;gap:12px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+  .login img{width:64px;height:64px;border-radius:12px;margin:0 auto}
+  .login h2{text-align:center;font-size:20px}
+  .login p{margin:0;text-align:center;color:var(--muted);font-size:14px}
+  .login label{display:grid;gap:4px;font-size:13px;color:var(--muted)}
+  .login input{font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:8px}
+  .btn{font:inherit;font-weight:600;padding:10px 14px;border-radius:8px;border:1px solid var(--pri);background:var(--pri);color:#fff;cursor:pointer}
+  .link{background:none;border:0;color:var(--pri);font:inherit;font-size:13px;cursor:pointer;padding:0}
+  .err{color:var(--bad);font-size:13.5px;min-height:1em;text-align:center}
+  a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--pri);outline-offset:2px}
+  @media print{.band{background:#fff;color:#000}.login{display:none!important}}
+  /* Painel da Direção */
+  .band .ctl{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .band .mes{display:flex;gap:6px;align-items:center;font-size:13px}
+  .band input[type=month]{font:inherit;padding:6px 8px;border-radius:8px;border:0}
+  .btn.wht{background:#fff;color:var(--pri);border-color:#fff;padding:7px 12px}
+  .btn.sec{background:#fff;color:var(--pri)}
+  .sec{font-size:15px;margin:4px 2px 10px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+  .grid2{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,26rem),1fr))}
+  .kpi .d{font-size:13px;font-weight:600}
+  .d.up{color:var(--ok)} .d.dn{color:var(--bad)} .d.eq{color:var(--muted)}
+  .kpi button.edit{background:none;border:0;color:var(--pri);font:inherit;font-size:12.5px;cursor:pointer;padding:0;text-align:left}
+  table.tm{width:100%;border-collapse:collapse;font-size:14px}
+  table.tm th{text-align:left;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600;padding:6px 8px;border-bottom:1px solid var(--line)}
+  table.tm td{padding:8px;border-bottom:1px solid var(--line);vertical-align:middle}
+  table.tm td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .bar{height:10px;border-radius:99px;background:var(--line);overflow:hidden;min-width:80px}
+  .bar i{display:block;height:100%;border-radius:99px}
+  .nota{margin:0;line-height:1.6}
+  dialog{border:0;border-radius:14px;padding:0;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+  .dlg{padding:20px;display:grid;gap:10px;min-width:300px}.dlg h3{margin:0}.dlg input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px}
+  .dlg .bts{display:flex;gap:8px;justify-content:flex-end}
+  /* Modo apresentação */
+  body.apres{font-size:19px;background:#eef1f6}
+  html.efa-menu body.apres{padding-left:0!important;padding-top:0!important}
+  body.apres .noapres,body.apres .efa-side,body.apres .efa-top,body.apres .efa-burger,body.apres .kpi button.edit{display:none!important}
+  body.apres main{max-width:none;padding:22px 40px 40px;gap:26px}
+  body.apres .band .in{max-width:none;padding:22px 40px}
+  body.apres .band h1{font-size:34px}
+  body.apres .kpis{grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:16px}
+  body.apres .kpi{padding:20px 22px}
+  body.apres .kpi .k{font-size:14px}
+  body.apres .kpi .v{font-size:46px}
+  body.apres .kpi .s,body.apres .kpi .d{font-size:16px}
+  body.apres .sec{font-size:22px}
+  body.apres h2{font-size:20px}
+  body.apres table.tm{font-size:18px}
+  body.apres .cols text{font-size:15px}
+  .sairApres{position:fixed;right:14px;bottom:14px;z-index:999;display:none}
+  body.apres .sairApres{display:block}
+  @media print{.noapres{display:none!important}.kpi{break-inside:avoid}}
+</style>
+</head>
+<body>
+
+<div class="band"><div class="in">
+  <div>
+    <h1>📈 Painel da Direção</h1>
+    <p id="sub">—</p>
+  </div>
+  <div class="ctl noapres">
+    <label class="mes">Mês <input type="month" id="mes"></label>
+    <button class="btn wht" id="bApres" type="button" title="Ecrã inteiro com letra grande, para mostrar numa TV ou projetor">📺 Apresentar</button>
+    <button class="btn wht" type="button" onclick="window.print()" title="Imprimir ou guardar em PDF">🖨️</button>
+  </div>
+  <div class="sync noapres" id="sync">A ligar…</div>
+</div></div>
+
+<main id="app" hidden>
+  <section>
+    <h2 class="sec">👥 Equipa <span class="muted small" id="cmpTxt"></span></h2>
+    <div class="kpis" id="kEquipa"></div>
+  </section>
+  <div class="grid2">
+    <section class="card"><div class="card-h"><h2>Absentismo – últimos 6 meses</h2></div><div class="cols" id="gAbs"></div></section>
+    <section class="card"><div class="card-h"><h2>Horas extra – últimos 6 meses</h2></div><div class="cols" id="gExt"></div></section>
+  </div>
+
+  <section>
+    <h2 class="sec">🦺 Segurança</h2>
+    <div class="kpis" id="kSeg"></div>
+  </section>
+
+  <section>
+    <h2 class="sec">🚜 Máquinas <span class="muted small" id="maqTxt"></span></h2>
+    <div class="kpis" id="kMaq"></div>
+  </section>
+  <section class="card">
+    <div class="card-h"><h2>Disponibilidade por máquina</h2><a class="noapres" href="assiduidade.html#maq">Máquinas e avarias →</a></div>
+    <div id="tMaq"></div>
+  </section>
+
+  <section>
+    <h2 class="sec">⚙️ Melhorias CNC</h2>
+    <div class="kpis" id="kCnc"></div>
+  </section>
+
+  <p class="muted small nota noapres">Setas: ▲▼ comparam com o mês anterior. Verde = melhorou, vermelho = piorou.
+    Absentismo = faltas, baixas e outras ausências não planeadas ÷ horas a trabalhar (não conta férias, formação, aniversários nem banco de horas).
+    Disponibilidade = dias úteis sem avaria em aberto ÷ dias úteis do mês.</p>
+</main>
+
+<dialog id="dlgAc">
+  <form method="dialog" class="dlg">
+    <h3>Último acidente de trabalho</h3>
+    <p class="muted small">Data do último acidente com baixa ou ferimento. Deixa em branco se não houve nenhum desde que usas a app.</p>
+    <input type="date" id="acData">
+    <div class="bts"><button class="btn sec" value="cancel">Cancelar</button><button class="btn" id="acOk" value="ok">Guardar</button></div>
+  </form>
+</dialog>
+
+<div class="login" id="login" hidden>
+  <form id="fLogin" autocomplete="on">
+    <img src="icon-192.png" alt="EFAFLU">
+    <h2>Parque de Máquinas EFAFLU</h2>
+    <p>Entra com a mesma conta da assiduidade.</p>
+    <label>Email<input id="lEmail" type="email" autocomplete="username" required></label>
+    <label>Palavra-passe<input id="lPass" type="password" autocomplete="current-password" required></label>
+    <div class="err" id="lErr" role="alert"></div>
+    <button class="btn" type="submit" id="lBtn">Entrar</button>
+    <button class="link" type="button" id="lForgot">Esqueci-me da palavra-passe</button>
+  </form>
+</div>
+
+<script>
+(function(){
+const FIREBASE_CONFIG={
+  apiKey:"AIzaSyAMzVccxOAb03gJ9LV7C1F03TWLKZtWaP8",
+  authDomain:"efaflu-assiduidade.firebaseapp.com",
+  projectId:"efaflu-assiduidade",
+  storageBucket:"efaflu-assiduidade.firebasestorage.app",
+  messagingSenderId:"282508571679",
+  appId:"1:282508571679:web:e72894bc6a45216400912a"
+};
+const DONO="ratonline1976@gmail.com", ARMAZEM=["armazem@efaflu.pt"];
+const $=id=>document.getElementById(id);
+const nf=new Intl.NumberFormat("pt-PT",{maximumFractionDigits:1});
+const eur0=new Intl.NumberFormat("pt-PT",{style:"currency",currency:"EUR",maximumFractionDigits:0});
+const p1=x=>x==null||!isFinite(x)?"—":new Intl.NumberFormat("pt-PT",{maximumFractionDigits:1}).format(x*100)+"%";
+const pad=n=>String(n).padStart(2,"0");
+const dLocal=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const HOJE=dLocal(new Date());
+const cobre=(r,d)=>r.data<=d&&d<=(r.fim||r.data);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const hm=h=>{const neg=h<0;h=Math.round(Math.abs(h||0)*60);return (neg?"−":"")+Math.floor(h/60)+"h"+(h%60?pad(h%60):"");};
+const mesNome=m=>{const t=new Date(m+"-15T12:00").toLocaleDateString("pt-PT",{month:"long",year:"numeric"});return t.charAt(0).toUpperCase()+t.slice(1);};
+const mesCurto=m=>new Date(m+"-15T12:00").toLocaleDateString("pt-PT",{month:"short"}).replace(".","");
+const mesSoma=(m,k)=>{const d=new Date(m+"-15T12:00");d.setMonth(d.getMonth()+k);return dLocal(d).slice(0,7);};
+const ultDia=m=>m+"-"+pad(new Date(+m.slice(0,4),+m.slice(5,7),0).getDate());
+const maisMeses=(d,m)=>{const x=new Date(d+"T12:00");x.setMonth(x.getMonth()+Number(m));return dLocal(x);};
+const diasEntre=(a,b)=>Math.round((new Date(b+"T12:00")-new Date(a+"T12:00"))/864e5);
+
+// ---------- Feriados e absentismo (iguais à assiduidade) ----------
+const pascoa=y=>{const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mes=Math.floor((h+l-7*m+114)/31),dia=((h+l-7*m+114)%31)+1;return new Date(y,mes-1,dia,12);};
+let ferCache={};
+const feriados=y=>{if(ferCache[y])return ferCache[y];const F={},fx=md=>F[y+"-"+md]=1,rel=k=>{const d=pascoa(y);d.setDate(d.getDate()+k);F[dLocal(d)]=1;};
+  ["01-01","04-25","05-01","06-10","08-15","10-05","11-01","12-01","12-08","12-25"].forEach(fx);rel(-2);rel(0);rel(60);
+  const g=geral();if(g.carnaval)rel(-47);if(g.municipal)fx(g.municipal);return ferCache[y]=F;};
+const util=ds=>{const w=new Date(ds+"T12:00").getDay();return w>0&&w<6&&!feriados(+ds.slice(0,4))[ds];};
+const diasUteis=(de,ate)=>{const out=[];for(let d=new Date(de+"T12:00"),f=new Date(ate+"T12:00");d<=f;d.setDate(d.getDate()+1)){const s=dLocal(d);if(util(s))out.push(s);}return out;};
+const DIA=8, ABS_MOT=["Baixa médica","Assistência à família","Licença","Outro"];
+const motAus=r=>["Férias","Baixa médica","Assistência à família","Formação","Licença","Aniversário","Outro"].includes(r.motivo)?r.motivo:"Outro";
+function absentismo(cols,de,ate){
+  const fim=ate<HOJE?ate:HOJE;const ini=D.regs.reduce((m,r)=>r.data&&r.data<m?r.data:m,"9999");if(ini>de)de=ini;if(!cols.length||fim<de)return null;
+  const ids=new Set(cols.map(c=>c.id));
+  const rel=D.regs.filter(r=>ids.has(r.colId)&&r.data<=fim&&(r.fim||r.data)>=de&&(r.tipo==="falta_i"||r.tipo==="falta_j"||(r.tipo==="ausencia"&&ABS_MOT.includes(motAus(r)))));
+  let teo=0,aus=0;
+  diasUteis(de,fim).forEach(ds=>cols.forEach(c=>{let h=0;rel.forEach(r=>{if(r.colId!==c.id||!cobre(r,ds))return;h+=r.tipo==="ausencia"||r.dias>0?DIA:(r.data===ds?(r.horas||0):0);});teo+=DIA;aus+=Math.min(h,DIA);}));
+  return teo?aus/teo:null;
+}
+// ---------- Banco de horas (igual à assiduidade, sem o banco anterior) ----------
+const temComp=r=>(r.tipo==="ausencia"&&["Aniversário","Assistência à família","Outro"].includes(motAus(r)))||r.tipo==="falta_j";
+const horasAniBanco=r=>temComp(r)&&r.compensa==="banco"?(r.horas||8*(r.dias||1)):0;
+const debBanco=r=>r.tipo==="banco"?(r.mov==="-"?(r.horas||0):0):horasAniBanco(r);
+const valBanco=r=>(r.origem==="ant"&&debBanco(r)>0)?0:r.tipo==="banco"?(r.mov==="-"?-(r.horas||0):(r.horas||0)):-horasAniBanco(r);
+
+const geral=()=>(D.cfg.find(x=>x.id==="geral")||{});
+const D={cfg:[],colabs:[],regs:[],formacoes:[],epis:[],avarias:[],maquinas:[],cnc:[]};
+let carregou=new Set(), isDono=false;
+
+// ---------- Indicadores de um mês ----------
+function mesDados(m){
+  const de=m+"-01", ate=ultDia(m), ativos=D.colabs.filter(c=>c.ativo!==false);
+  const rs=D.regs.filter(r=>r.data>=de&&r.data<=ate);
+  const ext=rs.filter(r=>r.tipo==="extra"||r.tipo==="sabado").reduce((s,r)=>s+(r.horas||0),0);
+  const sab=rs.filter(r=>r.tipo==="sabado").reduce((s,r)=>s+(r.dias||1),0);
+  const fi=rs.filter(r=>r.tipo==="falta_i").reduce((s,r)=>s+(r.dias>0?r.dias:(r.horas||0)/DIA),0);
+  const banco=D.regs.filter(r=>r.data<=ate).reduce((s,r)=>s+valBanco(r),0);
+  return {m, abs:de>HOJE?null:absentismo(ativos,de,ate), ext, sab, fi, banco};
+}
+// ---------- Máquinas: disponibilidade de um mês ----------
+function maqMes(m){
+  const de=m+"-01", fimM=ultDia(m), ate=fimM<HOJE?fimM:HOJE;
+  const dias=ate>=de?diasUteis(de,ate):[];
+  const maqs=D.maquinas.filter(x=>x.ativa!==false);
+  const lin=maqs.map(q=>{
+    const avs=D.avarias.filter(a=>a.maqId===q.id&&a.data<=ate&&(a.estado!=="resolvida"||(a.resolvidaEm||a.data)>=de));
+    const parado=dias.filter(ds=>avs.some(a=>a.data<=ds&&(a.estado!=="resolvida"||ds<(a.resolvidaEm||a.data)))).length;
+    return {q, parado, disp: dias.length?1-parado/dias.length:null, nAv:D.avarias.filter(a=>a.maqId===q.id&&a.data>=de&&a.data<=fimM).length, aberta:D.avarias.some(a=>a.maqId===q.id&&a.estado!=="resolvida")};
+  });
+  const tot=lin.length*dias.length, par=lin.reduce((s,x)=>s+x.parado,0);
+  const res=D.avarias.filter(a=>a.estado==="resolvida"&&a.resolvidaEm&&a.resolvidaEm>=de&&a.resolvidaEm<=fimM);
+  const mttr=res.length?res.reduce((s,a)=>s+Math.max(0,diasEntre(a.data,a.resolvidaEm)),0)/res.length:null;
+  return {lin, disp: tot?1-par/tot:null, novas:D.avarias.filter(a=>a.data>=de&&a.data<=fimM).length, mttr, nRes:res.length, dias:dias.length};
+}
+
+// ---------- KPI com seta (melhor: 'up' = subir é bom, 'dn' = descer é bom) ----------
+function kpi(k,v,s,dif,melhor,cls,extra){
+  let d="";
+  if(dif){ const [txt,val]=dif; if(val!=null&&isFinite(val)){ if(Math.abs(val)<1e-9) d=`<span class="d eq">= igual ao mês anterior</span>`;
+    else { const bom=(val>0)===(melhor==="up"); d=`<span class="d ${bom?"up":"dn"}">${val>0?"▲":"▼"} ${txt} vs mês anterior</span>`; } } }
+  return `<div class="kpi ${cls||""}"><span class="k">${k}</span><span class="v">${v}</span>${d}<span class="s">${s||""}</span>${extra||""}</div>`;
+}
+const cor=(v,ok,warn,inv)=>v==null?"":inv?(v<=ok?"ok":v<=warn?"warn":"bad"):(v>=ok?"ok":v>=warn?"warn":"bad");
+const pp=x=>(Math.abs(x)*100).toLocaleString("pt-PT",{maximumFractionDigits:1})+" p.p.";
+
+// ---------- Gráfico de colunas simples ----------
+function colunas(box,itens,fmt,corF){
+  const W=560,H=200,L=10,R=10,T=26,B=28,ih=H-T-B,mx=Math.max(...itens.map(i=>i.v||0),1e-9);
+  const gw=(W-L-R)/itens.length,bw=Math.min(54,gw*.6);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img">`;
+  itens.forEach((it,i)=>{const x=L+i*gw+(gw-bw)/2,hh=(it.v||0)/mx*ih,y=T+ih-hh;
+    s+=`<rect x="${x}" y="${y}" width="${bw}" height="${Math.max(hh,it.v?2:0)}" rx="4" style="fill:${corF(it)}"><title>${esc(it.lab)}: ${esc(fmt(it.v))}</title></rect>`;
+    s+=`<text x="${x+bw/2}" y="${y-6}" text-anchor="middle" style="fill:var(--txt);font-weight:600">${esc(fmt(it.v))}</text>`;
+    s+=`<text x="${x+bw/2}" y="${H-8}" text-anchor="middle"${it.on?' style="fill:var(--txt);font-weight:700"':""}>${esc(it.lab)}</text>`;});
+  $(box).innerHTML=s+"</svg>";
+}
+
+function render(){
+  $("sync").textContent=carregou.size>=8?"Atualizado em tempo real · "+new Date().toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"}):"A carregar dados…";
+  if(carregou.size<8) return;
+  ferCache={};
+  const M=$("mes").value||HOJE.slice(0,7), MA=mesSoma(M,-1), A=mesDados(M), P=mesDados(MA);
+  $("sub").textContent=mesNome(M)+(M===HOJE.slice(0,7)?" (até hoje)":"");
+  $("cmpTxt").textContent="· "+mesNome(M)+" comparado com "+mesNome(MA).toLowerCase();
+  const ativos=D.colabs.filter(c=>c.ativo!==false);
+
+  // ===== Equipa =====
+  $("kEquipa").innerHTML=[
+    kpi("Absentismo",p1(A.abs),"faltas, baixas e outras ausências",A.abs!=null&&P.abs!=null?[pp(A.abs-P.abs),A.abs-P.abs]:null,"dn",cor(A.abs,.03,.06,true)),
+    kpi("Horas extra",hm(A.ext),"inclui as horas dos sábados",[hm(Math.abs(A.ext-P.ext)),A.ext-P.ext],"dn"),
+    kpi("Sábados trabalhados",nf.format(A.sab),"dias-pessoa",[nf.format(Math.abs(A.sab-P.sab)),A.sab-P.sab],"dn"),
+    kpi("Faltas injustificadas",nf.format(A.fi)+" d","dias",[nf.format(Math.abs(A.fi-P.fi))+" d",A.fi-P.fi],"dn",A.fi>0?"warn":"ok"),
+    kpi("Banco de horas da equipa",hm(A.banco),A.banco>=0?"a favor dos colaboradores (fim do mês)":"os colaboradores devem horas (fim do mês)",[hm(Math.abs(A.banco-P.banco)),A.banco-P.banco],"dn"),
+    kpi("Colaboradores ativos",nf.format(ativos.length),"na equipa")
+  ].join("");
+  const m6=[...Array(6)].map((_,i)=>mesDados(mesSoma(M,i-5)));
+  colunas("gAbs",m6.map(x=>({lab:mesCurto(x.m),v:x.abs==null?null:x.abs*100,on:x.m===M})),v=>v==null?"—":nf.format(v)+"%",it=>it.v==null?"var(--line)":it.v<=3?"var(--ok)":it.v<=6?"var(--warn)":"var(--bad)");
+  colunas("gExt",m6.map(x=>({lab:mesCurto(x.m),v:x.ext,on:x.m===M})),v=>hm(v),it=>it.on?"var(--pri)":"#d9a3a7");
+
+  // ===== Segurança (situação atual) =====
+  const ids=new Set(ativos.map(c=>c.id));
+  const ultF={}; D.formacoes.filter(f=>ids.has(f.colId)).forEach(f=>{const k=f.colId+"|"+(f.nome||"").toLowerCase();if(!ultF[k]||(f.validade||"9999")>(ultF[k].validade||"9999"))ultF[k]=f;});
+  const F=Object.values(ultF), fVal=F.filter(f=>!f.validade||f.validade>=HOJE).length, fBreve=F.filter(f=>f.validade&&f.validade>=HOJE&&diasEntre(HOJE,f.validade)<=30).length;
+  const ultE={}; D.epis.filter(e=>ids.has(e.colId)).forEach(e=>{const k=e.colId+"|"+(e.item||"").toLowerCase();if(!ultE[k]||(e.data||"")>(ultE[k].data||""))ultE[k]=e;});
+  const E=Object.values(ultE), prox=e=>e.meses>0&&e.data?maisMeses(e.data,e.meses):"", eOk=E.filter(e=>!prox(e)||prox(e)>=HOJE).length;
+  const comEpi=new Set(E.map(e=>e.colId)).size;
+  const g=geral(), ua=g.ultimoAcidente||"", inicio=D.regs.reduce((m,r)=>r.data&&r.data<m?r.data:m,HOJE);
+  const semAc=Math.max(0,diasEntre(ua||inicio,HOJE));
+  $("kSeg").innerHTML=[
+    kpi("Dias sem acidentes",nf.format(semAc),ua?"último acidente: "+ua.split("-").reverse().join("/"):"desde o início dos registos",null,null,semAc>=90?"ok":semAc>=30?"warn":"bad",isDono?`<button class="edit" id="bAc" type="button">✏️ Registar acidente</button>`:""),
+    kpi("EPIs em dia",E.length?p1(eOk/E.length):"—",E.length?nf.format(eOk)+" de "+nf.format(E.length)+" EPIs · "+nf.format(comEpi)+" pessoas":"Ainda sem EPIs registados",null,null,E.length?cor(eOk/E.length,.95,.8):""),
+    kpi("Formações válidas",F.length?p1(fVal/F.length):"—",F.length?nf.format(fVal)+" de "+nf.format(F.length)+(fBreve?" · "+fBreve+(fBreve===1?" caduca":" caducam")+" em 30 dias":""):"Ainda sem formações registadas",null,null,F.length?cor(fVal/F.length,.95,.8):"")
+  ].join("");
+  if($("bAc")) $("bAc").onclick=()=>{ $("acData").value=ua||""; $("dlgAc").showModal(); };
+
+  // ===== Máquinas =====
+  const QA=maqMes(M), QP=maqMes(MA), abertas=D.avarias.filter(a=>a.estado!=="resolvida").length;
+  $("maqTxt").textContent=QA.dias?"· "+QA.dias+" dias úteis em "+mesNome(M).toLowerCase():"";
+  $("kMaq").innerHTML=[
+    kpi("Disponibilidade",p1(QA.disp),nf.format(QA.lin.length)+" máquinas ativas",QA.disp!=null&&QP.disp!=null?[pp(QA.disp-QP.disp),QA.disp-QP.disp]:null,"up",cor(QA.disp,.95,.85)),
+    kpi("Avarias novas",nf.format(QA.novas),"no mês",[nf.format(Math.abs(QA.novas-QP.novas)),QA.novas-QP.novas],"dn"),
+    kpi("Tempo médio de reparação",QA.mttr==null?"—":nf.format(QA.mttr)+" d",QA.nRes?nf.format(QA.nRes)+" avaria(s) resolvida(s) no mês":"nenhuma resolvida no mês",QA.mttr!=null&&QP.mttr!=null?[nf.format(Math.abs(QA.mttr-QP.mttr))+" d",QA.mttr-QP.mttr]:null,"dn"),
+    kpi("Avarias em aberto agora",nf.format(abertas),abertas?"máquinas à espera de reparação":"tudo a funcionar",null,null,abertas?"warn":"ok")
+  ].join("");
+  const L=QA.lin.slice().sort((a,b)=>(a.disp??2)-(b.disp??2));
+  $("tMaq").innerHTML=L.length?`<table class="tm"><thead><tr><th>Máquina</th><th style="width:40%">Disponibilidade</th><th class="n">%</th><th class="n">Dias parada</th><th class="n">Avarias no mês</th></tr></thead><tbody>`+
+    L.map(x=>{const c=x.disp==null?"var(--line)":x.disp>=.95?"var(--ok)":x.disp>=.85?"var(--warn)":"var(--bad)";
+      return `<tr><td>${esc((x.q.codigo?x.q.codigo+" – ":"")+x.q.nome)}${x.aberta?' <span title="Avaria em aberto">🔧</span>':""}</td><td><div class="bar"><i style="width:${(x.disp??0)*100}%;background:${c}"></i></div></td><td class="n"><b>${p1(x.disp)}</b></td><td class="n">${nf.format(x.parado)}</td><td class="n">${nf.format(x.nAv)}</td></tr>`;}).join("")+"</tbody></table>"
+    :'<p class="muted">Ainda não há máquinas registadas.</p>';
+
+  // ===== CNC =====
+  const est=r=>(r.f&&r.f.estado)||"Por validar";
+  const nr=D.cnc.filter(r=>est(r)!=="Rejeitada"), val=D.cnc.filter(r=>est(r)==="Validada");
+  const pa=a=>a.reduce((s,r)=>s+(r.res&&r.res.poupAno>0?r.res.poupAno:0),0);
+  $("kCnc").innerHTML=[
+    kpi("Poupança prevista por ano",D.cnc.length?eur0.format(pa(nr)):"—","todas as melhorias, sem as rejeitadas",null,null,pa(nr)>0?"ok":""),
+    kpi("Poupança já validada",D.cnc.length?eur0.format(pa(val)):"—",nf.format(val.length)+" melhoria(s) validada(s)",null,null,pa(val)>0?"ok":""),
+    kpi("Melhorias registadas",nf.format(D.cnc.length),nf.format(D.cnc.filter(r=>["Em teste","Por validar"].includes(est(r))).length)+" em teste / por validar")
+  ].join("");
+}
+
+// ---------- Firebase ----------
+if(!window.firebase){$("sync").textContent="Sem ligação ao Firebase. Verifica a internet.";return;}
+if(!firebase.apps.length)firebase.initializeApp(FIREBASE_CONFIG);
+const auth=firebase.auth(), db=firebase.firestore();
+try{const m=localStorage.getItem("efaflu_email");if(m)$("lEmail").value=m;}catch(e){}
+$("fLogin").addEventListener("submit",async e=>{
+  e.preventDefault();$("lErr").textContent="";$("lBtn").disabled=true;
+  const em=$("lEmail").value.trim().toLowerCase();
+  try{await auth.signInWithEmailAndPassword(em,$("lPass").value);try{localStorage.setItem("efaflu_email",em)}catch(x){}$("lPass").value="";}
+  catch(err){const c=err&&err.code||"";$("lErr").textContent=/wrong-password|invalid-credential|user-not-found|invalid-login/.test(c)?"Email ou palavra-passe errados.":c.includes("too-many")?"Demasiadas tentativas. Espera uns minutos.":c.includes("network")?"Sem internet. Verifica a ligação.":"Não foi possível entrar ("+c+").";}
+  $("lBtn").disabled=false;
+});
+$("lForgot").onclick=async()=>{const em=$("lEmail").value.trim();if(!em){$("lErr").textContent="Escreve primeiro o teu email.";return;}
+  try{await auth.sendPasswordResetEmail(em);$("lErr").textContent="Enviámos um email para criares nova palavra-passe.";}catch(err){$("lErr").textContent="Não foi possível enviar o email.";}};
+
+$("mes").value=HOJE.slice(0,7);
+$("mes").addEventListener("change",render);
+$("acOk").addEventListener("click",async()=>{
+  try{ await db.collection("assid_config").doc("geral").set({ultimoAcidente:$("acData").value||""},{merge:true}); }
+  catch(e){ alert("Não foi possível guardar ("+(e.code||e.message)+")."); }
+});
+// Modo apresentação: ecrã inteiro e letra grande
+const sair=document.createElement("button");sair.className="btn sairApres";sair.type="button";sair.textContent="✖ Sair da apresentação";document.body.append(sair);
+const fimApres=()=>{document.body.classList.remove("apres");if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});};
+$("bApres").onclick=()=>{document.body.classList.add("apres");const el=document.documentElement;if(el.requestFullscreen)el.requestFullscreen().catch(()=>{});window.scrollTo(0,0);};
+sair.onclick=fimApres;
+document.addEventListener("fullscreenchange",()=>{if(!document.fullscreenElement)document.body.classList.remove("apres");});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")fimApres();});
+
+let unsubs=[];
+auth.onAuthStateChanged(async u=>{
+  unsubs.forEach(f=>f());unsubs=[];
+  if(!u||u.isAnonymous){$("app").hidden=true;$("login").hidden=false;$("sync").textContent="Sessão terminada";return;}
+  const email=(u.email||"").toLowerCase();
+  if(ARMAZEM.includes(email)){location.replace("stock.html#leitura");return;}
+  isDono = email===DONO;
+  if(!isDono){
+    try{const a=await db.collection("assid_config").doc("acessos").get();const ac=a.exists?a.data():{};
+      if(ac.colaboradores&&ac.colaboradores[email]){location.replace("assiduidade.html#eu");return;}}catch(e){}
+  }
+  $("login").hidden=true;$("app").hidden=false;$("sync").textContent="A carregar dados…";
+  const ouvir=(col,key)=>unsubs.push(db.collection(col).onSnapshot(s=>{D[key]=s.docs.map(d=>({id:d.id,...d.data()}));carregou.add(key);render();},e=>{carregou.add(key);console.warn(col,e.code);render();}));
+  ouvir("assid_colaboradores","colabs");ouvir("assid_registos","regs");ouvir("assid_formacoes","formacoes");ouvir("assid_epis","epis");
+  ouvir("assid_avarias","avarias");ouvir("assid_maquinas","maquinas");ouvir("cnc_registos","cnc");ouvir("assid_config","cfg");
+});
+})();
+if(location.protocol==="https:"&&"serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+<script src="menu.js"></script>
+</body>
+</html>
