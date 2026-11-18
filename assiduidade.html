@@ -210,11 +210,11 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
   <button class="btn sec hide" id="lkCancel">Cancelar</button>
   <p id="lkErr"></p>
   <a href="#" id="lkEsq" class="small hide" style="color:var(--pri)">Esqueci-me da palavra-passe</a>
-  <div class="small" style="margin-top:14px;opacity:.6">versão 18/11f · jornada 8h</div>
+  <div class="small" style="margin-top:14px;opacity:.6">versão 18/11g · jornada 8h</div>
 </div></div>
 <header>
   <span class="logo"><img src="" data-logo alt="EFAFLU"></span>
-  <h1>Gestão Parque Máquinas <span style="font-size:11px;font-weight:500;opacity:.7;vertical-align:middle" title="Versão da app">v18/11f</span></h1>
+  <h1>Gestão Parque Máquinas <span style="font-size:11px;font-weight:500;opacity:.7;vertical-align:middle" title="Versão da app">v18/11g</span></h1>
   <span id="estado">A carregar…</span>
   <a href="index.html">← Parque Máquinas EFAFLU</a>
   <button class="btn sec" style="padding:6px 12px" onclick="bloquear()">🔒 Sair</button>
@@ -250,6 +250,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
         <div style="flex:0" class="w" id="boxFecho"><button class="btn sec" id="btnFecho" onclick="alternarFecho()">🔒 Fechar mês</button></div>
         <div style="flex:0"><button class="btn wa" onclick="abrirRelatorio()">💬 Relatório</button></div>
         <div style="flex:0"><button class="btn sec" onclick="relatorioPDF()">📄 PDF</button></div>
+        <div style="flex:0"><button class="btn sec" onclick="fichasAssinar()" title="Uma folha por colaborador com os registos do período, para assinar">🖊️ Fichas p/ assinar</button></div>
         <div style="flex:0"><button class="btn sec" onclick="window.print()">🖨️ Imprimir</button></div>
         <div style="flex:0"><button class="btn sec" onclick="exportCSV()">⬇️ Excel (CSV)</button></div>
       </div>
@@ -615,6 +616,16 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
     </div>
     <div class="card"><div class="wrap" id="mpTab"></div>
       <p class="small" style="margin:10px 0 0">Passa o rato (ou toca) num quadrado para ver o detalhe. Clica para registar uma ausência ou falta nesse dia. A linha "Disponíveis" mostra quantas pessoas não estão de férias nem a faltar.</p></div>
+    <div class="card">
+      <div class="row" style="align-items:center">
+        <div><h2 style="margin:0">🏖️ Plano de férias do ano <span id="pfAnoTxt"></span></h2></div>
+        <div style="flex:0;min-width:0;white-space:nowrap"><label style="display:inline">Avisar quando estão fora mais de </label>
+          <input type="number" id="pfMax" min="1" style="width:60px;display:inline-block;padding:4px 6px"> <span class="small">pessoas no mesmo dia</span></div>
+      </div>
+      <div id="pfAvisos" style="margin-top:10px"></div>
+      <div class="wrap" id="pfTab" style="margin-top:10px"></div>
+      <p class="small" style="margin:10px 0 0">Dias úteis de férias de cada pessoa em cada mês (aprovadas e registadas). <b>F?</b> = pedidos ainda por aprovar. "Por marcar" = dias a que tem direito e que ainda não estão marcados.</p>
+    </div>
   </section>
 
   <!-- ============ HISTÓRICO ============ -->
@@ -2220,6 +2231,54 @@ function relatorioPDF(){
   if(!w) return aviso('O browser bloqueou a janela do relatório.\nPermite janelas pop-up para esta página e tenta outra vez.');
   w.document.open(); w.document.write(html); w.document.close();
 }
+/* ---------------- FICHAS MENSAIS PARA ASSINAR ---------------- */
+function fichasAssinar(){
+  const porAno=$('fPer').value==='ano', ano=porAno?String($('fAno').value):$('fMes').value.slice(0,4);
+  const per = porAno ? 'Ano de '+ano : (()=>{ const t=new Date($('fMes').value+'-15T12:00').toLocaleDateString('pt-PT',{month:'long',year:'numeric'}); return t.charAt(0).toUpperCase()+t.slice(1); })();
+  const fc=$('fCol').value;
+  const cols=ordCol().filter(c=>fc ? c.id===fc : (c.ativo!==false || regs.some(r=>r.colId===c.id && noPeriodo(r))));
+  if(!cols.length) return aviso('Não há colaboradores para este período.');
+  const agora=new Date();
+  const folha=c=>{
+    const rs=regs.filter(r=>r.colId===c.id && noPeriodo(r)).sort((a,b)=>a.data.localeCompare(b.data));
+    const soma=(f,k)=>rs.filter(f).reduce((s,r)=>s+(r[k]||0),0);
+    const fjD=soma(r=>r.tipo==='falta_j'&&r.dias>0,'dias'), fjH=soma(r=>r.tipo==='falta_j'&&!r.dias,'horas');
+    const fiD=soma(r=>r.tipo==='falta_i'&&r.dias>0,'dias'), fiH=soma(r=>r.tipo==='falta_i'&&!r.dias,'horas');
+    const ext=soma(r=>r.tipo==='extra','horas'), sab=soma(r=>r.tipo==='sabado','dias')||rs.filter(r=>r.tipo==='sabado').length, sabH=soma(r=>r.tipo==='sabado','horas');
+    const bMais=rs.filter(r=>valBanco(r)>0).reduce((s,r)=>s+valBanco(r),0), bMenos=-rs.filter(r=>valBanco(r)<0).reduce((s,r)=>s+valBanco(r),0);
+    const saldo=saldoBanco(c.id, ateFimPeriodo), ant=c.bancoAnt?restoAnt(c.id):null;
+    const dir=direitoFerias(c.id), fer=feriasGozadas(c.id,ano);
+    const dh=(d,h)=>[d?fmtD(d):'',h?hm(h):''].filter(Boolean).join(' + ')||'–';
+    const k=(t,v)=>`<div class="k"><span>${t}</span><b>${v}</b></div>`;
+    return `<section class="folha">
+      <header><img src="${LOGO}"><div><h1>Ficha de assiduidade – ${esc(per)}</h1><div class="sub">Parque de Máquinas EFAFLU</div></div></header>
+      <div class="id"><div><span>Colaborador</span><b>${esc(c.nome)}</b></div><div><span>Nº</span><b>${esc(c.num)}</b></div>${c.funcao?`<div><span>Função</span><b>${esc(c.funcao)}</b></div>`:''}</div>
+      <div class="ks">${k('Faltas justificadas',dh(fjD,fjH))}${k('Faltas injustificadas',dh(fiD,fiH))}${k('Horas extra',ext?hm(ext):'–')}${k('Sábados trabalhados',sab?fmt(sab)+(sabH?' ('+hm(sabH)+')':''):'–')}
+        ${k('Banco de horas no período',(bMais?'+'+hm(bMais):'')+(bMais&&bMenos?' / ':'')+(bMenos?'−'+hm(bMenos):'')||'–')}${k('Saldo do banco de horas',(saldo>0?'+':saldo<0?'−':'')+hm(Math.abs(saldo)))}
+        ${ant!=null?k('Banco anterior (resta)',(ant<0?'−':'+')+hm(Math.abs(ant))):''}${k('Férias '+ano,fmt(fer)+' de '+fmt(dir)+' dias')}</div>
+      <h2>Registos ${porAno?'do ano':'do mês'}</h2>
+      ${rs.length?`<table><thead><tr><th>Data</th><th>Tipo</th><th>Horário</th><th class="n">Dias</th><th class="n">Horas</th><th>Observações</th></tr></thead><tbody>${rs.map(r=>`<tr><td>${dataPT(r.data)}${r.fim?' → '+dataPT(r.fim):''}</td><td>${esc(nomeTipo(r))}</td><td>${esc(perTxt(r))}</td><td class="n">${r.dias?fmt(r.dias):''}</td><td class="n">${r.horas?hm(r.horas):''}</td><td>${esc(r.obs||'')}</td></tr>`).join('')}</tbody></table>`:'<p class="vz">Sem registos neste período.</p>'}
+      <p class="dec">Declaro que tomei conhecimento dos registos acima e que estão corretos.${'<br>'}Observações do colaborador: ______________________________________________</p>
+      <div class="ass"><div>Assinatura do colaborador</div><div>Team Leader</div><div>Data</div></div>
+      <footer>Gerado a ${dataPT(dLocal(agora))} às ${horaLocal(agora)} · Assiduidade EFAFLU</footer>
+    </section>`;
+  };
+  const html=`<!DOCTYPE html><html lang="pt-PT"><head><meta charset="UTF-8"><title>Fichas de assiduidade – ${esc(per)}</title><style>
+    @page{size:A4;margin:14mm}body{font:11px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;color:#1d2433;margin:0}
+    .folha{page-break-after:always;break-after:page}.folha:last-child{page-break-after:auto;break-after:auto}
+    header{display:flex;gap:12px;align-items:center;border-bottom:3px solid #b82d36;padding-bottom:8px;margin-bottom:12px}header img{height:34px}
+    h1{font-size:16px;margin:0}.sub{color:#6b7385}h2{font-size:12px;margin:14px 0 6px}
+    .id{display:flex;gap:24px;margin-bottom:10px}.id div{display:grid}.id span,.k span{font-size:9px;color:#6b7385;text-transform:uppercase;letter-spacing:.05em}.id b{font-size:13px}
+    .ks{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.k{border:1px solid #e2e6ee;border-radius:6px;padding:6px 8px;display:grid}.k b{font-size:13px}
+    table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #e2e6ee;padding:4px 5px;text-align:left;vertical-align:top}th{font-size:9px;color:#6b7385;border-bottom:2px solid #ccc;text-transform:uppercase}
+    td.n,th.n{text-align:right}tr{break-inside:avoid}.vz{color:#6b7385}
+    .dec{margin-top:18px;line-height:2}.ass{display:flex;gap:30px;margin-top:40px}.ass div{flex:1;border-top:1px solid #999;padding-top:4px;color:#6b7385;font-size:10px}
+    footer{margin-top:14px;color:#6b7385;font-size:9px}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  </style></head><body>${cols.map(folha).join('')}<script>setTimeout(()=>print(),400)<\/script></body></html>`;
+  const w=window.open('','_blank');
+  if(!w) return aviso('O browser bloqueou a janela das fichas.\nPermite janelas pop-up para esta página e tenta outra vez.');
+  w.document.open(); w.document.write(html); w.document.close();
+}
 function abrirRelatorio(){ painelTexto('💬 Relatório para enviar', textoRelatorio()); }
 
 /* ---------------- MAPA ---------------- */
@@ -2283,7 +2342,49 @@ function renderMapa(){
   $('mpLegAus').innerHTML = Object.values(AUS).map(m=>`<span style="margin-right:12px"><i style="background:${m.cor}"></i>${m.sig} ${m.curto.toLowerCase()}</span>`).join('');
   $('mpTab').innerHTML = cols.length ? h+'</tbody></table>' : '<div class="vazio">Sem colaboradores.</div>';
   const mt=new Date(v+'-15T12:00').toLocaleDateString('pt-PT',{month:'long',year:'numeric'}); $('mpTit').textContent = mt.charAt(0).toUpperCase()+mt.slice(1);
+  renderPlanoFerias();
 }
+/* ---------------- PLANO ANUAL DE FÉRIAS ---------------- */
+const ehFerias = r => (r.tipo==='ausencia' && motAus(r)==='Férias') || (temComp(r) && r.compensa==='ferias');
+function diasUteisLista(de, ate){ const out=[]; for(let d=new Date(de+'T12:00'), f=new Date(ate+'T12:00'); d<=f; d.setDate(d.getDate()+1)){ const w=d.getDay(), ds=dLocal(d); if(w>0&&w<6&&!feriado(ds)) out.push(ds); } return out; }
+function renderPlanoFerias(){
+  const ano=($('mpMes').value||hoje()).slice(0,4), hj=hoje();
+  $('pfAnoTxt').textContent=ano;
+  const cols=ordCol().filter(c=>c.ativo!==false);
+  const lim = Math.max(1, parseInt($('pfMax').value) || Math.max(2, Math.ceil(cols.length*0.25)));
+  if(!$('pfMax').value) $('pfMax').placeholder=String(lim);
+  const fora={};   // dia -> nomes
+  const linhas=cols.map(c=>{
+    const mes=Array(12).fill(0), ped=Array(12).fill(0);
+    regs.filter(r=>r.colId===c.id && ehFerias(r) && (r.fim||r.data)>=ano+'-01-01' && r.data<=ano+'-12-31').forEach(r=>{
+      const dd = r.fim ? diasUteisLista(r.data<ano+'-01-01'?ano+'-01-01':r.data, r.fim>ano+'-12-31'?ano+'-12-31':r.fim) : [r.data];
+      const peso = r.fim ? 1 : (r.dias||1);
+      dd.forEach(d=>{ mes[+d.slice(5,7)-1]+=peso; (fora[d]=fora[d]||[]).push(primeiroNome(c.nome)); });
+    });
+    pedidos.filter(x=>x.colId===c.id && x.estado==='pendente' && (x.fim||x.data)>=ano+'-01-01' && x.data<=ano+'-12-31').forEach(x=>
+      diasUteisLista(x.data<ano+'-01-01'?ano+'-01-01':x.data, (x.fim||x.data)>ano+'-12-31'?ano+'-12-31':(x.fim||x.data)).forEach(d=>ped[+d.slice(5,7)-1]++));
+    const dir=direitoFerias(c.id), marc=feriasGozadas(c.id,ano);
+    const goz=regs.filter(r=>r.colId===c.id && ehFerias(r) && r.data.slice(0,4)===ano && r.data<=hj).reduce((s,r)=>s+(r.dias||0),0);
+    return {c, mes, ped, dir, marc, goz, falta:dir-marc};
+  });
+  // Dias com demasiada gente fora (ignora fins de semana e feriados)
+  const cheios=Object.keys(fora).filter(d=>fora[d].length>lim && d>=hj).sort();
+  const blocos=[]; cheios.forEach(d=>{ const b=blocos[blocos.length-1]; const ant=b&&diasUteisLista(b.fim,d).length<=2&&b.fim<d; if(ant){ b.fim=d; b.max=Math.max(b.max,fora[d].length); b.nomes=new Set([...b.nomes,...fora[d]]); } else blocos.push({ini:d,fim:d,max:fora[d].length,nomes:new Set(fora[d])}); });
+  const semMarcar=linhas.filter(l=>l.falta>0);
+  const av=[];
+  blocos.forEach(b=>av.push(`<li>⚠️ <b>${dataPT(b.ini).slice(0,5)}${b.fim!==b.ini?' a '+dataPT(b.fim).slice(0,5):''}</b>: até ${b.max} pessoas fora (${esc([...b.nomes].join(', '))})</li>`));
+  if(semMarcar.length && hj.slice(0,4)===ano) av.push(`<li>📅 Ainda por marcar: ${semMarcar.map(l=>esc(primeiroNome(l.c.nome))+' '+fmt(l.falta)+' d').join(' · ')}</li>`);
+  $('pfAvisos').innerHTML = av.length ? `<ul style="margin:0;padding-left:20px;line-height:1.7">${av.join('')}</ul>` : '<span class="small" style="color:var(--extra);font-weight:600">✅ Sem sobreposições acima do limite e férias todas marcadas.</span>';
+  const MS=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'], mAtual = hj.slice(0,4)===ano ? +hj.slice(5,7)-1 : -1;
+  const maxM=Math.max(1,...linhas.flatMap(l=>l.mes));
+  $('pfTab').innerHTML = cols.length ? `<table class="tbl pf"><thead><tr><th>Colaborador</th>${MS.map((m,i)=>`<th class="n" style="${i===mAtual?'color:var(--txt)':''}">${m}</th>`).join('')}<th class="n">Direito</th><th class="n">Marcadas</th><th class="n">Gozadas</th><th class="n">Por marcar</th></tr></thead><tbody>`+
+    linhas.map(l=>`<tr><td style="white-space:nowrap">${esc(l.c.num)} ${esc(l.c.nome)}</td>${l.mes.map((v,i)=>{ const p=l.ped[i];
+      return `<td class="n" style="${v?`background:rgba(217,138,28,${(0.18+0.6*v/maxM).toFixed(2)});font-weight:600`:''}" ${v||p?`data-tip="${esc(l.c.nome)} · ${MS[i]}: ${v?fmt(v)+' dias de férias':''}${p?(v?' + ':'')+p+' por aprovar':''}"`:''}>${v?fmt(v):''}${p?` <span class="small" style="color:var(--aus)">F?${p}</span>`:''}</td>`; }).join('')}
+      <td class="n">${fmt(l.dir)}</td><td class="n">${fmt(l.marc)}</td><td class="n">${fmt(l.goz)}</td><td class="n" style="font-weight:700;color:${l.falta<0?'var(--falta)':l.falta>0?'var(--aus)':'var(--extra)'}">${l.falta<0?'excedeu '+fmt(-l.falta):l.falta?fmt(l.falta):'✓'}</td></tr>`).join('')+
+    `<tr style="font-weight:700"><td>Pessoas fora (máx. num dia)</td>${MS.map((m,i)=>{ const pre=ano+'-'+pad(i+1); const mx=Math.max(0,...Object.keys(fora).filter(d=>d.startsWith(pre)).map(d=>fora[d].length)); return `<td class="n" style="${mx>lim?'color:var(--falta)':''}">${mx||''}</td>`; }).join('')}<td colspan="4"></td></tr></tbody></table>`
+    : '<p class="small">Adiciona primeiro colaboradores.</p>';
+}
+
 function abrirDoMapa(id){ if(papel==='consulta') return; editarReg(id); voltarMapa=true; window.scrollTo(0,0); }
 let voltarMapa=false;
 // Clique num quadrado do mapa: se houver vários registos nesse dia, mostra-os todos (e assinala os repetidos)
@@ -2527,6 +2628,8 @@ $('rHIni2').addEventListener('change',calcHoras);
 $('rHFim2').addEventListener('change',calcHoras);
 $('rData').addEventListener('change',rotulosDia);
 $('fdData').addEventListener('change',()=>{ rotulosDia(); renderFolhaJa(); $('fdMsg').textContent=''; });
+try{ const v=localStorage.getItem('pf_max'); if(v) $('pfMax').value=v; }catch(e){}
+$('pfMax').addEventListener('input',()=>{ try{ localStorage.setItem('pf_max',$('pfMax').value); }catch(e){} renderPlanoFerias(); });
 $('tbFolha').addEventListener('change',e=>{ if(e.target.type==='time') calcLinha(e.target.closest('tr')); });
 $('fdData').value=hoje();
 $('mpMes').value=hoje().slice(0,7);
