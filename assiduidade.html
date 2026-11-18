@@ -205,7 +205,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
   <button class="btn sec hide" id="lkCancel">Cancelar</button>
   <p id="lkErr"></p>
   <a href="#" id="lkEsq" class="small hide" style="color:var(--pri)">Esqueci-me da palavra-passe</a>
-  <div class="small" style="margin-top:14px;opacity:.6">versão 18/11 · jornada 8h</div>
+  <div class="small" style="margin-top:14px;opacity:.6">versão 18/11b · jornada 8h</div>
 </div></div>
 <header>
   <span class="logo"><img src="" data-logo alt="EFAFLU"></span>
@@ -406,7 +406,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
             <option value="ferias">🏖️ Descontar nas férias</option>
           </select></div>
         <div id="boxMov"><label>Movimento</label>
-          <select id="rMov" onchange="ajustarForm()">
+          <select id="rMov" onchange="ajustarForm();calcHoras()">
             <option value="+">➕ Crédito (horas a mais, entram no banco)</option>
             <option value="-">➖ Débito (horas gozadas / saiu mais cedo)</option>
           </select></div>
@@ -426,6 +426,12 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
         <div id="boxIni"><label>Hora início</label><div class="inline"><input type="time" id="rHIni"><button class="mini" onclick="agoraEm('rHIni')">Agora</button></div></div>
         <div id="boxFimH"><label>Hora fim</label><div class="inline"><input type="time" id="rHFim"><button class="mini" onclick="agoraEm('rHFim')">Agora</button></div></div>
         <div id="box2P"><label>&nbsp;</label><button class="mini" id="b2P" onclick="abrir2P(true)" title="Para quando a pessoa fez horas em duas partes do dia (ex.: de manhã e à noite). As horas são somadas.">➕ 2.º período</button></div>
+        <div id="boxMov2" class="hide"><label>2.º período é</label>
+          <select id="rMov2" onchange="calcHoras()">
+            <option value="">igual ao 1.º (soma)</option>
+            <option value="+">➕ Crédito (fez a mais)</option>
+            <option value="-">➖ Débito (gozou / saiu mais cedo)</option>
+          </select></div>
         <div id="boxIni2" class="hide"><label>2.º período – início</label><input type="time" id="rHIni2"></div>
         <div id="boxFimH2" class="hide"><label>2.º período – fim</label><div class="inline"><input type="time" id="rHFim2"><button class="mini" onclick="abrir2P(false)" title="Tirar o 2.º período">✕</button></div></div>
         <div id="boxHoras"><label>Horas <span class="small" id="rAlm" style="font-weight:400"></span></label><input type="number" id="rHoras" step="0.25" min="0"></div>
@@ -1118,16 +1124,27 @@ function agoraEm(id){ $(id).value=horaLocal(new Date()); calcHoras(); }
 function calcHoras(){
   const a=$('rHIni').value, b=$('rHFim').value, dois=visivel('boxIni2'), a2=dois?$('rHIni2').value:'', b2=dois?$('rHFim2').value:'';
   const p1 = a&&b, p2 = a2&&b2; if(!p1 && !p2) return;
+  // Banco de horas com movimentos diferentes (ex.: entrou 30 min mais cedo e saiu 4h mais cedo): ficam 2 registos
+  if(mov2Dif()){
+    const h1=p1?minsTrab(a,b)/60:0, h2=p2?minsTrab(a2,b2)/60:0, m1=$('rMov').value, m2=$('rMov2').value;
+    $('rHoras').value = Math.round(h1*100)/100;
+    const liq=(m1==='-'?-h1:h1)+(m2==='-'?-h2:h2);
+    $('rAlm').textContent = `(só o 1.º período: ${m1==='-'?'−':'+'}${hm(h1)} · 2.º: ${m2==='-'?'−':'+'}${hm(h2)} · no banco fica ${liq<0?'−':'+'}${hm(Math.abs(liq))})`;
+    return;
+  }
   const m = (p1?minsTrab(a,b):0) + (p2?minsTrab(a2,b2):0);
   $('rHoras').value = Math.round(m/60*100)/100;
   const al=(p1?descAlmoco(a,b):0)+(p2?descAlmoco(a2,b2):0);
   $('rAlm').textContent = (p1&&p2 ? '(soma dos 2 períodos' : '(')+(al ? (p1&&p2?', ':'')+'já sem '+hm(al/60)+' de almoço)' : (p1&&p2?')':''));
   if($('rAlm').textContent==='(') $('rAlm').textContent='';
 }
+// No banco de horas, o 2.º período pode ter movimento diferente do 1.º (crédito + débito no mesmo dia)
+const mov2Dif = () => valTipo()==='banco' && visivel('boxIni2') && $('rMov2').value && $('rMov2').value!==$('rMov').value;
 // 2.º período no mesmo dia (ex.: horas de manhã e à noite) – as horas somam-se
 function abrir2P(abrir){
   $('boxIni2').classList.toggle('hide',!abrir); $('boxFimH2').classList.toggle('hide',!abrir); $('box2P').classList.toggle('hide',abrir);
-  if(!abrir){ $('rHIni2').value=''; $('rHFim2').value=''; } else $('rHIni2').focus();
+  $('boxMov2').classList.toggle('hide', !abrir || valTipo()!=='banco' || !!editReg);
+  if(!abrir){ $('rHIni2').value=''; $('rHFim2').value=''; $('rMov2').value=''; } else $('rHIni2').focus();
   calcHoras();
 }
 // Texto dos períodos de um registo: "08:00–12:00 + 20:00–22:00"
@@ -1141,6 +1158,8 @@ function ajustarForm(){
   $('boxFimH').classList.toggle('hide', !temHoras);
   const tem2 = temHoras && !!($('rHIni2').value||$('rHFim2').value);
   $('box2P').classList.toggle('hide', !temHoras || tem2); $('boxIni2').classList.toggle('hide', !tem2); $('boxFimH2').classList.toggle('hide', !tem2);
+  $('boxMov2').classList.toggle('hide', !tem2 || t!=='banco' || !!editReg);
+  if(t!=='banco' || editReg) $('rMov2').value='';
   $('boxMotivo').classList.add('hide');
   $('boxMov').classList.toggle('hide', t!=='banco');
   const tv=$('rTipo').value, ani=tv==='aus:Aniversário', comp=COMPENSAVEIS.includes(tv);
@@ -1206,6 +1225,19 @@ async function guardarRegisto(){
   const obs=$('rObs').value.trim(), motivo = tipo==='ausencia' ? $('rTipo').value.slice(4) : '';
   const r = {id: editReg||uid(), colId, tipo, mov: tipo==='banco'?$('rMov').value:'', data, fim, dias, horas: compensa==='banco'?hBanco:(tipo==='ausencia'?0:horas), hIni, hFim, hIni2, hFim2, motivo, compensa, origem, obs,
              criado: new Date().toISOString()};
+  if(mov2Dif()){
+    // 2 registos: o 1.º período com o movimento escolhido em cima e o 2.º com o outro movimento
+    const h2 = Math.round(minsTrab(hIni2,hFim2)/60*100)/100;
+    if(!h2) return aviso('Indica a hora de início e de fim do 2.º período.');
+    const m2=$('rMov2').value;
+    if(m2==='-' && origem!=='ant'){ const s=saldoBanco(colId)+(r.mov==='-'?-horas:horas);
+      if(h2>s && !await perguntar(`Com este débito o banco de horas fica negativo (${hm(s-h2)}). Guardar mesmo assim?`)) return; }
+    const r2={...r, id:uid(), mov:m2, horas:h2, hIni:hIni2, hFim:hFim2, hIni2:'', hFim2:'', origem: m2==='-'?origem:''};
+    r.hIni2=''; r.hFim2=''; if(r.mov!=='-') r.origem='';
+    await salvar(COL_REG, r); await salvar(COL_REG, r2);
+    limparForm(); $('dica').textContent=`✅ Guardados 2 registos: ${r.mov==='-'?'−':'+'}${hm(r.horas)} e ${m2==='-'?'−':'+'}${hm(h2)} no banco de horas.`;
+    return;
+  }
   await salvar(COL_REG, r);
   const eraEdit = !!editReg;
   limparForm();
@@ -1215,7 +1247,7 @@ function limparForm(){
   editReg=null; $('regTitulo').textContent='Novo registo'; $('boxCancel').classList.add('hide'); $('boxApagar').classList.add('hide');
   if(!$('rData').value) $('rData').value=hoje();
   $('rFim').value=''; $('rComp').value='folga'; rotulosDia(); $('rDias').value=1; $('rHoras').value='';
-  $('rHIni').value=''; $('rHFim').value=''; $('rHIni2').value=''; $('rHFim2').value=''; $('rObs').value=''; $('rMov').value='+'; $('rOrig').value='';
+  $('rHIni').value=''; $('rHFim').value=''; $('rHIni2').value=''; $('rHFim2').value=''; $('rMov2').value=''; $('rObs').value=''; $('rMov').value='+'; $('rOrig').value='';
   ajustarForm();
 }
 function editarReg(id){
