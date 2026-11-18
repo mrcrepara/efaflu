@@ -16,6 +16,7 @@
   // perfis: d = dono, c = chefia (só consulta), a = armazém, k = colaborador
   const ITENS = [
     { href: "index.html", ic: "🏠", t: "Início", p: "dc" },
+    { href: "direcao.html", ic: "📈", t: "Painel da Direção", p: "dc" },
     { grupo: "Pessoas" },
     { href: "assiduidade.html#dash", ic: "👥", t: "Assiduidade", p: "dc" },
     { href: "assiduidade.html#folha", ic: "🗓️", t: "Folha do dia", p: "d" },
