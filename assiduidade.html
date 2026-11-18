@@ -61,6 +61,7 @@ button.edit{background:none;border:0;color:var(--pri);cursor:pointer;font-size:1
 .tbl{width:100%;border-collapse:collapse;font-size:14px}
 .tbl th{text-align:left;font-size:12px;color:var(--muted);border-bottom:2px solid var(--line);padding:8px 6px;white-space:nowrap}
 .tbl td{border-bottom:1px solid var(--line);padding:8px 6px;vertical-align:top}
+.tbl tr.fd-extra td{background:var(--bg2,rgba(0,0,0,.025));border-top:0}
 .tbl td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .pos{color:var(--extra);font-weight:700}.neg{color:var(--falta);font-weight:700}
 .wrap{overflow-x:auto}
@@ -204,7 +205,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
   <button class="btn sec hide" id="lkCancel">Cancelar</button>
   <p id="lkErr"></p>
   <a href="#" id="lkEsq" class="small hide" style="color:var(--pri)">Esqueci-me da palavra-passe</a>
-  <div class="small" style="margin-top:14px;opacity:.6">versão 12/11e · jornada 8h</div>
+  <div class="small" style="margin-top:14px;opacity:.6">versão 18/11 · jornada 8h</div>
 </div></div>
 <header>
   <span class="logo"><img src="" data-logo alt="EFAFLU"></span>
@@ -338,7 +339,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
             <button class="mini" onclick="setDia('fdData',0)">Hoje</button></div></div>
         <div><span class="small" id="fdDiaSem" style="font-size:15px;font-weight:600;color:var(--txt)"></span></div>
       </div>
-      <p class="small">Preenche só as linhas de quem teve alguma coisa nesse dia e carrega em "Guardar tudo". Se a pessoa teve duas coisas no mesmo dia (ex.: falta de manhã e horas extra à noite), usa o separador "Registar" para a segunda.</p>
+      <p class="small">Preenche só as linhas de quem teve alguma coisa nesse dia e carrega em "Guardar tudo". Se a pessoa teve duas coisas no mesmo dia (ex.: falta de manhã e horas extra à noite, ou horas de manhã e à noite), carrega no ➕ ao lado do nome para lhe juntar outra linha.</p>
     </div>
     <div class="card"><div class="wrap"><table class="tbl" id="fdTabela">
       <thead><tr><th>Nº</th><th>Nome</th><th>O que aconteceu</th><th>Início</th><th>Fim</th><th>Horas</th><th>Observações</th></tr></thead>
@@ -424,6 +425,9 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
         <div id="boxDias"><label>Dias</label><input type="number" id="rDias" step="0.5" min="0" value="1"></div>
         <div id="boxIni"><label>Hora início</label><div class="inline"><input type="time" id="rHIni"><button class="mini" onclick="agoraEm('rHIni')">Agora</button></div></div>
         <div id="boxFimH"><label>Hora fim</label><div class="inline"><input type="time" id="rHFim"><button class="mini" onclick="agoraEm('rHFim')">Agora</button></div></div>
+        <div id="box2P"><label>&nbsp;</label><button class="mini" id="b2P" onclick="abrir2P(true)" title="Para quando a pessoa fez horas em duas partes do dia (ex.: de manhã e à noite). As horas são somadas.">➕ 2.º período</button></div>
+        <div id="boxIni2" class="hide"><label>2.º período – início</label><input type="time" id="rHIni2"></div>
+        <div id="boxFimH2" class="hide"><label>2.º período – fim</label><div class="inline"><input type="time" id="rHFim2"><button class="mini" onclick="abrir2P(false)" title="Tirar o 2.º período">✕</button></div></div>
         <div id="boxHoras"><label>Horas <span class="small" id="rAlm" style="font-weight:400"></span></label><input type="number" id="rHoras" step="0.25" min="0"></div>
         <div id="boxMotivo"><label>Motivo</label>
           <select id="rMotivo">
@@ -1112,10 +1116,22 @@ function diasUteis(a,b){
 }
 function agoraEm(id){ $(id).value=horaLocal(new Date()); calcHoras(); }
 function calcHoras(){
-  const a=$('rHIni').value, b=$('rHFim').value; if(!a||!b) return;
-  $('rHoras').value = Math.round(minsTrab(a,b)/60*100)/100;
-  const al=descAlmoco(a,b); $('rAlm').textContent = al ? '(já sem '+hm(al/60)+' de almoço)' : '';
+  const a=$('rHIni').value, b=$('rHFim').value, dois=visivel('boxIni2'), a2=dois?$('rHIni2').value:'', b2=dois?$('rHFim2').value:'';
+  const p1 = a&&b, p2 = a2&&b2; if(!p1 && !p2) return;
+  const m = (p1?minsTrab(a,b):0) + (p2?minsTrab(a2,b2):0);
+  $('rHoras').value = Math.round(m/60*100)/100;
+  const al=(p1?descAlmoco(a,b):0)+(p2?descAlmoco(a2,b2):0);
+  $('rAlm').textContent = (p1&&p2 ? '(soma dos 2 períodos' : '(')+(al ? (p1&&p2?', ':'')+'já sem '+hm(al/60)+' de almoço)' : (p1&&p2?')':''));
+  if($('rAlm').textContent==='(') $('rAlm').textContent='';
 }
+// 2.º período no mesmo dia (ex.: horas de manhã e à noite) – as horas somam-se
+function abrir2P(abrir){
+  $('boxIni2').classList.toggle('hide',!abrir); $('boxFimH2').classList.toggle('hide',!abrir); $('box2P').classList.toggle('hide',abrir);
+  if(!abrir){ $('rHIni2').value=''; $('rHFim2').value=''; } else $('rHIni2').focus();
+  calcHoras();
+}
+// Texto dos períodos de um registo: "08:00–12:00 + 20:00–22:00"
+const perTxt = r => [r.hIni&&r.hFim?r.hIni+'–'+r.hFim:'', r.hIni2&&r.hFim2?r.hIni2+'–'+r.hFim2:''].filter(Boolean).join(' + ');
 function ajustarForm(){
   const t=valTipo(), temHoras = ['extra','banco','sabado','falta_j','falta_i'].includes(t);
   $('boxFim').classList.toggle('hide', !['ausencia','falta_j','falta_i'].includes(t));
@@ -1123,6 +1139,8 @@ function ajustarForm(){
   $('boxHoras').classList.toggle('hide', !temHoras);
   $('boxIni').classList.toggle('hide', !temHoras);
   $('boxFimH').classList.toggle('hide', !temHoras);
+  const tem2 = temHoras && !!($('rHIni2').value||$('rHFim2').value);
+  $('box2P').classList.toggle('hide', !temHoras || tem2); $('boxIni2').classList.toggle('hide', !tem2); $('boxFimH2').classList.toggle('hide', !tem2);
   $('boxMotivo').classList.add('hide');
   $('boxMov').classList.toggle('hide', t!=='banco');
   const tv=$('rTipo').value, ani=tv==='aus:Aniversário', comp=COMPENSAVEIS.includes(tv);
@@ -1160,6 +1178,8 @@ async function guardarRegisto(){
   const dias = visivel('boxDias') ? parseFloat($('rDias').value)||0 : (tipo==='sabado'?1:0);
   const horas = visivel('boxHoras') ? parseFloat($('rHoras').value)||0 : 0;
   const hIni = visivel('boxIni') ? $('rHIni').value : '', hFim = visivel('boxFimH') ? $('rHFim').value : '';
+  const hIni2 = visivel('boxIni2') ? $('rHIni2').value : '', hFim2 = visivel('boxFimH2') ? $('rHFim2').value : '';
+  if((hIni2||hFim2) && !(hIni2&&hFim2)) return aviso('No 2.º período falta a hora de início ou de fim (ou tira-o no ✕).');
   if((tipo==='extra'||tipo==='banco') && !horas) return aviso('Indica as horas (ou a hora de início e fim).');
   if(['falta_i','falta_j','ausencia'].includes(tipo) && !dias && !horas) return aviso('Indica dias ou horas.');
   if(horas>12 && !await perguntar(`São ${hm(horas)} – mais de 12 horas.${hIni&&hFim&&hFim<hIni?'\nA hora de fim é mais cedo que a de início, por isso contou como se passasse para o dia seguinte.':''}\n\nEstá certo?`,'Sim, gravar','Corrigir')) return;
@@ -1184,7 +1204,7 @@ async function guardarRegisto(){
     if(horas>s && !await perguntar(`O ${qual} tem ${hm(s)}. Com este débito fica negativo (${hm(s-horas)}). Guardar mesmo assim?`)) return;
   }
   const obs=$('rObs').value.trim(), motivo = tipo==='ausencia' ? $('rTipo').value.slice(4) : '';
-  const r = {id: editReg||uid(), colId, tipo, mov: tipo==='banco'?$('rMov').value:'', data, fim, dias, horas: compensa==='banco'?hBanco:(tipo==='ausencia'?0:horas), hIni, hFim, motivo, compensa, origem, obs,
+  const r = {id: editReg||uid(), colId, tipo, mov: tipo==='banco'?$('rMov').value:'', data, fim, dias, horas: compensa==='banco'?hBanco:(tipo==='ausencia'?0:horas), hIni, hFim, hIni2, hFim2, motivo, compensa, origem, obs,
              criado: new Date().toISOString()};
   await salvar(COL_REG, r);
   const eraEdit = !!editReg;
@@ -1195,7 +1215,7 @@ function limparForm(){
   editReg=null; $('regTitulo').textContent='Novo registo'; $('boxCancel').classList.add('hide'); $('boxApagar').classList.add('hide');
   if(!$('rData').value) $('rData').value=hoje();
   $('rFim').value=''; $('rComp').value='folga'; rotulosDia(); $('rDias').value=1; $('rHoras').value='';
-  $('rHIni').value=''; $('rHFim').value=''; $('rObs').value=''; $('rMov').value='+'; $('rOrig').value='';
+  $('rHIni').value=''; $('rHFim').value=''; $('rHIni2').value=''; $('rHFim2').value=''; $('rObs').value=''; $('rMov').value='+'; $('rOrig').value='';
   ajustarForm();
 }
 function editarReg(id){
@@ -1204,6 +1224,7 @@ function editarReg(id){
   $('rCol').value=r.colId; $('rTipo').value = r.tipo==='ausencia' ? 'aus:'+motAus(r) : r.tipo; $('rComp').value=r.compensa||'folga'; $('rOrig').value=r.origem||'';
   $('rData').value=r.data; rotulosDia(); $('rFim').value=r.fim||''; $('rDias').value=r.dias||0; $('rHoras').value=r.horas||'';
   $('rHIni').value=(r.hIni||'').slice(0,5); $('rHFim').value=(r.hFim||'').slice(0,5);
+  $('rHIni2').value=(r.hIni2||'').slice(0,5); $('rHFim2').value=(r.hFim2||'').slice(0,5);
   if(r.mov) $('rMov').value=r.mov;
   $('rObs').value=r.obs||''; ajustarForm();
   $('regTitulo').textContent='Editar registo'; $('boxCancel').classList.remove('hide'); $('boxApagar').classList.remove('hide');
@@ -1236,34 +1257,48 @@ const FD_OP = [['','—'],['falta_i','Falta injust. (dia)'],['falta_j','Falta ju
                ['comp:Assistência à família:banco','👨‍👩‍👧 Assist. família – desconta banco (8h)'],['comp:Assistência à família:ferias','👨‍👩‍👧 Assist. família – desconta férias'],
                ['fjc:banco','Falta just. – desconta banco'],['fjc:bancoA','📦 Falta just. – desconta banco anterior'],['fjc:ferias','Falta just. – desconta férias']];
 let fdChave=null;
+// Lê todas as linhas da folha (uma pessoa pode ter várias linhas no mesmo dia)
 function lerFolha(){
-  const v={};
-  document.querySelectorAll('#tbFolha tr[data-c]').forEach(tr=>{
+  return [...document.querySelectorAll('#tbFolha tr[data-c]')].map(tr=>{
     const g=k=>tr.querySelector('[data-k="'+k+'"]').value;
-    v[tr.dataset.c]={t:g('t'),i:g('i'),f:g('f'),h:g('h'),o:g('o')};
+    return {c:tr.dataset.c, t:g('t'), i:g('i'), f:g('f'), h:g('h'), o:g('o')};
   });
-  return v;
 }
-function renderFolha(limpar){
-  const ativos=ordCol().filter(c=>c.ativo!==false);
-  const ant = limpar ? {} : lerFolha();
-  fdChave = ativos.map(c=>c.id+c.num+c.nome).join('|');
-  $('tbFolha').innerHTML = ativos.length ? ativos.map(c=>{ const a=ant[c.id]||{};
-    return `<tr data-c="${c.id}">
-      <td>${esc(c.num)}</td><td style="white-space:nowrap">${esc(c.nome)}</td>
+function linhaFolha(c, a, extra){
+  return `<tr data-c="${c.id}"${extra?' class="fd-extra"':''}>
+      <td>${extra?'':esc(c.num)}</td>
+      <td style="white-space:nowrap">${extra?'<span class="small">↳ '+esc(c.nome)+'</span> <button class="mini" data-fd="del" title="Tirar esta linha">✕</button>'
+        : esc(c.nome)+' <button class="mini" data-fd="add" title="Juntar outra linha para esta pessoa no mesmo dia (ex.: falta de manhã e horas à noite)">➕</button>'}</td>
       <td><select data-k="t" style="min-width:170px">${FD_OP.map(([v,l])=>`<option value="${v}"${a.t===v?' selected':''}>${l}</option>`).join('')}</select></td>
       <td><input type="time" data-k="i" value="${esc(a.i||'')}" style="min-width:100px"></td>
       <td><input type="time" data-k="f" value="${esc(a.f||'')}" style="min-width:100px"></td>
       <td><input type="number" data-k="h" step="0.25" min="0" value="${esc(a.h||'')}" style="min-width:75px"></td>
-      <td><input data-k="o" value="${esc(a.o||'')}" style="min-width:150px"></td></tr>`;}).join('')
-    : '<tr><td colspan="7" class="vazio">Adiciona primeiro colaboradores.</td></tr>';
+      <td><input data-k="o" value="${esc(a.o||'')}" style="min-width:150px"></td></tr>`;
+}
+function renderFolha(limpar){
+  const ativos=ordCol().filter(c=>c.ativo!==false);
+  const ant = limpar ? [] : lerFolha();
+  fdChave = ativos.map(c=>c.id+c.num+c.nome).join('|');
+  $('tbFolha').innerHTML = ativos.length ? ativos.map(c=>{
+    const ls=ant.filter(x=>x.c===c.id); if(!ls.length) ls.push({});
+    return ls.map((a,i)=>linhaFolha(c,a,i>0)).join('');
+  }).join('') : '<tr><td colspan="7" class="vazio">Adiciona primeiro colaboradores.</td></tr>';
   if(limpar) $('fdMsg').textContent='';
   renderFolhaJa();
 }
+$('tbFolha').addEventListener('click',e=>{
+  const b=e.target.closest('[data-fd]'); if(!b) return;
+  const tr=b.closest('tr');
+  if(b.dataset.fd==='del'){ tr.remove(); return; }
+  const c=colabs.find(x=>x.id===tr.dataset.c); if(!c) return;
+  let ult=tr; while(ult.nextElementSibling && ult.nextElementSibling.dataset.c===c.id) ult=ult.nextElementSibling;
+  ult.insertAdjacentHTML('afterend', linhaFolha(c,{},true));
+  ult.nextElementSibling.querySelector('[data-k="t"]').focus();
+});
 function renderFolhaJa(){
   const d=$('fdData').value, ja=regs.filter(r=>r.data===d || (r.fim && r.data<=d && r.fim>=d));
   $('fdJa').innerHTML = ja.length ? '<h2 style="margin-top:16px">Já registado neste dia</h2><ul class="small" style="margin:0;padding-left:18px">'+
-    ja.map(r=>{const c=nomeCol(r.colId); return `<li>${esc(c.num)} – ${esc(c.nome)}: <b>${nomeTipo(r)}</b>${r.horas?' '+hm(r.horas):''}${r.hIni&&r.hFim?' ('+esc(r.hIni)+'–'+esc(r.hFim)+')':''}${r.obs?' · '+esc(r.obs):''}</li>`;}).join('')+'</ul>' : '';
+    ja.map(r=>{const c=nomeCol(r.colId); return `<li>${esc(c.num)} – ${esc(c.nome)}: <b>${nomeTipo(r)}</b>${r.horas?' '+hm(r.horas):''}${perTxt(r)?' ('+esc(perTxt(r))+')':''}${r.obs?' · '+esc(r.obs):''}</li>`;}).join('')+'</ul>' : '';
 }
 function calcLinha(tr){
   const i=tr.querySelector('[data-k="i"]').value, f=tr.querySelector('[data-k="f"]').value; if(!i||!f) return;
@@ -1272,7 +1307,8 @@ function calcLinha(tr){
 async function guardarFolha(){
   const data=$('fdData').value; if(!data) return aviso('Escolhe o dia.');
   const v=lerFolha(), novos=[], erros=[], dup=[];
-  for(const [colId,x] of Object.entries(v)){
+  for(const x of v){
+    const colId=x.c;
     if(!x.t) continue;
     const c=nomeCol(colId), horas=parseFloat(x.h)||0;
     let tipo=x.t, mov='', origem='';
@@ -1409,7 +1445,7 @@ function renderResumo(){
       <td style="white-space:nowrap">${dataPT(r.data)}${r.fim?' → '+dataPT(r.fim):''}</td>
       <td style="text-transform:capitalize">${diaSem(r.data).split('-')[0]}</td>
       <td>${tagReg(r)}</td>
-      <td style="white-space:nowrap">${r.hIni&&r.hFim?esc(r.hIni)+'–'+esc(r.hFim):''}</td>
+      <td style="white-space:nowrap">${esc(perTxt(r))}</td>
       <td class="n">${r.dias?fmt(r.dias):''}</td><td class="n">${r.horas?hm(r.horas):''}</td>
       <td>${esc(r.obs||'')}</td>
       <td class="noprint" style="white-space:nowrap"><button class="edit" title="Editar" onclick="editarReg('${r.id}')">✏️</button><button class="del" title="Apagar" onclick="apagarReg('${r.id}')">🗑️</button></td></tr>`).join('')
@@ -2055,7 +2091,7 @@ function relatorioPDF(){
   const av=calcAvisos();
   const det=L.map(l=>{ const rs=sel.filter(r=>r.colId===l.c.id).sort((a,b)=>a.data.localeCompare(b.data)); if(!rs.length) return '';
     return `<h3>${esc(l.c.num)} – ${esc(l.c.nome)}</h3><table><thead><tr><th>Data</th><th>Tipo</th><th>Horário</th><th>Dias</th><th>Horas</th><th>Observações</th></tr></thead><tbody>`+
-      rs.map(r=>`<tr><td>${dataPT(r.data)}${r.fim?' → '+dataPT(r.fim):''}</td><td>${esc(nomeTipo(r))}</td><td>${r.hIni&&r.hFim?esc(r.hIni)+'–'+esc(r.hFim):''}</td><td class="n">${r.dias?fmt(r.dias):''}</td><td class="n">${r.horas?hm(r.horas):''}</td><td>${esc(r.obs||'')}</td></tr>`).join('')+'</tbody></table>'; }).join('');
+      rs.map(r=>`<tr><td>${dataPT(r.data)}${r.fim?' → '+dataPT(r.fim):''}</td><td>${esc(nomeTipo(r))}</td><td>${esc(perTxt(r))}</td><td class="n">${r.dias?fmt(r.dias):''}</td><td class="n">${r.horas?hm(r.horas):''}</td><td>${esc(r.obs||'')}</td></tr>`).join('')+'</tbody></table>'; }).join('');
   const html=`<!doctype html><html lang="pt-PT"><head><meta charset="utf-8"><title>Assiduidade ${esc(per)} – EFAFLU</title><style>
     @page{size:A4;margin:14mm}*{box-sizing:border-box}body{font-family:system-ui,Segoe UI,Roboto,sans-serif;color:#1d2433;font-size:11px;margin:0}
     header{display:flex;align-items:center;gap:16px;border-bottom:3px solid #b82d36;padding-bottom:10px;margin-bottom:14px}header img{height:46px}
@@ -2091,7 +2127,16 @@ function ausente(colId, d){ return regs.find(r=>r.colId===colId && cobre(r,d) &&
   ((r.tipo==='falta_i'||r.tipo==='falta_j') && (r.dias>0 || (r.horas||0)>=DIA_INTEIRO)) ||
   (r.tipo==='banco' && r.mov==='-' && (r.horas||0)>=DIA_INTEIRO)
 )); }
+// Se a pessoa tiver mais do que um registo no dia (ex.: falta de manhã + horas à noite), o quadrado mostra "+" e a dica lista tudo
 function celula(colId, d){
+  const o=celula1(colId,d), rs=regs.filter(r=>r.colId===colId && cobre(r,d));
+  if(o && rs.length>1 && o.id){
+    o.sig+='+';
+    o.txt=rs.map(r=>'• '+nomeTipo(r)+(r.horas?' '+hm(r.horas):'')+(perTxt(r)?' ('+perTxt(r)+')':'')).join('\n');
+  }
+  return o;
+}
+function celula1(colId, d){
   const rs=regs.filter(r=>r.colId===colId && cobre(r,d));
   const a=rs.find(r=>r.tipo==='ausencia'); if(a){ const m=AUS[motAus(a)]; return {sig:m.sig, cor:m.cor, txt:m.curto+sufComp(a)+(a.fim?' ('+dataPT(a.data)+' a '+dataPT(a.fim)+')':''), id:a.id}; }
   const fi=rs.find(r=>r.tipo==='falta_i'); if(fi) return {sig:fi.dias?'FI':'fi', cor:'var(--falta)', txt:'Falta injustificada'+(fi.horas?' ('+hm(fi.horas)+')':''), id:fi.id};
@@ -2240,7 +2285,7 @@ function render(){
     <td style="white-space:nowrap">${dataPT(r.data)}${r.fim?' → '+dataPT(r.fim):''}</td>
     <td>${esc(c.num)}</td><td>${esc(c.nome)}</td>
     <td>${tagReg(r)}</td>
-    <td style="white-space:nowrap">${r.hIni&&r.hFim?esc(r.hIni)+'–'+esc(r.hFim):''}</td>
+    <td style="white-space:nowrap">${esc(perTxt(r))}</td>
     <td class="n">${r.dias?fmt(r.dias):''}</td><td class="n">${r.horas?hm(r.horas):''}</td>
     <td>${esc(r.obs||'')}${r.alteradoPor||r.criadoPor?`<div class="small" title="Criado por ${esc(r.criadoPor||'?')}${r.criadoEm?' a '+dataPT(r.criadoEm.slice(0,10)):''}">✍️ ${esc(quemCurto(r.alteradoPor||r.criadoPor))}${r.alteradoEm?' · '+dataPT(r.alteradoEm.slice(0,10)):''}</div>`:''}</td>
     <td style="white-space:nowrap"><button class="edit" title="Editar" onclick="editarReg('${r.id}')">✏️</button><button class="del" title="Apagar" onclick="apagarReg('${r.id}')">🗑️</button></td></tr>`}).join('')
@@ -2334,6 +2379,8 @@ document.addEventListener('change',e=>{
 },true);
 $('rHIni').addEventListener('change',calcHoras);
 $('rHFim').addEventListener('change',calcHoras);
+$('rHIni2').addEventListener('change',calcHoras);
+$('rHFim2').addEventListener('change',calcHoras);
 $('rData').addEventListener('change',rotulosDia);
 $('fdData').addEventListener('change',()=>{ rotulosDia(); renderFolhaJa(); $('fdMsg').textContent=''; });
 $('tbFolha').addEventListener('change',e=>{ if(e.target.type==='time') calcLinha(e.target.closest('tr')); });
