@@ -210,11 +210,11 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
   <button class="btn sec hide" id="lkCancel">Cancelar</button>
   <p id="lkErr"></p>
   <a href="#" id="lkEsq" class="small hide" style="color:var(--pri)">Esqueci-me da palavra-passe</a>
-  <div class="small" style="margin-top:14px;opacity:.6">versão 18/11g · jornada 8h</div>
+  <div class="small" style="margin-top:14px;opacity:.6">versão 18/11h · jornada 8h</div>
 </div></div>
 <header>
   <span class="logo"><img src="" data-logo alt="EFAFLU"></span>
-  <h1>Gestão Parque Máquinas <span style="font-size:11px;font-weight:500;opacity:.7;vertical-align:middle" title="Versão da app">v18/11g</span></h1>
+  <h1>Gestão Parque Máquinas <span style="font-size:11px;font-weight:500;opacity:.7;vertical-align:middle" title="Versão da app">v18/11h</span></h1>
   <span id="estado">A carregar…</span>
   <a href="index.html">← Parque Máquinas EFAFLU</a>
   <button class="btn sec" style="padding:6px 12px" onclick="bloquear()">🔒 Sair</button>
@@ -696,6 +696,14 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
       <div class="row">
         <div><label>Assinatura</label><input id="asTxt" placeholder="ex.: Rui Veloso, Team Leader"></div>
         <div style="flex:0"><button class="btn" onclick="guardarAssinatura()">💾 Guardar</button></div>
+      </div>
+    </div>
+    <div class="card noprint w">
+      <h2>💾 Cópia de segurança</h2>
+      <p class="small" style="margin-top:0">Descarrega para o computador uma cópia de <b>todos</b> os dados do sistema EFAFLU (assiduidade, máquinas, formações e EPIs, stock, pedidos, afiação e CNC). Guarda o ficheiro numa pen ou no email. Faz pelo menos uma vez por mês.</p>
+      <div class="row" style="align-items:center">
+        <div style="flex:0"><button class="btn" id="bkBtn" onclick="copiaSeguranca()">⬇️ Descarregar cópia de tudo</button></div>
+        <div><span class="small" id="bkInfo"></span></div>
       </div>
     </div>
     <div class="card noprint w">
@@ -1812,6 +1820,7 @@ function renderAcessos(){
     $('fmData').value = g.municipal ? new Date().getFullYear()+'-'+g.municipal : ''; $('fmNome').value=g.municipalNome||''; $('fmCarn').checked=!!g.carnaval; }
   if(!['lmExtra','lmBPos','lmBNeg','lmFI','lmPct'].includes(document.activeElement&&document.activeElement.id)){
     const l=(g.limites)||{}; $('lmExtra').value=l.extra||''; $('lmBPos').value=l.bPos||''; $('lmBNeg').value=l.bNeg||''; $('lmFI').value=l.fi||''; $('lmPct').value=String(l.pct||80); }
+  { const n=diasDesdeCopia(); $('bkInfo').innerHTML = n==null ? '<span style="color:var(--aus);font-weight:600">Ainda não foi feita nenhuma cópia.</span>' : 'Última cópia: '+dataPT(cfg.geral.ultimaCopia.slice(0,10))+' ('+(n===0?'hoje':'há '+n+' dia'+(n>1?'s':''))+')'+(n>30?' – <b style="color:var(--aus)">está na altura de fazer outra</b>':''); }
   $('lmPctTxt').textContent=((g.limites&&g.limites.pct)||80)+'%';
   const y=new Date().getFullYear(), F=feriados(y);
   $('fmLista').innerHTML = '<b>Feriados '+y+':</b> '+Object.keys(F).sort().map(d=>dataPT(d).slice(0,5)+' '+esc(F[d])).join(' · ');
@@ -1851,6 +1860,33 @@ async function guardarAssinatura(){
   else { cfg.geral=g; gravarLocal(); }
   cfg.geral=g; aviso('✅ Assinatura guardada.\n'+assinatura());
 }
+/* ---------------- CÓPIA DE SEGURANÇA ---------------- */
+const COLS_COPIA = ['assid_colaboradores','assid_registos','assid_planos','assid_relogio','assid_pedidos_ferias','assid_formacoes','assid_epis',
+  'assid_maquinas','assid_maq_uso','assid_avarias','assid_config','assid_log','stock_artigos','stock_codigos','stock_movimentos','ped_compras','ped_afiar','cnc_registos'];
+const diasDesdeCopia = () => { const u=cfg.geral&&cfg.geral.ultimaCopia; return u ? Math.round((new Date(hoje()+'T12:00')-new Date(u.slice(0,10)+'T12:00'))/864e5) : null; };
+async function copiaSeguranca(){
+  const b=$('bkBtn'); b.disabled=true; const txt=b.textContent; b.textContent='⏳ A juntar os dados…';
+  try{
+    const dados={}, cont={}, falhas=[];
+    if(db){
+      for(const c of COLS_COPIA){
+        try{ const sn=await db.collection(c).get(); dados[c]=sn.docs.map(d=>({id:d.id,...d.data()})); cont[c]=dados[c].length; }
+        catch(e){ falhas.push(c+' ('+(e.code||e.message)+')'); }
+      }
+    } else {
+      Object.assign(dados,{assid_colaboradores:colabs,assid_registos:regs,assid_planos:planos,assid_formacoes:formacoes,assid_epis:epis,assid_maquinas:maquinas,assid_maq_uso:usos,assid_avarias:avarias,assid_pedidos_ferias:pedidos});
+      Object.keys(dados).forEach(k=>cont[k]=dados[k].length);
+    }
+    const agora=new Date(), nome='EFAFLU_copia_'+dLocal(agora)+'_'+horaLocal(agora).replace(':','h')+'.json';
+    baixar(nome, JSON.stringify({sistema:'EFAFLU', versao:1, criado:agora.toISOString(), por:meuEmail&&meuEmail()||'', contagem:cont, dados}, null, 1), 'application/json');
+    if(db){ try{ await db.collection(COL_CFG).doc('geral').set({ultimaCopia:agora.toISOString()},{merge:true}); }catch(e){} }
+    const tot=Object.values(cont).reduce((s,n)=>s+n,0);
+    aviso('✅ Cópia descarregada: '+nome+'\n\n'+tot+' registos no total, por exemplo:\n• '+(cont.assid_colaboradores||0)+' colaboradores\n• '+(cont.assid_registos||0)+' registos de assiduidade\n• '+(cont.stock_artigos||0)+' artigos de stock\n• '+(cont.cnc_registos||0)+' melhorias CNC'+
+      (falhas.length?'\n\n⚠️ Não foi possível copiar: '+falhas.join(', '):'')+'\n\nGuarda o ficheiro num sítio seguro (pen, email ou disco).');
+  } catch(e){ aviso('Não foi possível fazer a cópia.\n'+(e.code||e.message)); }
+  finally{ b.disabled=false; b.textContent=txt; }
+}
+
 /* ---------------- LIMITES E ALERTAS ---------------- */
 const LIM = () => { const l=(cfg.geral&&cfg.geral.limites)||{}; return {extra:+l.extra||0, bPos:+l.bPos||0, bNeg:+l.bNeg||0, fi:+l.fi||0, pct:+l.pct||80}; };
 const horasExtraAno = (colId, ano) => regs.filter(r=>r.colId===colId && (r.tipo==='extra'||r.tipo==='sabado') && r.data.slice(0,4)===ano).reduce((s,r)=>s+(r.horas||0),0);
@@ -2139,6 +2175,7 @@ function calcAvisos(){
       else if(anoF===String(new Date().getFullYear()) && new Date().getMonth()>=9 && f>=5) porGozar.push(primeiroNome(l.c.nome)+' '+fmt(f));
     }
   });
+  if(papel==='editor' && db){ const n=diasDesdeCopia(); if(n==null||n>30) A.push({ic:'💾', t: n==null?'Ainda não fizeste nenhuma cópia de segurança dos dados':'A última cópia de segurança foi há '+n+' dias – faz uma nova', tab:'col'}); }
   if(porGozar.length) A.push({ic:'🏖️', t:`Férias de ${anoF} ainda por gozar (dias): ${porGozar.join(' · ')}`});
   { const pc=LIM().pct, fc=$('fCol').value;
     estadoLimites().filter(x=>x.pct>=pc && (!fc||x.c.id===fc)).sort((a,b)=>b.pct-a.pct).forEach(x=>
