@@ -93,6 +93,11 @@ button.edit{background:none;border:0;color:var(--pri);cursor:pointer;font-size:1
 button.wa-mini{background:#e7f8ee;color:#128c4b;border:0;border-radius:8px;padding:5px 9px;cursor:pointer;font-size:13px;white-space:nowrap}
 .motivo{font-size:13px;padding:5px 8px;margin-top:6px;max-width:260px}
 @media (max-width:640px){ .plrow td{display:block;border:0;padding:4px 0} .plrow{display:block;border-bottom:1px solid var(--line);padding:6px 0} .plrow .est{justify-content:flex-start!important;flex-wrap:wrap} }
+#diaFundo{position:fixed;inset:0;background:rgba(15,20,30,.55);display:flex;align-items:center;justify-content:center;padding:16px;z-index:998}
+#diaBox{background:var(--card,#fff);border-radius:14px;max-width:520px;width:100%;padding:18px;box-shadow:0 10px 40px rgba(0,0,0,.25);max-height:85vh;overflow:auto}
+#diaBox h3{margin:0 0 4px}#diaBox ul{list-style:none;margin:12px 0;padding:0}
+#diaBox li{display:flex;gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
+#diaBox li .tx{flex:1;min-width:0}#diaBox li.rep .tx b::after{content:" ⚠️ repetido";color:var(--falta);font-weight:600;font-size:12px}
 #dlgFundo{position:fixed;inset:0;background:rgba(15,20,30,.55);display:flex;align-items:center;justify-content:center;padding:16px;z-index:999}
 #dlg{background:#fff;border-radius:14px;max-width:420px;width:100%;padding:20px;box-shadow:0 10px 40px rgba(0,0,0,.3)}
 #dlgMsg{white-space:pre-line;font-size:16px;line-height:1.45;margin-bottom:18px}
@@ -205,7 +210,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
   <button class="btn sec hide" id="lkCancel">Cancelar</button>
   <p id="lkErr"></p>
   <a href="#" id="lkEsq" class="small hide" style="color:var(--pri)">Esqueci-me da palavra-passe</a>
-  <div class="small" style="margin-top:14px;opacity:.6">versão 18/11d · jornada 8h</div>
+  <div class="small" style="margin-top:14px;opacity:.6">versão 18/11e · jornada 8h</div>
 </div></div>
 <header>
   <span class="logo"><img src="" data-logo alt="EFAFLU"></span>
@@ -713,6 +718,8 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
   <div class="row" style="align-items:center;margin-bottom:10px"><div><h2 id="pnTit" style="margin:0"></h2></div>
     <div style="flex:0;min-width:0"><button class="btn sec" onclick="fecharPainel()">✖</button></div></div>
   <div id="pnBody"></div></div></div>
+<div id="diaFundo" class="hide" onclick="if(event.target===this)fecharDia()"><div id="diaBox"><h3 id="diaTit"></h3><div class="small" id="diaSub"></div><ul id="diaLista"></ul>
+  <div class="bt" style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap"><button class="btn sec" onclick="fecharDia()">Fechar</button><button class="btn" id="diaNovo">➕ Novo registo neste dia</button></div></div></div>
 <div id="dlgFundo" class="hide"><div id="dlg"><div id="dlgMsg"></div><div class="bt">
   <button class="btn sec" id="dlgNao"></button><button class="btn" id="dlgSim"></button></div></div></div>
 
@@ -1188,7 +1195,13 @@ function ajustarForm(){
 function recalcDias(){ const n=diasUteis($('rData').value,$('rFim').value); if(n!==null) $('rDias').value=n; }
 const visivel = id => !$(id).classList.contains('hide');
 
+let aGuardar=false;
 async function guardarRegisto(){
+  if(aGuardar) return;            // evita gravar 2 vezes com duplo clique
+  aGuardar=true;
+  try{ await guardarRegisto2(); } finally { aGuardar=false; }
+}
+async function guardarRegisto2(){
   const colId=$('rCol').value, tipo=valTipo(), data=$('rData').value;
   if(!colId) return aviso('Escolhe o colaborador (adiciona primeiro em "Colaboradores").');
   if(!data) return aviso('Indica a data.');
@@ -1223,6 +1236,9 @@ async function guardarRegisto(){
     if(horas>s && !await perguntar(`O ${qual} tem ${hm(s)}. Com este débito fica negativo (${hm(s-horas)}). Guardar mesmo assim?`)) return;
   }
   const obs=$('rObs').value.trim(), motivo = tipo==='ausencia' ? $('rTipo').value.slice(4) : '';
+  { const mv = tipo==='banco'?$('rMov').value:'', hh = compensa==='banco'?hBanco:(tipo==='ausencia'?0:horas);
+    const igual = regs.find(r=>r.id!==editReg && r.colId===colId && r.data===data && r.tipo===tipo && (r.mov||'')===mv && (r.horas||0)===hh && (r.motivo||'')===motivo);
+    if(igual && !await perguntar('Já existe um registo igual neste dia:\n\n'+descReg(igual)+'\n\nGuardar outro mesmo assim?','Sim, guardar','Não')) return; }
   const r = {id: editReg||uid(), colId, tipo, mov: tipo==='banco'?$('rMov').value:'', data, fim, dias, horas: compensa==='banco'?hBanco:(tipo==='ausencia'?0:horas), hIni, hFim, hIni2, hFim2, motivo, compensa, origem, obs,
              criado: new Date().toISOString()};
   if(mov2Dif()){
@@ -2202,7 +2218,7 @@ function renderMapa(){
     const ce=celula(c.id,x.d), cls=x.cls;
     const tip=`${c.nome}\n${diaLongo(x.d)}${x.fer?'\n🎉 '+x.fer:''}${ce?'\n'+ce.txt:''}${papel==='consulta'?'':ce&&ce.id?'\n(clica para corrigir ou apagar)':'\n(clica para registar)'}`;
     const ani=fazAnosEm(c,x.d);
-    return `<td class="${cls}" data-tip="${esc(tip+(ani?'\n🎂 Faz anos!':''))}" onclick="${ce&&ce.id?`abrirDoMapa('${ce.id}')`:ce&&ce.ped?`document.getElementById('pedCard').scrollIntoView({behavior:'smooth'})`:`registarEm('${c.id}','${x.d}')`}">${ce?`<span class="mc ${ce.plan?'plan':''} ${ce.ped?'ped':''}" style="${ce.cor?'background:'+ce.cor:''}">${ce.sig}</span>`:ani?'<span style="font-size:15px">🎂</span>':''}</td>`;
+    return `<td class="${cls}" data-tip="${esc(tip+(ani?'\n🎂 Faz anos!':''))}" onclick="${ce&&ce.id?`abrirCelula('${c.id}','${x.d}','${ce.id}')`:ce&&ce.ped?`document.getElementById('pedCard').scrollIntoView({behavior:'smooth'})`:`registarEm('${c.id}','${x.d}')`}">${ce?`<span class="mc ${ce.plan?'plan':''} ${ce.ped?'ped':''}" style="${ce.cor?'background:'+ce.cor:''}">${ce.sig}</span>`:ani?'<span style="font-size:15px">🎂</span>':''}</td>`;
   }).join('')+'</tr>').join('');
   const ativos=ordCol().filter(c=>c.ativo!==false);
   h+='<tr class="disp"><td class="nmc">Disponíveis</td>'+dias.map(x=>{ const k=ativos.filter(c=>!ausente(c.id,x.d)).length;
@@ -2213,6 +2229,28 @@ function renderMapa(){
 }
 function abrirDoMapa(id){ if(papel==='consulta') return; editarReg(id); voltarMapa=true; window.scrollTo(0,0); }
 let voltarMapa=false;
+// Clique num quadrado do mapa: se houver vários registos nesse dia, mostra-os todos (e assinala os repetidos)
+function abrirCelula(colId, d, id){
+  const rs=regs.filter(r=>r.colId===colId && cobre(r,d));
+  if(rs.length<=1) return abrirDoMapa(id);
+  const chave=r=>[r.tipo,r.mov||'',r.horas||0,r.dias||0,r.hIni||'',r.hFim||'',r.motivo||'',r.data,r.fim||''].join('|');
+  const vistos={};
+  $('diaTit').textContent=nomeCol(colId).nome+' – '+dataPT(d);
+  $('diaSub').textContent=rs.length+' registos neste dia. Toca em ✏️ para alterar ou em 🗑️ para apagar.';
+  $('diaLista').innerHTML=rs.map(r=>{ const k=chave(r), rep=vistos[k]; vistos[k]=1;
+    return `<li class="${rep?'rep':''}"><span class="tx"><b>${esc(nomeTipo(r))}${r.horas?' '+hm(r.horas):r.dias?' '+fmtD(r.dias):''}</b>${perTxt(r)?'<br><span class="small">'+esc(perTxt(r))+'</span>':''}${r.obs?'<br><span class="small">'+esc(r.obs)+'</span>':''}</span>
+      ${papel==='consulta'?'':`<button class="mini" onclick="fecharDia();abrirDoMapa('${r.id}')">✏️</button><button class="mini" onclick="apagarDoDia('${r.id}','${colId}','${d}')">🗑️</button>`}</li>`; }).join('');
+  $('diaNovo').classList.toggle('hide', papel==='consulta');
+  $('diaNovo').onclick=()=>{ fecharDia(); registarEm(colId,d); };
+  $('diaFundo').classList.remove('hide');
+}
+function fecharDia(){ $('diaFundo').classList.add('hide'); }
+async function apagarDoDia(id, colId, d){
+  fecharDia(); const r=regs.find(x=>x.id===id); if(!r) return;
+  if(!await perguntar('Apagar este registo?\n\n'+descReg(r),'🗑️ Apagar','Não')) return abrirCelula(colId,d,'');
+  await apagar(COL_REG,id);
+  setTimeout(()=>{ if(regs.filter(x=>x.colId===colId && cobre(x,d)).length>1) abrirCelula(colId,d,''); },400);
+}
 function registarEm(colId, d){
   if(papel==='consulta') return;
   limparForm(); mostrar('reg'); $('rCol').value=colId; $('rData').value=d; rotulosDia();
