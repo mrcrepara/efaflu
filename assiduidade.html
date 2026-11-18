@@ -205,7 +205,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
   <button class="btn sec hide" id="lkCancel">Cancelar</button>
   <p id="lkErr"></p>
   <a href="#" id="lkEsq" class="small hide" style="color:var(--pri)">Esqueci-me da palavra-passe</a>
-  <div class="small" style="margin-top:14px;opacity:.6">versão 18/11b · jornada 8h</div>
+  <div class="small" style="margin-top:14px;opacity:.6">versão 18/11c · jornada 8h</div>
 </div></div>
 <header>
   <span class="logo"><img src="" data-logo alt="EFAFLU"></span>
@@ -1129,7 +1129,7 @@ function calcHoras(){
     const h1=p1?minsTrab(a,b)/60:0, h2=p2?minsTrab(a2,b2)/60:0, m1=$('rMov').value, m2=$('rMov2').value;
     $('rHoras').value = Math.round(h1*100)/100;
     const liq=(m1==='-'?-h1:h1)+(m2==='-'?-h2:h2);
-    $('rAlm').textContent = `(só o 1.º período: ${m1==='-'?'−':'+'}${hm(h1)} · 2.º: ${m2==='-'?'−':'+'}${hm(h2)} · no banco fica ${liq<0?'−':'+'}${hm(Math.abs(liq))})`;
+    $('rAlm').textContent = `(${m1==='-'?'−':'+'}${hm(h1)} ${m2==='-'?'−':'+'} ${hm(h2)} = ${liq<0?'−':'+'}${hm(Math.abs(liq))})`;
     return;
   }
   const m = (p1?minsTrab(a,b):0) + (p2?minsTrab(a2,b2):0);
@@ -1143,7 +1143,7 @@ const mov2Dif = () => valTipo()==='banco' && visivel('boxIni2') && $('rMov2').va
 // 2.º período no mesmo dia (ex.: horas de manhã e à noite) – as horas somam-se
 function abrir2P(abrir){
   $('boxIni2').classList.toggle('hide',!abrir); $('boxFimH2').classList.toggle('hide',!abrir); $('box2P').classList.toggle('hide',abrir);
-  $('boxMov2').classList.toggle('hide', !abrir || valTipo()!=='banco' || !!editReg);
+  $('boxMov2').classList.toggle('hide', !abrir || valTipo()!=='banco');
   if(!abrir){ $('rHIni2').value=''; $('rHFim2').value=''; $('rMov2').value=''; } else $('rHIni2').focus();
   calcHoras();
 }
@@ -1158,8 +1158,8 @@ function ajustarForm(){
   $('boxFimH').classList.toggle('hide', !temHoras);
   const tem2 = temHoras && !!($('rHIni2').value||$('rHFim2').value);
   $('box2P').classList.toggle('hide', !temHoras || tem2); $('boxIni2').classList.toggle('hide', !tem2); $('boxFimH2').classList.toggle('hide', !tem2);
-  $('boxMov2').classList.toggle('hide', !tem2 || t!=='banco' || !!editReg);
-  if(t!=='banco' || editReg) $('rMov2').value='';
+  $('boxMov2').classList.toggle('hide', !tem2 || t!=='banco');
+  if(t!=='banco') $('rMov2').value='';
   $('boxMotivo').classList.add('hide');
   $('boxMov').classList.toggle('hide', t!=='banco');
   const tv=$('rTipo').value, ani=tv==='aus:Aniversário', comp=COMPENSAVEIS.includes(tv);
@@ -1235,7 +1235,7 @@ async function guardarRegisto(){
     const r2={...r, id:uid(), mov:m2, horas:h2, hIni:hIni2, hFim:hFim2, hIni2:'', hFim2:'', origem: m2==='-'?origem:''};
     r.hIni2=''; r.hFim2=''; if(r.mov!=='-') r.origem='';
     await salvar(COL_REG, r); await salvar(COL_REG, r2);
-    limparForm(); $('dica').textContent=`✅ Guardados 2 registos: ${r.mov==='-'?'−':'+'}${hm(r.horas)} e ${m2==='-'?'−':'+'}${hm(h2)} no banco de horas.`;
+    const eraEd = !!editReg; limparForm(); if(eraEd){ mostrar(voltarMapa?'mapa':'hist'); voltarMapa=false; } $('dica').textContent=`✅ Guardados 2 registos: ${r.mov==='-'?'−':'+'}${hm(r.horas)} e ${m2==='-'?'−':'+'}${hm(h2)} no banco de horas.`;
     return;
   }
   await salvar(COL_REG, r);
