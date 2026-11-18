@@ -210,7 +210,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
   <button class="btn sec hide" id="lkCancel">Cancelar</button>
   <p id="lkErr"></p>
   <a href="#" id="lkEsq" class="small hide" style="color:var(--pri)">Esqueci-me da palavra-passe</a>
-  <div class="small" style="margin-top:14px;opacity:.6">versão 18/11e · jornada 8h</div>
+  <div class="small" style="margin-top:14px;opacity:.6">versão 18/11f · jornada 8h</div>
 </div></div>
 <header>
   <span class="logo"><img src="" data-logo alt="EFAFLU"></span>
@@ -271,6 +271,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
       <div class="card"><h2 id="gT3">Horas extra por mês</h2><p class="small sub" id="gS3"></p><div id="gMesExtra"></div></div>
       <div class="card"><h2 id="gT4">Faltas e ausências por mês</h2><p class="small sub" id="gS4"></p><div id="gMesFal"></div></div>
       <div class="card"><h2>Absentismo por mês (%)</h2><p class="small sub" id="gS5"></p><div id="gMesAbs"></div></div>
+      <div class="card hide" id="gC7"><h2>🚦 Limites – onde está cada um</h2><p class="small sub" id="gS7"></p><div id="gLim"></div></div>
       <div class="card" id="gC6"><h2>Absentismo por colaborador (%)</h2><p class="small sub" id="gS6"></p><div id="gColAbs"></div></div>
     </div>
     <div class="card hide" id="fichaCol">
@@ -319,7 +320,7 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
           <button class="mini" style="padding:3px 8px" onclick="marcarTodos(false)">Nenhum</button>
           <span style="white-space:nowrap;margin-left:6px">· <button class="mini" style="padding:3px 8px" onclick="sugerirSabados()">⭐ Sugerir os</button>
           <input type="number" id="plSug" min="1" value="5" style="width:56px;padding:3px 6px;font-size:13px;display:inline-block">
-          <span class="small">que fizeram menos sábados</span></span></span>
+          <span class="small" title="Conta os sábados trabalhados no ano, as vezes que disseram que não (meio sábado cada) e as horas que devem ao banco (quem deve vem primeiro)">primeiros da escala justa ⓘ</span></span></span>
           <div class="pick" id="plPick"></div>
         </div>
         <div class="row" style="margin-top:12px;justify-content:flex-end">
@@ -685,6 +686,19 @@ details.ant summary{cursor:pointer;font-weight:600;padding:4px 0}
         <div><label>Assinatura</label><input id="asTxt" placeholder="ex.: Rui Veloso, Team Leader"></div>
         <div style="flex:0"><button class="btn" onclick="guardarAssinatura()">💾 Guardar</button></div>
       </div>
+    </div>
+    <div class="card noprint w">
+      <h2>🚦 Limites e alertas</h2>
+      <p class="small" style="margin-top:0">Põe os máximos que a empresa usa. A app avisa no Resumo quando alguém chega a <b id="lmPctTxt">80%</b> do limite e quando o passa. Deixa em branco o que não quiseres controlar.</p>
+      <div class="row">
+        <div style="max-width:190px"><label>Horas extra por ano (máx.)</label><input type="number" id="lmExtra" min="0" step="1" placeholder="ex.: 150"></div>
+        <div style="max-width:190px"><label>Banco de horas – máx. a favor</label><input type="number" id="lmBPos" min="0" step="1" placeholder="ex.: 150"></div>
+        <div style="max-width:190px"><label>Banco de horas – máx. a dever</label><input type="number" id="lmBNeg" min="0" step="1" placeholder="ex.: 40"></div>
+        <div style="max-width:190px"><label>Faltas injust. por ano (dias)</label><input type="number" id="lmFI" min="0" step="0.5" placeholder="ex.: 3"></div>
+        <div style="max-width:130px"><label>Avisar a partir de</label><select id="lmPct"><option value="70">70%</option><option value="80" selected>80%</option><option value="90">90%</option></select></div>
+        <div style="flex:0"><button class="btn" onclick="guardarLimites()">💾 Guardar</button></div>
+      </div>
+      <p class="small" style="margin-bottom:0">As horas extra contam as "Horas extra" e as horas dos sábados trabalhados do ano. O banco de horas é o saldo atual (sem o banco anterior).</p>
     </div>
     <div class="card noprint w">
       <h2>🎉 Feriados</h2>
@@ -1527,21 +1541,35 @@ function proxSabado(){ const d=new Date(); d.setDate(d.getDate()+((6-d.getDay()+
 function rotuloPl(){ const d=$('plData').value; $('plDiaSem').textContent = d ? '('+diaSem(d)+')' : ''; }
 const sabadosAno = (colId, ano) => regs.filter(r=>r.colId===colId && r.tipo==='sabado' && r.data.slice(0,4)===ano).reduce((s,r)=>s+(r.dias||1),0);
 const ultimoSabado = colId => regs.filter(r=>r.colId===colId && r.tipo==='sabado').map(r=>r.data).sort().pop()||'';
+/* Escala justa: quem tem menos pontos é chamado primeiro.
+   pontos = sábados trabalhados no ano + ½ por cada vez que foi chamado e disse que não
+            − 1 por cada 8h que deve ao banco de horas (assim recupera as horas)
+   Em caso de empate, vai primeiro quem trabalhou ao sábado há mais tempo. */
+const recusasAno = (colId, ano) => planos.filter(p=>p.data.slice(0,4)===ano && p.pessoas[colId] && p.pessoas[colId].estado==='nao').length;
+function escala(d){
+  const ano=(d||hoje()).slice(0,4);
+  return ordCol().filter(c=>c.ativo!==false).map(c=>{
+    const sab=sabadosAno(c.id,ano), rec=recusasAno(c.id,ano), sb=saldoBanco(c.id), deve = sb<0 ? -sb/DIA_INTEIRO : 0;
+    const pts = sab + rec*0.5 - deve;
+    const pq=[sab+' sáb.'+(sab===1?'':'')]; if(rec) pq.push(rec+' recusa'+(rec>1?'s':'')); if(sb<0) pq.push('deve '+hm(-sb)+' ao banco');
+    return {c, pts, ult:ultimoSabado(c.id), aus: d ? ausente(c.id,d) : null, pq:pq.join(' · ')};
+  }).sort((a,b)=>a.pts-b.pts || a.ult.localeCompare(b.ult) || String(a.c.num).localeCompare(String(b.c.num),'pt',{numeric:true}));
+}
 function sugerirSabados(){
-  const d=$('plData').value||hoje(), n=Math.max(1,parseInt($('plSug').value)||5), ano=d.slice(0,4);
-  const cand=ordCol().filter(c=>c.ativo!==false && !ausente(c.id,d))
-    .sort((a,b)=>sabadosAno(a.id,ano)-sabadosAno(b.id,ano) || ultimoSabado(a.id).localeCompare(ultimoSabado(b.id)));
-  const esc=new Set(cand.slice(0,n).map(c=>c.id));
+  const d=$('plData').value||hoje(), n=Math.max(1,parseInt($('plSug').value)||5);
+  const esc=new Set(escala(d).filter(x=>!x.aus).slice(0,n).map(x=>x.c.id));
   document.querySelectorAll('#plPick input').forEach(i=>i.checked=esc.has(i.value));
 }
 function marcarTodos(v){ document.querySelectorAll('#plPick input').forEach(i=>i.checked=v); }
 function renderPick(sel){
-  const ativos=ordCol().filter(c=>c.ativo!==false);
+  const d0=$('plData').value, E=escala(d0), pos={}; let k=0; E.forEach(x=>{ if(!x.aus) pos[x.c.id]=++k; });
+  const info=Object.fromEntries(E.map(x=>[x.c.id,x]));
+  const ativos=E.map(x=>x.c);   // ordenados pela escala justa
   const extra = sel ? Object.keys(sel).filter(id=>!ativos.some(c=>c.id===id)).map(nomeCol) : [];
   const d=$('plData').value;
   $("plPick").innerHTML = ativos.length||extra.length ? [...ativos,...extra].map(c=>{ const au=d&&ausente(c.id,d);
-    const ns=sabadosAno(c.id, (d||hoje()).slice(0,4));
-    return `<label><input type="checkbox" value="${c.id}" ${sel&&sel[c.id]?'checked':''}> <span>${esc(c.num)} – ${esc(c.nome)} <span class="small" title="Sábados trabalhados em ${(d||hoje()).slice(0,4)}">· ${ns} sáb.</span>${au?`<br><span class="small" style="color:var(--aus);font-weight:600">${au.tipo==='ausencia'?AUS[motAus(au)].ic+' '+esc(AUS[motAus(au)].curto):'❌ Falta'} nesse dia</span>`:''}</span></label>`; }).join('')
+    const ix=info[c.id];
+    return `<label><input type="checkbox" value="${c.id}" ${sel&&sel[c.id]?'checked':''}> <span>${pos[c.id]?`<b class="small" style="color:var(--sab)" title="Posição na escala justa">${pos[c.id]}.º</b> `:''}${esc(c.num)} – ${esc(c.nome)} <span class="small" title="Escala justa: sábados no ano, recusas e horas a dever ao banco">· ${ix?esc(ix.pq):sabadosAno(c.id,(d||hoje()).slice(0,4))+' sáb.'}</span>${au?`<br><span class="small" style="color:var(--aus);font-weight:600">${au.tipo==='ausencia'?AUS[motAus(au)].ic+' '+esc(AUS[motAus(au)].curto):'❌ Falta'} nesse dia</span>`:''}</span></label>`; }).join('')
     : '<span class="small">Adiciona primeiro colaboradores.</span>';
 }
 function toggleFormPlano(){ $('plForm').classList.contains('hide') ? abrirFormPlano(null) : fecharFormPlano(); }
@@ -1771,6 +1799,9 @@ function renderAcessos(){
   if(document.activeElement!==$('fmData') && document.activeElement!==$('fmNome')){
     if(document.activeElement!==$('asTxt')) $('asTxt').value = g.assinatura || 'Rui Veloso, Team Leader';
     $('fmData').value = g.municipal ? new Date().getFullYear()+'-'+g.municipal : ''; $('fmNome').value=g.municipalNome||''; $('fmCarn').checked=!!g.carnaval; }
+  if(!['lmExtra','lmBPos','lmBNeg','lmFI','lmPct'].includes(document.activeElement&&document.activeElement.id)){
+    const l=(g.limites)||{}; $('lmExtra').value=l.extra||''; $('lmBPos').value=l.bPos||''; $('lmBNeg').value=l.bNeg||''; $('lmFI').value=l.fi||''; $('lmPct').value=String(l.pct||80); }
+  $('lmPctTxt').textContent=((g.limites&&g.limites.pct)||80)+'%';
   const y=new Date().getFullYear(), F=feriados(y);
   $('fmLista').innerHTML = '<b>Feriados '+y+':</b> '+Object.keys(F).sort().map(d=>dataPT(d).slice(0,5)+' '+esc(F[d])).join(' · ');
 }
@@ -1808,6 +1839,29 @@ async function guardarAssinatura(){
   if(db){ try{ await db.collection(COL_CFG).doc('geral').set(g); }catch(e){ return aviso('Não foi possível guardar.\n'+(e.code||e.message)); } }
   else { cfg.geral=g; gravarLocal(); }
   cfg.geral=g; aviso('✅ Assinatura guardada.\n'+assinatura());
+}
+/* ---------------- LIMITES E ALERTAS ---------------- */
+const LIM = () => { const l=(cfg.geral&&cfg.geral.limites)||{}; return {extra:+l.extra||0, bPos:+l.bPos||0, bNeg:+l.bNeg||0, fi:+l.fi||0, pct:+l.pct||80}; };
+const horasExtraAno = (colId, ano) => regs.filter(r=>r.colId===colId && (r.tipo==='extra'||r.tipo==='sabado') && r.data.slice(0,4)===ano).reduce((s,r)=>s+(r.horas||0),0);
+const faltasInjAno = (colId, ano) => regs.filter(r=>r.colId===colId && r.tipo==='falta_i' && r.data.slice(0,4)===ano).reduce((s,r)=>s+(r.dias>0?r.dias:(r.horas||0)/DIA_INTEIRO),0);
+// Situação de cada colaborador face aos limites: [{c, k, v, lim, pct, txt}]
+function estadoLimites(){
+  const L=LIM(), ano=String(new Date().getFullYear()), out=[];
+  ordCol().filter(c=>c.ativo!==false).forEach(c=>{
+    if(L.extra){ const v=horasExtraAno(c.id,ano); out.push({c,k:'extra',v,lim:L.extra,pct:v/L.extra*100,txt:`horas extra em ${ano}: ${hm(v)} de ${hm(L.extra)}`}); }
+    const sb=saldoBanco(c.id);
+    if(L.bPos && sb>0) out.push({c,k:'bPos',v:sb,lim:L.bPos,pct:sb/L.bPos*100,txt:`banco de horas a favor: ${hm(sb)} de ${hm(L.bPos)}`});
+    if(L.bNeg && sb<0) out.push({c,k:'bNeg',v:-sb,lim:L.bNeg,pct:-sb/L.bNeg*100,txt:`banco de horas a dever: −${hm(-sb)} de −${hm(L.bNeg)}`});
+    if(L.fi){ const v=faltasInjAno(c.id,ano); out.push({c,k:'fi',v,lim:L.fi,pct:v/L.fi*100,txt:`faltas injustificadas em ${ano}: ${fmt(v)} de ${fmt(L.fi)} dias`}); }
+  });
+  return out;
+}
+async function guardarLimites(){
+  const n=id=>{ const v=parseFloat($(id).value); return isNaN(v)||v<=0 ? 0 : v; };
+  const g={...(cfg.geral||{}), limites:{extra:n('lmExtra'), bPos:n('lmBPos'), bNeg:n('lmBNeg'), fi:n('lmFI'), pct:+$('lmPct').value||80}};
+  if(db){ try{ await db.collection(COL_CFG).doc('geral').set(g); }catch(e){ return aviso('Não foi possível guardar.\n'+(e.code||e.message)); } }
+  else { cfg.geral=g; gravarLocal(); }
+  cfg.geral=g; render(); aviso('✅ Limites guardados.');
 }
 async function guardarFeriados(){
   const d=$('fmData').value;
@@ -2067,7 +2121,7 @@ function calcAvisos(){
   const anoF = $('fPer').value==='ano' ? String($('fAno').value) : $('fMes').value.slice(0,4);
   L.forEach(l=>{
     if(l.fiD>=2) A.push({ic:'❌', t:`${l.c.nome} tem ${fmtD(l.fiD)} de faltas injustificadas neste período`, col:l.c.id});
-    if(l.saldo<0) A.push({ic:'🏦', t:`${l.c.nome} tem o banco de horas negativo (${hm(l.saldo)})`, col:l.c.id});
+    if(l.saldo<0 && !LIM().bNeg) A.push({ic:'🏦', t:`${l.c.nome} tem o banco de horas negativo (${hm(l.saldo)})`, col:l.c.id});
     if(l.c.ativo!==false){
       const d=direitoFerias(l.c.id), g=feriasGozadas(l.c.id,anoF), f=d-g;
       if(f<0) A.push({ic:'🏖️', t:`${l.c.nome} excedeu as férias de ${anoF} em ${fmtD(-f)}`, col:l.c.id});
@@ -2075,6 +2129,9 @@ function calcAvisos(){
     }
   });
   if(porGozar.length) A.push({ic:'🏖️', t:`Férias de ${anoF} ainda por gozar (dias): ${porGozar.join(' · ')}`});
+  { const pc=LIM().pct, fc=$('fCol').value;
+    estadoLimites().filter(x=>x.pct>=pc && (!fc||x.c.id===fc)).sort((a,b)=>b.pct-a.pct).forEach(x=>
+      A.push({ic: x.pct>=100?'🔴':'🟠', t:`${x.c.nome} ${x.pct>100.5?'PASSOU o limite':x.pct>=100?'chegou ao limite':'está a chegar ao limite'} – ${x.txt} (${Math.round(x.pct)}%)`, col:x.c.id})); }
   ordCol().filter(c=>c.ativo!==false).forEach(c=>{ const p=proxAni(c); if(p && p.dias<=7)
     A.push({ic:'🎂', t: p.dias===0 ? `Hoje é o aniversário de ${c.nome}${p.idade?' ('+p.idade+' anos)':''}! 🎉` : `${c.nome} faz anos ${p.dias===1?'amanhã':'daqui a '+p.dias+' dias'} (${dataPT(p.data).slice(0,5)})${p.idade?' – '+p.idade+' anos':''}`, tab:'col'}); });
   planos.filter(p=>!p.fechado).forEach(p=>{
@@ -2314,6 +2371,16 @@ function renderGraficos(L, p){
   $('gS5').textContent = quem+ano+(aAno&&aAno.pct!=null?' · média do ano '+pctTxt(aAno.pct):'')+' · faltas, baixas e outras ausências não planeadas';
   colChart('gMesAbs',[{nome:'Absentismo',cor:'var(--falta)',vals:aAno?aAno.porMes.map(x=>x.teo?x.aus/x.teo*100:0):Array(12).fill(0),fmt:pctTxt}], ano, 'Sem absentismo em '+ano+'. 👍');
   $('gC6').classList.toggle('hide',!!fc);
+  { const E=estadoLimites().filter(x=>!fc||x.c.id===fc), pc=LIM().pct;
+    $('gC7').classList.toggle('hide', !E.length);
+    const nomes={extra:'Horas extra no ano',bPos:'Banco a favor',bNeg:'Banco a dever',fi:'Faltas injust. no ano'};
+    $('gS7').textContent='% do limite de cada um · laranja a partir de '+pc+'% · vermelho acima de 100%';
+    $('gLim').innerHTML = E.length ? Object.keys(nomes).filter(k=>E.some(x=>x.k===k)).map(k=>{
+      const it=E.filter(x=>x.k===k).sort((a,b)=>b.pct-a.pct), mx=Math.max(100,...it.map(x=>x.pct));
+      return `<div class="small" style="font-weight:700;margin:10px 0 4px">${nomes[k]}</div>`+it.map(x=>{ const cor=x.pct>=100?'var(--falta)':x.pct>=pc?'var(--aus)':'var(--extra)';
+        return `<div class="hb"><div class="nm" title="${esc(x.c.nome)}">${esc(x.c.nome)}</div><div class="tr" data-tip="${esc(x.c.nome+'\n'+x.txt)}" onclick="verCol('${x.c.id}')" style="cursor:pointer">
+          <div class="b" style="left:0;width:${Math.min(100,x.pct/mx*100)}%;background:${cor}"></div><div style="position:absolute;left:${100/mx*100}%;top:-2px;bottom:-2px;border-left:2px dashed var(--muted)"></div></div>
+          <div class="v">${Math.round(x.pct)}%</div></div>`; }).join(''); }).join('') : ''; }
   const aPer=absPeriodo();
   $('gS6').textContent = p+' · clica numa barra para ver o colaborador';
   hBars('gColAbs', aPer ? ordCol().filter(c=>aPer.porCol[c.id]&&aPer.porCol[c.id].aus>0).map(c=>({id:c.id,n:c.nome,num:c.num,v:aPer.porCol[c.id].aus/aPer.porCol[c.id].teo*100})).sort((a,b)=>b.v-a.v) : [], 'var(--falta)', 'Ninguém faltou neste período. 👍', pctTxt);
